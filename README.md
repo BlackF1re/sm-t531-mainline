@@ -198,7 +198,7 @@ lk2nd, `fastboot flash boot` writes at 512 KiB offset. See the bootstrap gate be
 
 | Component | Mainline implementation | Actual tablet acceptance |
 |---|---|---|
-| Kernel / DT / initramfs | Built and artifact hashes checked | USB diagnostic shell executed commands; Debian not booted |
+| Kernel / DT / initramfs | Built and artifact hashes checked | Internal UP bootstrap automatically kexecs SD SMP kernel; ACM shell commands verified; Debian not booted |
 | Four CPU cores | Upstream Qualcomm SMP, OPP and TSENS | Four CPUs online after boot; CPU3 could not return after a hotplug test; OPP/thermal/stability tests pending |
 | eMMC / microSD | Common DTS SDHCI and regulators | eMMC enumerated; SD passed two 32 MiB ext4 write/unmount/readback tests after load-vote fix at 50 MHz; UHS and long stress unverified |
 | USB / buttons / touch / backlight | Existing upstream drivers and board DT | USB ACM shell command exchange tested; Ethernet and input tests pending |
@@ -377,14 +377,19 @@ The bootstrap uses static ARM kexec-tools 2.0.29 from
 archive SHA-256 `67b1ac503aade45a54db0bc79228a8830a35d5d4f83cee932cff3e7a81a4a9ec`.
 It mounts `LABEL=T531_BOOT` read-only, verifies `kernel.sha256` for `zImage`
 and `initramfs.cpio.gz`, reads `kexec.cmdline`, loads and unmounts before kexec.
+It uses a tested 64 MiB image allowance to place initramfs/DT above the normal
+kernel decompression area, and saves addresses plus first-stage dmesg to
+`/var/log/t531-bootstrap.log` on the external rootfs before handoff.
 It reuses `/sys/firmware/fdt` with lk2nd's actual RAM/framebuffer settings;
 DT changes therefore require updating the bootstrap DTB too. A failed load
 returns to the diagnostic shell. Missing-card recovery is not yet physically tested.
 
-Test the bootstrap on SD using `boot/bootstrap-extlinux.conf.in`, with the
-bootstrap files alongside the ordinary files and checksum manifest. Internal
-installation is gated on a successful real UP-to-SMP kexec test. It has not
-been performed yet:
+Test the bootstrap on SD using `boot/bootstrap-extlinux.conf.in`, replacing
+`t531.bootstrap=internal` with `t531.bootstrap=sd-test`, with the bootstrap
+files alongside the ordinary files and checksum manifest. The saved first-stage
+command line distinguishes the selected loader in subsequent internal tests. Internal
+installation is gated on a successful real UP-to-SMP kexec test. The revised
+loader passed automatic SD-to-SMP loading and was installed with:
 
 ```sh
 # Only after real kexec validation and confirmation of the 10 MiB BOOT layout:
@@ -394,7 +399,29 @@ fastboot flash boot .work/artifacts/current/bootstrap-boot.ext2
 This command is for lk2nd Fastboot, never stock Fastboot or Heimdall. It must
 preserve the first 512 KiB. The complete current lk2nd BOOT was read and its
 SHA-256 verified before preparing this scheme; its initial release-image bytes
-also match the pinned lk2nd download. Recovery of that exact saved state from
+also match the pinned lk2nd download. Fastboot reported logical BOOT
+`0x980000` and protected lk2nd `0x80000`. After flashing, the complete BOOT,
+protected 512 KiB prefix and payload hashes matched the expected bytes.
+The card's test `/extlinux/extlinux.conf` had priority and was renamed to
+`extlinux.sd-test.conf`. The next boot's saved first-stage log identified
+`t531.bootstrap=internal`; the answering SMP shell identified `t531.stage=second`
+and CPUs `0-3`. The other internal partitions were not written.
+
+Keep `/extlinux/extlinux.conf` absent from the SD boot filesystem when using
+this internal loader, or lk2nd may select the card entry first. Update ordinary
+kernel files from a mounted card with:
+
+```sh
+make build
+make deploy-sd BOOT_MODE=internal BOOT_MOUNT=/mounted/card-boot
+```
+
+This copies the kernel, initramfs, DTB and checksums without creating an SD
+extlinux entry. It refuses an existing active extlinux configuration. The
+loader currently reuses its live DT, so a DT change needs a rebuilt/retested
+internal bootstrap too. Kernel/initramfs-only updates stay on SD.
+
+Recovery of the exact saved pre-bootstrap lk2nd state from
 Samsung Download Mode is:
 
 ```sh
@@ -405,6 +432,20 @@ Bootstrap loading from SD and UP-to-UP kexec were observed on-device; the
 second UP kernel returned an ACM shell with `t531.stage=up-self`. Re-enumeration
 changed the host port to `/dev/ttyACM1`; inspect all ACM ports. Automatic UP-to-SMP kexec
 reached the first kernel's `Bye!` handoff, but no second-stage console or usable
-USB appeared; the owner reported a USB descriptor error. Successful execution
-is unverified; no internal bootstrap installation or Debian systemd boot is
-claimed. Raw results and both BOOT backups remain outside Git.
+USB appeared; the owner reported a USB descriptor error. That first execution
+was unverified. Repeating with only `maxcpus=1` added to the ordinary
+second-stage command line also stopped at `Bye!`, without an answering ACM
+shell. This does not support secondary-CPU startup as the sole cause. A compact
+SMP kernel derived from the successful UP configuration then booted through
+kexec with four CPUs and passed an 8 MiB ext4 write/unmount/readback test.
+The ordinary multi_v7 kernel booted unchanged when kexec used
+`--image-size=0x04000000`: initrd at `0x04008000`, DT at `0x040e5000`, instead
+of `0x02ba5000`/`0x02c82000`. Its ACM shell reported `t531.stage=second`, CPUs
+`0-3`, and passed a 32 MiB ext4 write/unmount/cache-drop/readback test.
+This establishes a placement-dependent failure; the exact overwritten region
+has not been measured. The final loader subsequently passed automatic SD-to-SMP kexec; the saved
+first-stage command line identifies `t531.bootstrap=sd-test`, and the second
+ACM shell reports `t531.stage=second` and CPUs `0-3`. The installed internal
+loader then passed the same chain after the higher-priority SD test entry was
+removed from lookup; its saved first-stage marker is `t531.bootstrap=internal`.
+Debian systemd has not booted. Raw results and both BOOT backups remain outside Git.

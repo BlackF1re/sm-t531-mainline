@@ -1,3 +1,5 @@
+BOOT_MODE ?= sd
+
 .PHONY: build bootstrap collect rootfs deploy-sd deploy-adb-sd
 build:
 	./scripts/build.sh
@@ -8,7 +10,7 @@ collect:
 rootfs:
 	./scripts/rootfs.sh
 deploy-sd:
-	./scripts/deploy-sd.sh "$(BOOT_MOUNT)"
+	BOOT_MODE="$(BOOT_MODE)" ./scripts/deploy-sd.sh "$(BOOT_MOUNT)"
 
 deploy-adb-sd:
 	./scripts/deploy-adb-sd.sh

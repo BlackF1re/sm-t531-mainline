@@ -61,7 +61,15 @@ import sys
 cfg=set(open(sys.argv[1]).read().splitlines())
 required=[s.strip() for s in open(sys.argv[2])
           if s.startswith('CONFIG_') or (s.startswith('# CONFIG_') and s.rstrip().endswith(' is not set'))]
-missing=[s for s in required if s not in cfg]
+missing=[]
+for setting in required:
+    if setting.startswith('CONFIG_'):
+        if setting not in cfg: missing.append(setting)
+    else:
+        symbol=setting.split()[1]
+        # Invisible symbols are omitted by Kconfig when their parent is off.
+        if any(line.startswith(symbol+'=') and line != symbol+'=n' for line in cfg):
+            missing.append(setting)
 if missing: raise SystemExit('Unresolved required config: '+', '.join(missing))
 PY
 targets=(zImage qcom/qcom-msm8226-samsung-matisse3g.dtb)

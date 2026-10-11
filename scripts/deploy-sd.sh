@@ -6,10 +6,12 @@ mountpoint -q "$1" || { echo 'Destination must be an existing mount'; exit 1; }
 [ "$(findmnt -n -o FSTYPE --target "$1")" = ext2 ] || { echo 'lk2nd requires ext2'; exit 1; }
 [ "$(findmnt -n -o TARGET --target "$1")" = "$(realpath "$1")" ] || { echo 'Pass the mount root'; exit 1; }
 [ ! -e "$1/extlinux/extlinux.conf" ] || { echo 'Existing boot configuration; refusing overwrite'; exit 1; }
+mode=${BOOT_MODE:-sd}
+case "$mode" in sd|internal) ;; *) echo 'BOOT_MODE must be sd or internal'; exit 1;; esac
 a=.work/artifacts/current
 (cd "$a"; sha256sum -c SHA256SUMS)
-mkdir -p "$1/extlinux"
+[ "$mode" != sd ] || mkdir -p "$1/extlinux"
 cp "$a/zImage" "$a/qcom-msm8226-samsung-matisse3g.dtb" "$a/initramfs.cpio.gz" \
    "$a/kernel.sha256" "$a/kexec.cmdline" "$1/"
-cp "$a/extlinux.conf" "$1/extlinux/"
+[ "$mode" != sd ] || cp "$a/extlinux.conf" "$1/extlinux/"
 sync

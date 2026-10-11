@@ -3,4 +3,4 @@ label bootstrap
     linux /bootstrap-zImage
     initrd /bootstrap-initramfs.cpio.gz
     fdt /qcom-msm8226-samsung-matisse3g.dtb
-    append console=tty0 console=ttyMSM0,115200 loglevel=7 clk_ignore_unused lk2nd.pass-ramoops t531.kexec
+    append console=tty0 console=ttyMSM0,115200 loglevel=7 clk_ignore_unused lk2nd.pass-ramoops t531.bootstrap=internal t531.kexec

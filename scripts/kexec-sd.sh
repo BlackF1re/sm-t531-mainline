@@ -24,10 +24,23 @@ sha256sum -c kernel.sha256
 cmdline=$(cat kexec.cmdline)
 case "$cmdline" in *t531.kexec*) echo 'Refusing a recursive kexec command line'; exit 1;; esac
 # Reuse lk2nd's live DT: it includes actual RAM and inherited framebuffer data.
-kexec -l /newroot/zImage --dtb=/sys/firmware/fdt \
-    --initrd=/newroot/initramfs.cpio.gz --append="$cmdline"
+# The automatic zImage estimate stalled multi_v7 at handoff on this board.
+# The same kernel booted with initrd/DT above a tested 64 MiB image allowance.
+load_status=0
+kexec -d -l /newroot/zImage --image-size=0x04000000 --dtb=/sys/firmware/fdt \
+    --initrd=/newroot/initramfs.cpio.gz --append="$cmdline" \
+    > /run/t531-kexec.log 2>&1 || load_status=$?
+cat /run/t531-kexec.log
 cd /
 umount /newroot
 trap - EXIT
+# Preserve segment addresses and first-stage evidence before leaving this kernel.
+if mount -t ext4 -o rw LABEL=T531_ROOT /newroot; then
+    mkdir -p /newroot/var/log
+    { cat /proc/cmdline; cat /run/t531-kexec.log; dmesg; } > /newroot/var/log/t531-bootstrap.log
+    sync
+    umount /newroot
+fi
+[ "$load_status" -eq 0 ] || exit "$load_status"
 echo 'Second-stage kernel loaded from read-only microSD'
 [ "$mode" = --load ] || exec kexec -e
