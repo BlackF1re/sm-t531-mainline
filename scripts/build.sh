@@ -18,20 +18,30 @@ if [ ! -d "$linux/.git" ]; then
     git clone --depth 1 --branch "$tag" https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git "$linux"
 fi
 [ "$(git -C "$linux" rev-parse HEAD)" = "$commit" ] || { echo 'Wrong Linux base'; exit 1; }
-# Never reset source modifications: accept only the exact recorded patch state.
-for patch in "$project"/patches/linux/*.patch; do
-    if git -C "$linux" apply --reverse --check "$patch" 2>/dev/null; then
-        continue
-    fi
-    git -C "$linux" apply --check "$patch"
-    git -C "$linux" apply "$patch"
-done
-# Compare against an independent index containing only the approved patches.
+# Match an exact patch prefix before applying any pending patches. Later
+# patches can modify files created by earlier ones, so individual reverse
+# checks are insufficient for repeat builds.
+patches=("$project"/patches/linux/*.patch)
 export GIT_INDEX_FILE="$work/source-check.index"
-git -C "$linux" read-tree HEAD
-for patch in "$project"/patches/linux/*.patch; do git -C "$linux" apply --cached "$patch"; done
+prefix=-1
+for ((candidate=${#patches[@]}; candidate>=0; candidate--)); do
+    git -C "$linux" read-tree HEAD
+    for ((i=0; i<candidate; i++)); do
+        git -C "$linux" apply --cached "${patches[i]}"
+    done
+    if git -C "$linux" diff --quiet &&
+       [ -z "$(git -C "$linux" ls-files --others --exclude-standard)" ]; then
+        prefix=$candidate
+        break
+    fi
+done
+[ "$prefix" -ge 0 ] || { echo 'Source changes outside the recorded patch prefixes'; exit 1; }
+for ((i=prefix; i<${#patches[@]}; i++)); do
+    git -C "$linux" apply --check "${patches[i]}"
+    git -C "$linux" apply "${patches[i]}"
+    git -C "$linux" apply --cached "${patches[i]}"
+done
 git -C "$linux" diff --quiet || { echo 'Source changes outside the recorded patches'; exit 1; }
-[ -z "$(git -C "$linux" ls-files --others --exclude-standard)" ] || { echo 'Unexpected untracked Linux source'; exit 1; }
 unset GIT_INDEX_FILE
 km=(make -C "$linux" O="$out" ARCH=arm CROSS_COMPILE="$cross")
 "${km[@]}" multi_v7_defconfig

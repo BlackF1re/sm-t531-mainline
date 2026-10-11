@@ -1,6 +1,8 @@
 #!/bin/sh
 export PATH=/bin:/sbin
 mount -t devtmpfs devtmpfs /dev
+# Redraw fbcon so inherited boot graphics do not remain over the terminal.
+[ ! -c /dev/tty1 ] || printf "\033[2J\033[H" > /dev/tty1
 mkdir -p /dev/pts /proc /sys /run /tmp /newroot
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
@@ -59,6 +61,10 @@ case " $(cat /proc/cmdline) " in
         while :; do sleep 1; done
         ;;
 esac
+root=
+for arg in $(cat /proc/cmdline); do
+    case "$arg" in root=*) root=${arg#root=};; esac
+done
 # ACM is an additional console; enumeration is an on-device acceptance test.
 mount -t configfs configfs /sys/kernel/config
 G=/sys/kernel/config/usb_gadget/t531
@@ -68,29 +74,22 @@ if mkdir -p "$G" 2>/dev/null; then
     mkdir -p "$G/strings/0x409" "$G/configs/c.1" "$G/functions/acm.usb0"
     echo 'SM-T531 diagnostics' > "$G/strings/0x409/product"
     ln -s "$G/functions/acm.usb0" "$G/configs/c.1/acm.usb0"
-    mkdir -p "$G/functions/ecm.usb0"
-    ln -s "$G/functions/ecm.usb0" "$G/configs/c.1/ecm.usb0"
-    # Start access paths before binding or storage calls can block PID 1.
-    (for i in $(seq 1 30); do
-         if [ -e /sys/class/net/usb0 ] && ip link set usb0 up &&
-            ip addr add 192.168.77.2/24 dev usb0; then
-             exec telnetd -F -p 2323 -b 192.168.77.2 -l /bin/sh
-         fi
-         sleep 1
-     done) &
-    (
-        trap '' HUP
-        while :; do
-            configured=
-            for udc in /sys/class/udc/*; do
-                [ "$(cat "$udc/state" 2>/dev/null)" = configured ] && configured=yes
+    # Debian provides its own getty after switch_root.
+    if [ -z "$root" ]; then
+        (
+            trap '' HUP
+            while :; do
+                configured=
+                for udc in /sys/class/udc/*; do
+                    [ "$(cat "$udc/state" 2>/dev/null)" = configured ] && configured=yes
+                done
+                if [ "$configured" = yes ] && [ -c /dev/ttyGS0 ]; then
+                    sh -i </dev/ttyGS0 >/dev/ttyGS0 2>&1
+                fi
+                sleep 1
             done
-            if [ "$configured" = yes ] && [ -c /dev/ttyGS0 ]; then
-                sh -i </dev/ttyGS0 >/dev/ttyGS0 2>&1
-            fi
-            sleep 1
-        done
-    ) &
+        ) &
+    fi
     bound=
     for i in $(seq 1 15); do
         for udc in /sys/class/udc/*; do
@@ -103,10 +102,6 @@ if mkdir -p "$G" 2>/dev/null; then
         sleep 1
     done
 fi
-root=
-for arg in $(cat /proc/cmdline); do
-    case "$arg" in root=*) root=${arg#root=};; esac
-done
 if [ -n "$root" ]; then
     case "$root" in
         /dev/mmcblk*|LABEL=T531_ROOT|UUID=*) ;;

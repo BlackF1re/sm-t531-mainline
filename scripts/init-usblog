@@ -1,6 +1,8 @@
 #!/bin/sh
 export PATH=/bin:/sbin
 mount -t devtmpfs devtmpfs /dev
+# Redraw fbcon so inherited boot graphics do not remain over the terminal.
+[ ! -c /dev/tty1 ] || printf "\033[2J\033[H" > /dev/tty1
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 mount -t tmpfs tmpfs /run

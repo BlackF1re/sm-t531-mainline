@@ -103,8 +103,8 @@ state. Host compiler/package versions also matter for kernel reproducibility.
 Current outputs are in `.work/artifacts/current/`: `zImage`,
 `qcom-msm8226-samsung-matisse3g.dtb`, `initramfs.cpio.gz`, installed modules,
 `kernel.config`, `SHA256SUMS`, lk2nd image and Debian tar/manifest.
-The initramfs boots to a shell and attempts USB ACM plus ECM diagnostics.
-These gadget paths still require enumeration and traffic tests on the tablet.
+The diagnostic initramfs provides a USB ACM root shell. Command exchange has
+been tested on the tablet; USB Ethernet is currently disabled during bring-up.
 
 Rootfs contains systemd, udev, SSH, networkd, basic storage/network diagnostics
 and packaged Qualcomm firmware. No desktop is installed. SSH permits keys only;
@@ -137,8 +137,7 @@ uses Android's existing mke2fs and streams Debian via raw ADB. It does not
 write the eMMC partition table or any eMMC partition.
 
 The ext2 root contains `zImage`, DTB, initramfs and `/extlinux/extlinux.conf`.
-Diagnostic initramfs provides ACM and a USB-only shell at `192.168.77.2:2323`
-(telnet); configure the host USB Ethernet interface as `192.168.77.1/24`.
+Diagnostic initramfs provides an ACM shell through `/dev/ttyACM0` on the host.
 This shell is for bring-up and is not a Debian login service. It also attempts
 to save boot evidence to `/var/log/t531-initramfs.log` on the card rootfs.
 
@@ -199,7 +198,7 @@ lk2nd, `fastboot flash boot` writes at 512 KiB offset; it is not used here.
 |---|---|---|
 | Kernel / DT / initramfs | Built and artifact hashes checked | USB diagnostic shell executed commands; Debian not booted |
 | Four CPU cores | Upstream Qualcomm SMP, OPP and TSENS | Four CPUs online in saved mainline log; OPP/thermal/stability tests pending |
-| eMMC / microSD | Common DTS SDHCI and regulators | eMMC enumerated; SD logs saved, but SDR104 command timeouts and write failures recur; unreliable |
+| eMMC / microSD | Common DTS SDHCI and regulators | eMMC enumerated; SD logs saved, but write/status failures recur in SDR104 and 50 MHz high-speed mode; unreliable |
 | USB / buttons / touch / backlight | Existing upstream drivers and board DT | USB ACM shell command exchange tested; Ethernet and input tests pending |
 | Display | Boot framebuffer retains MDSS clocks/domain and DSI supplies | Owner observed continuing output past former failure; brief blue handover remains; native DRM and repeated boots untested |
 | Adreno 305 | Upstream msm DRM/OCMEM; GPU DT remains disabled | No acceleration test |
@@ -323,3 +322,20 @@ verified, but card I/O errors recurred. Logs remain local; SD reliability
 must be fixed before Debian boot or further sustained writes. Inter-test
 reboots were explicitly requested through the runtime shell; an independent
 spontaneous reboot has not been established by a saved panic/reset log.
+
+Further runtime checks (2026-10-12): the ACM shell remained responsive for
+more than ten minutes. An observed battery-icon fragment disappeared after
+clearing and redrawing tty1; the owner confirmed normal text afterwards. Both
+initramfs entry points now clear tty1. The origin of the fragment is unknown;
+this does not validate native DRM, cold boots or the rebuilt initramfs.
+
+Patch 0004 limits external SD to 50 MHz without a 1.8 V transition for diagnosis.
+Short 8 MiB write/readback checks passed, but subsequent log writes still caused
+card removal and corrupted the on-card initramfs. The boot partition was
+restored through temporary Android and its complete image hash verified.
+MMC tracing then showed CMD25 completing successfully, followed immediately
+by CMD13 timeouts and card re-enumeration. Runtime tests with vendor-confirmed
+GPIO38 input/no-pull, controller reprobe and 25 MHz did not resolve the failure.
+No GPIO workaround is included. Further boot-file updates require persistent
+readback verification; Debian has not booted. Raw logs and partition images
+remain outside Git.
