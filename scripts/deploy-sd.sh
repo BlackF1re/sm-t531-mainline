@@ -9,6 +9,7 @@ mountpoint -q "$1" || { echo 'Destination must be an existing mount'; exit 1; }
 a=.work/artifacts/current
 (cd "$a"; sha256sum -c SHA256SUMS)
 mkdir -p "$1/extlinux"
-cp "$a/zImage" "$a/qcom-msm8226-samsung-matisse3g.dtb" "$a/initramfs.cpio.gz" "$1/"
+cp "$a/zImage" "$a/qcom-msm8226-samsung-matisse3g.dtb" "$a/initramfs.cpio.gz" \
+   "$a/kernel.sha256" "$a/kexec.cmdline" "$1/"
 cp "$a/extlinux.conf" "$1/extlinux/"
 sync

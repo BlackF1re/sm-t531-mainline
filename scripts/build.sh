@@ -9,6 +9,12 @@ artifacts=$work/artifacts/current
 commit=5fce161649b4d779d1b76d9fcd52dc77779774b8
 tag=v7.2.9
 cross=${CROSS_COMPILE:-arm-linux-gnueabihf-}
+profile=${1:-main}
+case "$profile" in
+    main) defconfig=multi_v7_defconfig; prefix=; required=config/kernel.fragment;;
+    bootstrap) defconfig=qcom_defconfig; prefix=bootstrap-; required=config/bootstrap.fragment;;
+    *) echo 'Usage: build.sh [main|bootstrap]'; exit 1;;
+esac
 export KBUILD_BUILD_USER=builder KBUILD_BUILD_HOST=t531
 export KBUILD_BUILD_TIMESTAMP='2026-10-03 00:00:00 UTC' KBUILD_BUILD_VERSION=1
 export SOURCE_DATE_EPOCH=1790985600
@@ -23,7 +29,7 @@ fi
 # checks are insufficient for repeat builds.
 patches=("$project"/patches/linux/*.patch)
 export GIT_INDEX_FILE="$work/source-check.index"
-prefix=-1
+applied_prefix=-1
 for ((candidate=${#patches[@]}; candidate>=0; candidate--)); do
     git -C "$linux" read-tree HEAD
     for ((i=0; i<candidate; i++)); do
@@ -31,12 +37,12 @@ for ((candidate=${#patches[@]}; candidate>=0; candidate--)); do
     done
     if git -C "$linux" diff --quiet &&
        [ -z "$(git -C "$linux" ls-files --others --exclude-standard)" ]; then
-        prefix=$candidate
+        applied_prefix=$candidate
         break
     fi
 done
-[ "$prefix" -ge 0 ] || { echo 'Source changes outside the recorded patch prefixes'; exit 1; }
-for ((i=prefix; i<${#patches[@]}; i++)); do
+[ "$applied_prefix" -ge 0 ] || { echo 'Source changes outside the recorded patch prefixes'; exit 1; }
+for ((i=applied_prefix; i<${#patches[@]}; i++)); do
     git -C "$linux" apply --check "${patches[i]}"
     git -C "$linux" apply "${patches[i]}"
     git -C "$linux" apply --cached "${patches[i]}"
@@ -44,20 +50,29 @@ done
 git -C "$linux" diff --quiet || { echo 'Source changes outside the recorded patches'; exit 1; }
 unset GIT_INDEX_FILE
 km=(make -C "$linux" O="$out" ARCH=arm CROSS_COMPILE="$cross")
-"${km[@]}" multi_v7_defconfig
+"${km[@]}" "$defconfig"
 "$linux/scripts/kconfig/merge_config.sh" -m -O "$out" "$out/.config" "$project/config/kernel.fragment"
+if [ "$profile" = bootstrap ]; then
+    "$linux/scripts/kconfig/merge_config.sh" -m -O "$out" "$out/.config" "$project/config/bootstrap.fragment"
+fi
 "${km[@]}" olddefconfig
-python3 - "$out/.config" "$project/config/kernel.fragment" <<'PY'
+python3 - "$out/.config" "$project/$required" <<'PY'
 import sys
 cfg=set(open(sys.argv[1]).read().splitlines())
-missing=[s.strip() for s in open(sys.argv[2]) if s.startswith('CONFIG_') and s.strip() not in cfg]
+required=[s.strip() for s in open(sys.argv[2])
+          if s.startswith('CONFIG_') or (s.startswith('# CONFIG_') and s.rstrip().endswith(' is not set'))]
+missing=[s for s in required if s not in cfg]
 if missing: raise SystemExit('Unresolved required config: '+', '.join(missing))
 PY
-"${km[@]}" -j"${JOBS:-8}" zImage qcom/qcom-msm8226-samsung-matisse3g.dtb modules
-"${km[@]}" INSTALL_MOD_PATH="$artifacts/modules" INSTALL_MOD_STRIP=1 modules_install
-cp "$out/arch/arm/boot/zImage" "$artifacts/"
+targets=(zImage qcom/qcom-msm8226-samsung-matisse3g.dtb)
+[ "$profile" = bootstrap ] || targets+=(modules)
+"${km[@]}" -j"${JOBS:-8}" "${targets[@]}"
+if [ "$profile" = main ]; then
+    "${km[@]}" INSTALL_MOD_PATH="$artifacts/modules" INSTALL_MOD_STRIP=1 modules_install
+fi
+cp "$out/arch/arm/boot/zImage" "$artifacts/${prefix}zImage"
 cp "$out/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dtb" "$artifacts/"
-cp "$out/.config" "$artifacts/kernel.config"
+cp "$out/.config" "$artifacts/${prefix}kernel.config"
 cp "$project/boot/extlinux.conf.in" "$artifacts/extlinux.conf"
 # Pinned static Debian armhf BusyBox; no host-architecture binary in initramfs.
 url='https://deb.debian.org/debian/pool/main/b/busybox/busybox-static_1.37.0-6+b9_armhf.deb'
@@ -66,10 +81,22 @@ mkdir -p "$work/busybox"
 if [ ! -f "$work/busybox.deb" ]; then curl -fL "$url" -o "$work/busybox.deb"; fi
 echo "$sha  $work/busybox.deb" | sha256sum -c -
 dpkg-deb -x "$work/busybox.deb" "$work/busybox"
+if [ "$profile" = bootstrap ]; then
+    kexec_sha=67b1ac503aade45a54db0bc79228a8830a35d5d4f83cee932cff3e7a81a4a9ec
+    [ -f "$work/kexec-tools.tar.xz" ] || curl -fL \
+        https://cdn.kernel.org/pub/linux/utils/kernel/kexec/kexec-tools-2.0.29.tar.xz \
+        -o "$work/kexec-tools.tar.xz"
+    echo "$kexec_sha  $work/kexec-tools.tar.xz" | sha256sum -c -
+    [ -d "$work/kexec-tools-2.0.29" ] || tar -xf "$work/kexec-tools.tar.xz" -C "$work"
+    (cd "$work/kexec-tools-2.0.29";
+     ./configure --host="${cross%-}" --without-zlib --without-lzma --without-xen \
+        CFLAGS=-Os LDFLAGS=-static;
+     make -j"${JOBS:-8}")
+fi
 # gen_init_cpio writes device nodes without root privileges.
-python3 - "$work" "$project" > "$work/initramfs.list" <<'PYLIST'
+python3 - "$work" "$project" "$profile" > "$work/initramfs.list" <<'PYLIST'
 import subprocess,sys
-work,project=sys.argv[1:]
+work,project,profile=sys.argv[1:]
 for directory in ['bin','sbin','dev','proc','sys','run','tmp','newroot']:
     print(f'dir /{directory} 755 0 0')
 print('nod /dev/console 600 0 0 c 5 1')
@@ -77,11 +104,33 @@ print('nod /dev/null 666 0 0 c 1 3')
 print(f'file /init {project}/scripts/init 755 0 0')
 print(f'file /init-usblog {project}/scripts/init-usblog 755 0 0')
 print(f'file /bin/busybox {work}/busybox/usr/bin/busybox 755 0 0')
+if profile == 'bootstrap':
+    print(f'file /bin/kexec {work}/kexec-tools-2.0.29/build/sbin/kexec 755 0 0')
+    print(f'file /kexec-sd.sh {project}/scripts/kexec-sd.sh 755 0 0')
 apps=subprocess.check_output(['qemu-arm',work+'/busybox/usr/bin/busybox','--list'],text=True)
 for app in sorted(apps.split()):
-    if app != 'busybox': print(f'slink /bin/{app} busybox 777 0 0')
+    if app not in ('busybox','kexec'): print(f'slink /bin/{app} busybox 777 0 0')
 PYLIST
-"$out/usr/gen_init_cpio" -t "$SOURCE_DATE_EPOCH" "$work/initramfs.list" | gzip -n -9 > "$artifacts/initramfs.cpio.gz"
+"$out/usr/gen_init_cpio" -t "$SOURCE_DATE_EPOCH" "$work/initramfs.list" | gzip -n -9 > "$artifacts/${prefix}initramfs.cpio.gz"
+if [ "$profile" = bootstrap ]; then
+    staging=$work/bootstrap-root
+    mkdir -p "$staging/extlinux"
+    cp "$artifacts/bootstrap-zImage" "$artifacts/bootstrap-initramfs.cpio.gz" \
+       "$artifacts/qcom-msm8226-samsung-matisse3g.dtb" "$staging/"
+    cp "$project/boot/bootstrap-extlinux.conf.in" "$staging/extlinux/extlinux.conf"
+    find "$staging" -exec touch -h -d "@$SOURCE_DATE_EPOCH" {} +
+    rm -f "$artifacts/bootstrap-boot.ext2"
+    truncate -s $((10*1024*1024-512*1024)) "$artifacts/bootstrap-boot.ext2"
+    E2FSPROGS_FAKE_TIME=$SOURCE_DATE_EPOCH mke2fs -q -t ext2 -F -b 1024 -I 256 -m 0 \
+        -U 53100000-8226-4000-8000-000000000001 \
+        -E hash_seed=53100000-8226-4000-8000-000000000001 \
+        -L T531_BOOTSTRAP -d "$staging" "$artifacts/bootstrap-boot.ext2"
+    e2fsck -fn "$artifacts/bootstrap-boot.ext2"
+    (cd "$artifacts"; sha256sum bootstrap-zImage bootstrap-initramfs.cpio.gz \
+        bootstrap-boot.ext2 qcom-msm8226-samsung-matisse3g.dtb > bootstrap-SHA256SUMS)
+    printf 'Bootstrap artifacts: %s\n' "$artifacts"
+    exit 0
+fi
 url='https://github.com/msm8916-mainline/lk2nd/releases/download/23.1/lk2nd-msm8226.img'
 [ -f "$artifacts/lk2nd-msm8226.img" ] || curl -fL "$url" -o "$artifacts/lk2nd-msm8226.img"
 echo "3e94879473e6136bda826949474525b8d3b9d20365258ba3347878affe7f23bc  $artifacts/lk2nd-msm8226.img" | sha256sum -c -
@@ -93,7 +142,11 @@ tags_offset=$((ramdisk_offset - 0x00200000))
 mkbootimg --header_version 0 --pagesize 2048 --base 0x00000000 \
     --kernel_offset 0x00008000 --ramdisk_offset "$ramdisk_offset" --tags_offset "$tags_offset" \
     --board matisse3g --kernel "$work/zImage-dtb" --ramdisk "$artifacts/initramfs.cpio.gz" \
-    --cmdline 'earlycon console=tty0 console=ttyMSM0,115200 loglevel=8 ignore_loglevel lk2nd.pass-ramoops' \
+    --cmdline 'console=tty0 console=ttyMSM0,115200 loglevel=8 ignore_loglevel clk_ignore_unused lk2nd.pass-ramoops' \
     --output "$artifacts/diagnostic-boot.img"
-(cd "$artifacts"; sha256sum zImage *.dtb initramfs.cpio.gz lk2nd-msm8226.img diagnostic-boot.img > SHA256SUMS)
+(cd "$artifacts"; sha256sum zImage initramfs.cpio.gz > kernel.sha256)
+printf '%s\n' 'console=tty0 console=ttyMSM0,115200 loglevel=7 clk_ignore_unused t531.stage=second' \
+    > "$artifacts/kexec.cmdline"
+(cd "$artifacts"; sha256sum zImage *.dtb initramfs.cpio.gz lk2nd-msm8226.img \
+    diagnostic-boot.img kernel.sha256 kexec.cmdline > SHA256SUMS)
 printf 'Artifacts: %s\n' "$artifacts"

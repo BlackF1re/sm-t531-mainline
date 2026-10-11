@@ -1,0 +1,31 @@
+# The first stage must not start CPUs that upstream cannot safely stop for kexec.
+# The second-stage multi_v7 kernel remains SMP-enabled.
+# CONFIG_SMP is not set
+CONFIG_KEXEC=y
+CONFIG_FB_SIMPLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_EXT2_FS=y
+# CONFIG_MODULES is not set
+# CONFIG_DRM is not set
+# CONFIG_SOUND is not set
+# CONFIG_MEDIA_SUPPORT is not set
+# CONFIG_WLAN is not set
+# CONFIG_BT is not set
+# CONFIG_NETDEVICES is not set
+# CONFIG_PCI is not set
+# CONFIG_MTD is not set
+# CONFIG_ATA is not set
+# CONFIG_SCSI is not set
+# CONFIG_MD is not set
+# CONFIG_INPUT_JOYSTICK is not set
+# CONFIG_INPUT_TABLET is not set
+# CONFIG_INPUT_TOUCHSCREEN is not set
+# CONFIG_IIO is not set
+# CONFIG_USB_STORAGE is not set
+# CONFIG_USB_NET_DRIVERS is not set
+# CONFIG_USB_ETH is not set
+# CONFIG_DEBUG_INFO is not set
+# CONFIG_FTRACE is not set
+# CONFIG_PROFILING is not set
+# CONFIG_KPROBES is not set
+# CONFIG_MODVERSIONS is not set

@@ -3,14 +3,14 @@ label diagnostic
     linux /zImage
     initrd /initramfs.cpio.gz
     fdt /qcom-msm8226-samsung-matisse3g.dtb
-    append earlycon console=tty0 console=ttyMSM0,115200 loglevel=8 ignore_loglevel lk2nd.pass-ramoops
+    append console=tty0 console=ttyMSM0,115200 loglevel=8 ignore_loglevel clk_ignore_unused lk2nd.pass-ramoops
 label debian
     linux /zImage
     initrd /initramfs.cpio.gz
     fdt /qcom-msm8226-samsung-matisse3g.dtb
-    append earlycon console=tty0 console=ttyMSM0,115200 root=LABEL=T531_ROOT rootfstype=ext4 rootwait rw lk2nd.pass-ramoops
+    append console=tty0 console=ttyMSM0,115200 root=LABEL=T531_ROOT rootfstype=ext4 rootwait rw clk_ignore_unused lk2nd.pass-ramoops
 label usb-log
     linux /zImage
     initrd /initramfs.cpio.gz
     fdt /qcom-msm8226-samsung-matisse3g.dtb
-    append earlycon console=tty0 console=ttyMSM0,115200 loglevel=8 ignore_loglevel lk2nd.pass-ramoops t531.usblog
+    append console=tty0 console=ttyMSM0,115200 loglevel=8 ignore_loglevel clk_ignore_unused lk2nd.pass-ramoops t531.usblog

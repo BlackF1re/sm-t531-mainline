@@ -102,6 +102,12 @@ if mkdir -p "$G" 2>/dev/null; then
         sleep 1
     done
 fi
+case " $(cat /proc/cmdline) " in
+    *" t531.kexec "*)
+        /bin/sh /kexec-sd.sh --exec
+        echo 'SD kexec failed; staying in diagnostic shell'
+        ;;
+esac
 if [ -n "$root" ]; then
     case "$root" in
         /dev/mmcblk*|LABEL=T531_ROOT|UUID=*) ;;

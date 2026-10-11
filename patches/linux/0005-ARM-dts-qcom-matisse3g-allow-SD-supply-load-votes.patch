@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sun, 11 Oct 2026 19:15:00 +0000
+Subject: [PATCH] ARM: dts: qcom: matisse3g: allow SD supply load votes
+
+SDHCI requests active loads for the external card's L18 and L21 supplies,
+but the inherited regulator constraints do not allow those votes to reach
+RPM. The SM-T531 vendor configuration explicitly switches both supplies
+between low and high load, with active requests of 800 mA and 22 mA.
+
+Allow the existing upstream regulator and SDHCI drivers to propagate their
+load requests. Do not change voltages or add a board-specific driver.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -109,3 +109,11 @@
+ 	max-frequency = <50000000>;
+ 	no-1-8-v;
+ };
++
++&pm8226_l18 {
++	regulator-allow-set-load;
++};
++
++&pm8226_l21 {
++	regulator-allow-set-load;
++};
+-- 
+2.53.0

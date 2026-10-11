@@ -17,7 +17,7 @@ Plasma Mobile follows real DRM/KMS and Freedreno validation.
 | [Debian snapshot](https://snapshot.debian.org/archive/debian/20261003T000000Z/) | `trixie`, `20261003T000000Z` | Rootfs package inputs |
 | Debian static BusyBox | `1:1.37.0-6+b9`, armhf | Diagnostic initramfs; GPL-2.0, Debian source available |
 
-Sources checked 2026-10-11. Host build used ARM GCC 15.2.0 and binutils 2.46. Linux is GPL-2.0-only; retained upstream DTS code
+Sources checked 2026-10-12. Host build used ARM GCC 15.2.0 and binutils 2.46. Linux is GPL-2.0-only; retained upstream DTS code
 is BSD-3-Clause, with original authorship. The downstream tree is research only,
 not copied into the project. [postmarketOS ports](https://gitlab.postmarketos.org/postmarketOS/pmaports)
 are additional research references; related Matisse Wi-Fi/LTE and MSM8916
@@ -69,14 +69,14 @@ are only in `/home/paul/t531/private/device`, outside this Git repository.
 
 All three backups and MODEMST1/2, FSG, FSC, PERSIST, PERSDATA and PARAM were
 verified against a second complete device read and local SHA-256.
-The current BOOT has `ANDROID!` header, 2048-byte pages, separate QCDT at
+The backed-up Android BOOT has `ANDROID!` header, 2048-byte pages, separate QCDT at
 byte 6072320, four embedded FDT magic occurrences. Live DT was exported from
 `/proc/device-tree`; `/sys/firmware/fdt` was unavailable.
 
 ## Build
 
 On Debian/Ubuntu install Git, Make, GCC, `gcc-arm-linux-gnueabihf`, binutils,
-bison, flex, libssl-dev, libelf-dev, bc, Python 3, dtc, cpio, gzip, curl,
+bison, flex, libssl-dev, libelf-dev, bc, Python 3, dtc, cpio, gzip, curl, e2fsprogs,
 Debian debootstrap/keyring, `mkbootimg` and static QEMU ARM with binfmt. `qemu-arm` must
 execute armhf binaries. `ripgrep` is used for collector checks.
 
@@ -84,6 +84,7 @@ execute armhf binaries. `ripgrep` is used for collector checks.
 make build
 # Optional: JOBS=4 make build on a smaller host.
 make rootfs
+make bootstrap  # Compact first-stage kernel and internal BOOT payload.
 ```
 
 `multi_v7_defconfig` plus `config/kernel.fragment` is the bring-up baseline.
@@ -91,8 +92,9 @@ It retains unrelated upstream defconfig drivers; it is not a final size-tuned
 production config. Required fragment settings are checked after olddefconfig.
 One source checkout and one out-of-tree build live under `.work/`, ignored by Git.
 The build refuses a different base or conflicting source modifications. It
-applies two format-patch changes: the board compatible binding and SM-T531 DTS
-with its Makefile entry. No driver or lk2nd patches are used. The modem is disabled.
+applies six format-patch changes: compatible binding, board DTS, inherited
+framebuffer resources, diagnostic SD speed limit, SD regulator load voting and
+card-detect pin configuration. No driver or lk2nd patches are used. The modem is disabled.
 
 Build timestamps, host/user and initramfs ordering/ownership are fixed. BusyBox
 and lk2nd downloads are checked against pinned SHA-256. Rootfs uses signed
@@ -190,15 +192,15 @@ DTB). After lk2nd starts, test it only with
 lk2nd extlinux placement: initrd ends below 50 MiB on a 4 KiB boundary, with
 2 MiB reserved immediately below it for DT. The previous RAM test placed the
 initrd at 46 MiB; overlap during decompression is under investigation. Through
-lk2nd, `fastboot flash boot` writes at 512 KiB offset; it is not used here.
+lk2nd, `fastboot flash boot` writes at 512 KiB offset. See the bootstrap gate below.
 
 ## State and acceptance tests
 
 | Component | Mainline implementation | Actual tablet acceptance |
 |---|---|---|
 | Kernel / DT / initramfs | Built and artifact hashes checked | USB diagnostic shell executed commands; Debian not booted |
-| Four CPU cores | Upstream Qualcomm SMP, OPP and TSENS | Four CPUs online in saved mainline log; OPP/thermal/stability tests pending |
-| eMMC / microSD | Common DTS SDHCI and regulators | eMMC enumerated; SD logs saved, but write/status failures recur in SDR104 and 50 MHz high-speed mode; unreliable |
+| Four CPU cores | Upstream Qualcomm SMP, OPP and TSENS | Four CPUs online after boot; CPU3 could not return after a hotplug test; OPP/thermal/stability tests pending |
+| eMMC / microSD | Common DTS SDHCI and regulators | eMMC enumerated; SD passed two 32 MiB ext4 write/unmount/readback tests after load-vote fix at 50 MHz; UHS and long stress unverified |
 | USB / buttons / touch / backlight | Existing upstream drivers and board DT | USB ACM shell command exchange tested; Ethernet and input tests pending |
 | Display | Boot framebuffer retains MDSS clocks/domain and DSI supplies | Owner observed continuing output past former failure; brief blue handover remains; native DRM and repeated boots untested |
 | Adreno 305 | Upstream msm DRM/OCMEM; GPU DT remains disabled | No acceleration test |
@@ -336,6 +338,73 @@ restored through temporary Android and its complete image hash verified.
 MMC tracing then showed CMD25 completing successfully, followed immediately
 by CMD13 timeouts and card re-enumeration. Runtime tests with vendor-confirmed
 GPIO38 input/no-pull, controller reprobe and 25 MHz did not resolve the failure.
-No GPIO workaround is included. Further boot-file updates require persistent
+Patch 0006 subsequently records the vendor GPIO38 input/no-pull pin configuration; hotplug and long-term IRQ behavior remain unverified. Further boot-file updates require persistent
 readback verification; Debian has not booted. Raw logs and partition images
 remain outside Git.
+
+
+## SD write fix and bootstrap kernel
+
+The same card passed a 32 MiB write/unmount/cache-drop/readback under the
+Android driver. With mainline it completed CMD25 data transfers but timed out
+on the following CMD13 and re-enumerated. The board omitted
+`regulator-allow-set-load` on PM8226 L18/L21; the upstream regulator core silently
+ignored SDHCI load requests without that permission. Patch 0005 enables those
+existing upstream requests, without changing supply voltages. Vendor SM-T531
+revision-02 DTS documents active loads of 800000 and 22000 microamps.
+A physical voltage drop was not measured; a defective card is not established.
+
+With only the load-vote DT change, two separate 32 MiB ext4 write tests passed
+sync, unmount, cache drop and remounted SHA-256 verification. MMC error counters
+remained zero in those tests. Updated boot files also passed persistent readback.
+The diagnostic 50 MHz/no-1.8-V limit remains; SDR104 and sustained storage
+reliability still require testing. GPIO38 also generated an interrupt storm in
+an earlier boot. Patch 0006 models the vendor GPIO/no-pull/2 mA configuration;
+this is separate from the demonstrated supply-load fix.
+
+`make bootstrap` reuses the one kernel build directory with `qcom_defconfig`,
+`kernel.fragment` and `bootstrap.fragment`. It emits `bootstrap-zImage`,
+`bootstrap-initramfs.cpio.gz`, `bootstrap-kernel.config` and
+`bootstrap-boot.ext2`, a 9961472-byte ext2 payload fitting the logical BOOT
+space after lk2nd's protected 512 KiB. Run `make build` for ordinary SMP
+artifacts; the two profiles keep their current artifacts under distinct names.
+The first stage is deliberately UP: upstream Qualcomm Cortex-A7 SMP lacks
+`cpu_kill`, so ARM's kexec safety check rejects a load from an SMP kernel.
+The ordinary second-stage kernel remains SMP-enabled; no safety check is bypassed.
+
+The bootstrap uses static ARM kexec-tools 2.0.29 from
+[the kernel.org release directory](https://www.kernel.org/pub/linux/utils/kernel/kexec/),
+archive SHA-256 `67b1ac503aade45a54db0bc79228a8830a35d5d4f83cee932cff3e7a81a4a9ec`.
+It mounts `LABEL=T531_BOOT` read-only, verifies `kernel.sha256` for `zImage`
+and `initramfs.cpio.gz`, reads `kexec.cmdline`, loads and unmounts before kexec.
+It reuses `/sys/firmware/fdt` with lk2nd's actual RAM/framebuffer settings;
+DT changes therefore require updating the bootstrap DTB too. A failed load
+returns to the diagnostic shell. Missing-card recovery is not yet physically tested.
+
+Test the bootstrap on SD using `boot/bootstrap-extlinux.conf.in`, with the
+bootstrap files alongside the ordinary files and checksum manifest. Internal
+installation is gated on a successful real UP-to-SMP kexec test. It has not
+been performed yet:
+
+```sh
+# Only after real kexec validation and confirmation of the 10 MiB BOOT layout:
+fastboot flash boot .work/artifacts/current/bootstrap-boot.ext2
+```
+
+This command is for lk2nd Fastboot, never stock Fastboot or Heimdall. It must
+preserve the first 512 KiB. The complete current lk2nd BOOT was read and its
+SHA-256 verified before preparing this scheme; its initial release-image bytes
+also match the pinned lk2nd download. Recovery of that exact saved state from
+Samsung Download Mode is:
+
+```sh
+heimdall flash --BOOT /home/paul/t531/private/device/BOOT-lk2nd.img
+```
+
+Bootstrap loading from SD and UP-to-UP kexec were observed on-device; the
+second UP kernel returned an ACM shell with `t531.stage=up-self`. Re-enumeration
+changed the host port to `/dev/ttyACM1`; inspect all ACM ports. Automatic UP-to-SMP kexec
+reached the first kernel's `Bye!` handoff, but no second-stage console or usable
+USB appeared; the owner reported a USB descriptor error. Successful execution
+is unverified; no internal bootstrap installation or Debian systemd boot is
+claimed. Raw results and both BOOT backups remain outside Git.

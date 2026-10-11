@@ -1,6 +1,8 @@
-.PHONY: build collect rootfs deploy-sd deploy-adb-sd
+.PHONY: build bootstrap collect rootfs deploy-sd deploy-adb-sd
 build:
 	./scripts/build.sh
+bootstrap:
+	./scripts/build.sh bootstrap
 collect:
 	./scripts/collect-device.sh
 rootfs:

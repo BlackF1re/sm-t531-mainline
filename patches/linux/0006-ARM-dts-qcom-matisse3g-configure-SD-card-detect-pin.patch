@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sun, 11 Oct 2026 19:25:00 +0000
+Subject: [PATCH] ARM: dts: qcom: matisse3g: configure SD card detect pin
+
+Describe GPIO38 pin configuration explicitly rather than inheriting the
+bootloader's pull-up. Samsung's SM-T531 gpiomux table configures this card
+detect input as GPIO, 2 mA, with no pull in both active and sleep states.
+Keep the existing active-low card detection wiring.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -117,3 +117,12 @@
+ &pm8226_l21 {
+ 	regulator-allow-set-load;
+ };
++
++&sdhc2_default_state {
++	card-detect-pins {
++		pins = "gpio38";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
++	};
++};
+-- 
+2.53.0

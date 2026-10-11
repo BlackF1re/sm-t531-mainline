@@ -39,7 +39,8 @@ fi
 remote "/system/bin/mke2fs -t ext2 -L T531_BOOT /dev/block/mmcblk1p1"
 remote "/system/bin/mke2fs -t ext4 -L T531_ROOT /dev/block/mmcblk1p2"
 remote "mkdir -p $boot $root; $bb mount -t ext2 /dev/block/mmcblk1p1 $boot; $bb mount -t ext4 /dev/block/mmcblk1p2 $root"
-"${adb_cmd[@]}" push "$a/zImage" "$a/qcom-msm8226-samsung-matisse3g.dtb" "$a/initramfs.cpio.gz" "$boot/"
+"${adb_cmd[@]}" push "$a/zImage" "$a/qcom-msm8226-samsung-matisse3g.dtb" "$a/initramfs.cpio.gz" \
+    "$a/kernel.sha256" "$a/kexec.cmdline" "$boot/"
 remote "mkdir -p $boot/extlinux"
 "${adb_cmd[@]}" push "$a/extlinux.conf" "$boot/extlinux/extlinux.conf"
 # Old adbd does not propagate exec-in exit status: persist the result remotely.
