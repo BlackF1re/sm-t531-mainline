@@ -1,0 +1,61 @@
+#!/bin/sh
+export PATH=/bin:/sbin
+mount -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts /proc /sys /run /tmp /newroot
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devpts devpts /dev/pts
+mount -t tmpfs tmpfs /run
+mount -t tmpfs tmpfs /tmp
+# ACM is an additional console; enumeration is an on-device acceptance test.
+mount -t configfs configfs /sys/kernel/config
+G=/sys/kernel/config/usb_gadget/t531
+if mkdir -p "$G" 2>/dev/null; then
+    echo 0x1d6b > "$G/idVendor"
+    echo 0x0104 > "$G/idProduct"
+    mkdir -p "$G/strings/0x409" "$G/configs/c.1" "$G/functions/acm.usb0"
+    echo 'SM-T531 diagnostics' > "$G/strings/0x409/product"
+    ln -s "$G/functions/acm.usb0" "$G/configs/c.1/acm.usb0"
+    mkdir -p "$G/functions/ecm.usb0"
+    ln -s "$G/functions/ecm.usb0" "$G/configs/c.1/ecm.usb0"
+    bound=
+    for i in $(seq 1 15); do
+        for udc in /sys/class/udc/*; do
+            [ -e "$udc" ] || continue
+            if basename "$udc" > "$G/UDC"; then bound=yes; fi
+            break
+        done
+        [ "$bound" = yes ] && break
+        sleep 1
+    done
+fi
+root=
+for arg in $(cat /proc/cmdline); do
+    case "$arg" in root=*) root=${arg#root=};; esac
+done
+if [ -n "$root" ]; then
+    case "$root" in
+        /dev/mmcblk*|LABEL=T531_ROOT|UUID=*) ;;
+        *) echo 'Unsupported root selector'; root=;;
+    esac
+fi
+if [ -n "$root" ]; then
+    for i in $(seq 1 60); do
+        if mount -t ext4 -o rw "$root" /newroot; then
+            if [ -x /newroot/sbin/init ]; then
+                for fs in dev proc sys run; do mount --move /$fs /newroot/$fs; done
+                exec switch_root /newroot /sbin/init
+            fi
+            umount /newroot
+            break
+        fi
+        sleep 1
+    done
+    echo 'Rootfs unavailable; staying in diagnostic shell'
+fi
+uname -a
+cat /proc/device-tree/model; echo
+cat /sys/devices/system/cpu/online
+cat /proc/partitions
+[ -c /dev/ttyGS0 ] && setsid cttyhack sh </dev/ttyGS0 >/dev/ttyGS0 2>&1 &
+while :; do setsid cttyhack sh; sleep 1; done

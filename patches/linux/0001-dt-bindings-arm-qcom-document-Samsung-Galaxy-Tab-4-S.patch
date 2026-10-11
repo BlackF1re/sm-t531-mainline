@@ -1,0 +1,29 @@
+From eec0ba807217ca090fb713e6a6f184513425a864 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sun, 11 Oct 2026 20:48:16 +0700
+Subject: [PATCH 1/2] dt-bindings: arm: qcom: document Samsung Galaxy Tab 4
+ SM-T531
+
+Add the MSM8226-based 3G Matisse tablet compatible. The existing APQ8026
+Wi-Fi and MSM8926 LTE compatibles identify different product variants.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+ Documentation/devicetree/bindings/arm/qcom.yaml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/qcom.yaml b/Documentation/devicetree/bindings/arm/qcom.yaml
+index 50cc18a6e..c55426f7c 100644
+--- a/Documentation/devicetree/bindings/arm/qcom.yaml
++++ b/Documentation/devicetree/bindings/arm/qcom.yaml
+@@ -88,6 +88,7 @@ properties:
+               - microsoft,makepeace
+               - microsoft,moneypenny
+               - motorola,falcon
++              - samsung,matisse3g
+               - samsung,ms013g
+               - samsung,s3ve3g
+           - const: qcom,msm8226
+-- 
+2.53.0
+

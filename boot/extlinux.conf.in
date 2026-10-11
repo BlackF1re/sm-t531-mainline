@@ -1,0 +1,11 @@
+default diagnostic
+label diagnostic
+    linux /zImage
+    initrd /initramfs.cpio.gz
+    fdt /qcom-msm8226-samsung-matisse3g.dtb
+    append earlycon console=tty0 console=ttyMSM0,115200 loglevel=8 ignore_loglevel
+label debian
+    linux /zImage
+    initrd /initramfs.cpio.gz
+    fdt /qcom-msm8226-samsung-matisse3g.dtb
+    append earlycon console=tty0 console=ttyMSM0,115200 root=LABEL=T531_ROOT rootfstype=ext4 rootwait rw

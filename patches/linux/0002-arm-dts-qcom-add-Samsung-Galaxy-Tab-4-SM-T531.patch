@@ -1,0 +1,137 @@
+From ac8ec7dde572e97b4e860ebe4f15577a6da444d3 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sun, 11 Oct 2026 20:48:16 +0700
+Subject: [PATCH 2/2] arm: dts: qcom: add Samsung Galaxy Tab 4 SM-T531
+
+Describe the MSM8226-based 3G Matisse variant using the upstream common
+board support. Samsung's matisse3g revision 00, 01 and 02 device trees
+agree on SDC2 supplies and card detect, maXTouch I2C5 address, interrupt,
+PMIC reset and GPIO31/GPIO73 power enables. Reuse the existing upstream
+maXTouch and LIS2HH12 descriptions with their original authorship.
+
+The SM-T535 GPIO32 touchscreen supply is not applicable here. Keep the
+modem disabled for the initial storage and input bring-up. Display uses
+the existing inherited boot framebuffer; this does not enable native
+DSI/LVDS modesetting. CPU OPP and thermal policy remain upstream defaults.
+
+Source: LineageOS/android_kernel_samsung_msm8226 at
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, matisse3g-r00/r01/r02 DTSI.
+Physical device validation remains pending.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+ arch/arm/boot/dts/qcom/Makefile               |  1 +
+ .../qcom/qcom-msm8226-samsung-matisse3g.dts   | 89 +++++++++++++++++++
+ 2 files changed, 90 insertions(+)
+ create mode 100644 arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+
+diff --git a/arch/arm/boot/dts/qcom/Makefile b/arch/arm/boot/dts/qcom/Makefile
+index 32a44b02d..6b90ad741 100644
+--- a/arch/arm/boot/dts/qcom/Makefile
++++ b/arch/arm/boot/dts/qcom/Makefile
+@@ -28,6 +28,7 @@ dtb-$(CONFIG_ARCH_QCOM) += \
+ 	qcom-msm8226-microsoft-makepeace.dtb \
+ 	qcom-msm8226-microsoft-moneypenny.dtb \
+ 	qcom-msm8226-samsung-ms013g.dtb \
++	qcom-msm8226-samsung-matisse3g.dtb \
+ 	qcom-msm8226-samsung-s3ve3g.dtb \
+ 	qcom-msm8660-surf.dtb \
+ 	qcom-msm8916-samsung-e5.dtb \
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+new file mode 100644
+index 000000000..c06d4cb8b
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -0,0 +1,89 @@
++// SPDX-License-Identifier: BSD-3-Clause
++/*
++ * Copyright (c) 2022, Matti Lehtimäki <matti.lehtimaki@gmail.com>
++ * Copyright (c) 2026, BlackF1re
++ */
++
++/dts-v1/;
++
++#include "qcom-msm8226.dtsi"
++#include "qcom-msm8226-samsung-matisse-common.dtsi"
++
++/ {
++	model = "Samsung Galaxy Tab 4 10.1 3G (SM-T531)";
++	compatible = "samsung,matisse3g", "qcom,msm8226";
++	chassis-type = "tablet";
++
++	reg_tsp_3p3v: regulator-tsp-3p3v {
++		compatible = "regulator-fixed";
++		regulator-name = "tsp_3p3v";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++
++		gpio = <&tlmm 73 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&tsp_en1_default_state>;
++	};
++};
++
++&blsp1_i2c2 {
++	status = "okay";
++
++	accelerometer@1d {
++		compatible = "st,lis2hh12";
++		reg = <0x1d>;
++
++		interrupt-parent = <&tlmm>;
++		interrupts = <54 IRQ_TYPE_LEVEL_HIGH>;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&accel_int_default_state>;
++
++		st,drdy-int-pin = <1>;
++
++		vdd-supply = <&pm8226_l19>;
++		vddio-supply = <&pm8226_lvs1>;
++	};
++};
++
++&blsp1_i2c5 {
++	status = "okay";
++
++	touchscreen@4a {
++		compatible = "atmel,maxtouch";
++		reg = <0x4a>;
++
++		interrupt-parent = <&tlmm>;
++		interrupts = <17 IRQ_TYPE_LEVEL_LOW>;
++
++		linux,keycodes = <KEY_RESERVED>,
++				 <KEY_RESERVED>,
++				 <KEY_RESERVED>,
++				 <KEY_RESERVED>,
++				 <KEY_APPSELECT>,
++				 <KEY_BACK>;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&tsp_int_rst_default_state>;
++
++		reset-gpios = <&pm8226_gpios 6 GPIO_ACTIVE_LOW>;
++
++		vdd-supply = <&reg_tsp_1p8v>;
++		vdda-supply = <&reg_tsp_3p3v>;
++	};
++};
++
++&tlmm {
++	tsp_en1_default_state: tsp-en1-default-state {
++		pins = "gpio73";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
++	};
++};
++
++&modem {
++	status = "disabled";
++};
+-- 
+2.53.0
+
