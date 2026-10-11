@@ -1,0 +1,77 @@
+#!/bin/sh
+export PATH=/bin:/sbin
+mount -t devtmpfs devtmpfs /dev
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t tmpfs tmpfs /run
+mkdir -p /newroot /sys/fs/pstore
+mount -t pstore pstore /sys/fs/pstore
+mounted=
+for attempt in $(seq 1 20); do
+    if mount -t ext2 -o rw LABEL=T531_BOOT /newroot; then
+        mounted=yes
+        break
+    fi
+    sleep 1
+done
+if [ "$mounted" != yes ]; then
+    echo '<3>T531_USB: log partition unavailable' > /dev/kmsg
+    while :; do sleep 1; done
+fi
+# Mount the external log destination before touching gadget functions.
+echo '<6>T531_USB: SD logger ready' > /dev/kmsg
+dmesg > /newroot/t531-usb-dmesg.log
+sync
+(
+    for i in $(seq 1 12); do
+        {
+            echo "sample $i"
+            cat /proc/uptime
+            cat /proc/interrupts
+            ps
+            for p in /proc/[0-9]*; do
+                echo "TASK ${p##*/}"
+                cat "$p/comm" "$p/wchan" "$p/stack" 2>/dev/null
+            done
+        } > /newroot/t531-usb-tasks.log
+        dmesg > /newroot/t531-usb-dmesg.log
+        sync
+        sleep 2
+    done
+    echo '<6>T531_USB: log collection complete' > /dev/kmsg
+    dmesg > /newroot/t531-usb-dmesg.log
+    sync
+    umount /newroot
+    echo '<6>T531_USB: staying online after collection' > /dev/kmsg
+) &
+mount -t configfs configfs /sys/kernel/config
+G=/sys/kernel/config/usb_gadget/t531
+mkdir -p "$G"
+echo 0x1d6b > "$G/idVendor"
+echo 0x0104 > "$G/idProduct"
+mkdir -p "$G/strings/0x409" "$G/configs/c.1" "$G/functions/acm.usb0"
+echo 'SM-T531 USB log test' > "$G/strings/0x409/product"
+ln -s "$G/functions/acm.usb0" "$G/configs/c.1/acm.usb0"
+echo '<6>T531_USB: ACM function created' > /dev/kmsg
+for u in /sys/class/udc/*; do
+    [ -e "$u" ] || continue
+    (echo '<6>T531_USB: entering UDC bind' > /dev/kmsg
+     echo "${u##*/}" > "$G/UDC"
+     echo '<6>T531_USB: UDC bind returned' > /dev/kmsg) &
+    break
+done
+(
+    trap '' HUP
+    while :; do
+        configured=
+        for u in /sys/class/udc/*; do
+            [ "$(cat "$u/state" 2>/dev/null)" = configured ] && configured=yes
+        done
+        if [ "$configured" != yes ]; then sleep 1; continue; fi
+        echo '<6>T531_USB: configured; starting interactive shell' > /dev/kmsg
+        sh -i </dev/ttyGS0 >/dev/ttyGS0 2>&1
+        echo "<6>T531_USB: shell exited status=$?; restarting" > /dev/kmsg
+        sleep 1
+    done
+) &
+while :; do sleep 1; done

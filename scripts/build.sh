@@ -65,6 +65,7 @@ for directory in ['bin','sbin','dev','proc','sys','run','tmp','newroot']:
 print('nod /dev/console 600 0 0 c 5 1')
 print('nod /dev/null 666 0 0 c 1 3')
 print(f'file /init {project}/scripts/init 755 0 0')
+print(f'file /init-usblog {project}/scripts/init-usblog 755 0 0')
 print(f'file /bin/busybox {work}/busybox/usr/bin/busybox 755 0 0')
 apps=subprocess.check_output(['qemu-arm',work+'/busybox/usr/bin/busybox','--list'],text=True)
 for app in sorted(apps.split()):
@@ -76,10 +77,13 @@ url='https://github.com/msm8916-mainline/lk2nd/releases/download/23.1/lk2nd-msm8
 echo "3e94879473e6136bda826949474525b8d3b9d20365258ba3347878affe7f23bc  $artifacts/lk2nd-msm8226.img" | sha256sum -c -
 # lk2nd accepts a single appended mainline DTB without Qualcomm board IDs.
 cat "$artifacts/zImage" "$artifacts/qcom-msm8226-samsung-matisse3g.dtb" > "$work/zImage-dtb"
+# Match lk2nd extlinux placement, leaving decompression room below initramfs.
+ramdisk_offset=$(( (0x03200000 - $(stat -c %s "$artifacts/initramfs.cpio.gz")) / 4096 * 4096 ))
+tags_offset=$((ramdisk_offset - 0x00200000))
 mkbootimg --header_version 0 --pagesize 2048 --base 0x00000000 \
-    --kernel_offset 0x00008000 --ramdisk_offset 0x02e00000 --tags_offset 0x03000000 \
+    --kernel_offset 0x00008000 --ramdisk_offset "$ramdisk_offset" --tags_offset "$tags_offset" \
     --board matisse3g --kernel "$work/zImage-dtb" --ramdisk "$artifacts/initramfs.cpio.gz" \
-    --cmdline 'earlycon console=tty0 console=ttyMSM0,115200 loglevel=8 ignore_loglevel' \
+    --cmdline 'earlycon console=tty0 console=ttyMSM0,115200 loglevel=8 ignore_loglevel lk2nd.pass-ramoops' \
     --output "$artifacts/diagnostic-boot.img"
 (cd "$artifacts"; sha256sum zImage *.dtb initramfs.cpio.gz lk2nd-msm8226.img diagnostic-boot.img > SHA256SUMS)
 printf 'Artifacts: %s\n' "$artifacts"

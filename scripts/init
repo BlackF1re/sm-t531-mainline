@@ -7,6 +7,58 @@ mount -t sysfs sysfs /sys
 mount -t devpts devpts /dev/pts
 mount -t tmpfs tmpfs /run
 mount -t tmpfs tmpfs /tmp
+case " $(cat /proc/cmdline) " in
+    *" t531.usblog "*) exec /bin/sh /init-usblog;;
+esac
+# Isolate log collection from USB bring-up with t531.logonly on the command line.
+case " $(cat /proc/cmdline) " in
+    *" t531.logonly "*)
+        mkdir -p /sys/fs/pstore
+        mount -t pstore pstore /sys/fs/pstore
+        echo '<6>T531_LOG: initramfs reached; USB disabled for this test' > /dev/kmsg
+        {
+            uname -a
+            cat /proc/cmdline
+            cat /proc/device-tree/model; echo
+            cat /sys/devices/system/cpu/online
+            cat /proc/iomem
+            cat /proc/partitions
+            cat /proc/interrupts
+            ls -l /sys/bus/platform/drivers/ramoops /sys/fs/pstore
+            for node in /proc/device-tree/reserved-memory/ramoops*; do
+                [ -d "$node" ] || continue
+                echo "$node"
+                for prop in reg console-size record-size; do
+                    echo "$prop"; od -An -tx4 "$node/$prop"
+                done
+            done
+            dmesg
+        } > /run/t531-boot.log 2>&1
+        (
+            for attempt in $(seq 1 20); do
+                if mount -t ext2 -o rw LABEL=T531_BOOT /newroot; then
+                    echo '<6>T531_LOG: microSD boot partition mounted' > /dev/kmsg
+                    cp /run/t531-boot.log /newroot/t531-boot.log
+                    mkdir -p /newroot/pstore
+                    for record in /sys/fs/pstore/*; do
+                        [ -f "$record" ] && cp "$record" /newroot/pstore/
+                    done
+                    dmesg > /newroot/t531-dmesg.log
+                    sync
+                    umount /newroot
+                    echo '<6>T531_LOG: microSD logs saved and unmounted' > /dev/kmsg
+                    exit
+                fi
+                sleep 1
+            done
+            echo '<3>T531_LOG: microSD logging unavailable' > /dev/kmsg
+        ) &
+        sleep 30
+        echo '<6>T531_LOG: requesting warm reboot after log collection' > /dev/kmsg
+        reboot -f
+        while :; do sleep 1; done
+        ;;
+esac
 # ACM is an additional console; enumeration is an on-device acceptance test.
 mount -t configfs configfs /sys/kernel/config
 G=/sys/kernel/config/usb_gadget/t531
@@ -18,11 +70,33 @@ if mkdir -p "$G" 2>/dev/null; then
     ln -s "$G/functions/acm.usb0" "$G/configs/c.1/acm.usb0"
     mkdir -p "$G/functions/ecm.usb0"
     ln -s "$G/functions/ecm.usb0" "$G/configs/c.1/ecm.usb0"
+    # Start access paths before binding or storage calls can block PID 1.
+    (for i in $(seq 1 30); do
+         if [ -e /sys/class/net/usb0 ] && ip link set usb0 up &&
+            ip addr add 192.168.77.2/24 dev usb0; then
+             exec telnetd -F -p 2323 -b 192.168.77.2 -l /bin/sh
+         fi
+         sleep 1
+     done) &
+    (
+        trap '' HUP
+        while :; do
+            configured=
+            for udc in /sys/class/udc/*; do
+                [ "$(cat "$udc/state" 2>/dev/null)" = configured ] && configured=yes
+            done
+            if [ "$configured" = yes ] && [ -c /dev/ttyGS0 ]; then
+                sh -i </dev/ttyGS0 >/dev/ttyGS0 2>&1
+            fi
+            sleep 1
+        done
+    ) &
     bound=
     for i in $(seq 1 15); do
         for udc in /sys/class/udc/*; do
             [ -e "$udc" ] || continue
-            if basename "$udc" > "$G/UDC"; then bound=yes; fi
+            (basename "$udc" > "$G/UDC") &
+            bound=yes
             break
         done
         [ "$bound" = yes ] && break
@@ -53,9 +127,17 @@ if [ -n "$root" ]; then
     done
     echo 'Rootfs unavailable; staying in diagnostic shell'
 fi
+# Preserve boot evidence on the external rootfs even if ACM is silent.
+if mount -t ext4 -o rw LABEL=T531_ROOT /newroot; then
+    mkdir -p /newroot/var/log
+    { uname -a; cat /proc/device-tree/model; echo;
+      cat /sys/devices/system/cpu/online; cat /proc/partitions;
+      cat /proc/interrupts; dmesg; } > /newroot/var/log/t531-initramfs.log
+    sync
+    umount /newroot
+fi
 uname -a
 cat /proc/device-tree/model; echo
 cat /sys/devices/system/cpu/online
 cat /proc/partitions
-[ -c /dev/ttyGS0 ] && setsid cttyhack sh </dev/ttyGS0 >/dev/ttyGS0 2>&1 &
 while :; do setsid cttyhack sh; sleep 1; done

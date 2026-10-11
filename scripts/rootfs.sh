@@ -58,6 +58,7 @@ if [ -d "$work/artifacts/current/modules/lib/modules" ]; then
     sudo cp -a "$work/artifacts/current/modules/lib/modules/." "$root/lib/modules/"
 fi
 sudo chroot "$root" dpkg-query -W '-f=${Package}\t${Version}\t${Architecture}\n' > "$work/artifacts/current/debian-packages.tsv"
+sudo chroot "$root" apt-get clean
 # Fresh installations generate their own machine-id and SSH host keys.
 sudo rm -f "$root/etc/ssh/ssh_host_"* "$root/var/lib/dbus/machine-id"
 sudo truncate -s 0 "$root/etc/machine-id"

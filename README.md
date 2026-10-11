@@ -17,7 +17,7 @@ Plasma Mobile follows real DRM/KMS and Freedreno validation.
 | [Debian snapshot](https://snapshot.debian.org/archive/debian/20261003T000000Z/) | `trixie`, `20261003T000000Z` | Rootfs package inputs |
 | Debian static BusyBox | `1:1.37.0-6+b9`, armhf | Diagnostic initramfs; GPL-2.0, Debian source available |
 
-Sources checked 2026-10-11. Linux is GPL-2.0-only; retained upstream DTS code
+Sources checked 2026-10-11. Host build used ARM GCC 15.2.0 and binutils 2.46. Linux is GPL-2.0-only; retained upstream DTS code
 is BSD-3-Clause, with original authorship. The downstream tree is research only,
 not copied into the project. [postmarketOS ports](https://gitlab.postmarketos.org/postmarketOS/pmaports)
 are additional research references; related Matisse Wi-Fi/LTE and MSM8916
@@ -48,7 +48,9 @@ Android system, not a mainline acceptance test:
   PWM GPIO33. Vendor panel sequence uses four DSI lanes, reset GPIO51,
   enable GPIO25, backlight enable GPIO74 and PMIC GPIO2.
 - microSD wiring: SDC2, PM8226 L18/L21, active-low detect GPIO38.
-  No microSD was detected in the initial collection. eMMC is SDC1, 8-bit,
+  No microSD was detected in the initial collection. The subsequently inserted
+  16 GB SD card has 30253056 sectors; its 48 MiB boot and remaining root
+  partitions are reformatted only with owner authorization. eMMC is SDC1, 8-bit,
   L17/L6; its Android device name is `016GE2`.
 - SM5502 MUIC `0x25`, I2C GPIO14/15, IRQ GPIO67. SMB358 charger `0x6a`
   on GPIO10/11 I2C. Android reports Li-ion battery and valid temperature/voltage.
@@ -123,7 +125,23 @@ sudo tar --numeric-owner -xpf .work/artifacts/current/debian-armhf.tar.gz \
     -C /mounted/card-root
 ```
 
+For the identified card still inside the rooted Android tablet:
+
+```sh
+FORMAT_SD=yes make deploy-adb-sd
+```
+
+This erases only the verified `mmcblk1p1`/`mmcblk1p2` external SD partitions,
+checks model, SD type and exact partition boundaries, releases vold mounts,
+uses Android's existing mke2fs and streams Debian via raw ADB. It does not
+write the eMMC partition table or any eMMC partition.
+
 The ext2 root contains `zImage`, DTB, initramfs and `/extlinux/extlinux.conf`.
+Diagnostic initramfs provides ACM and a USB-only shell at `192.168.77.2:2323`
+(telnet); configure the host USB Ethernet interface as `192.168.77.1/24`.
+This shell is for bring-up and is not a Debian login service. It also attempts
+to save boot evidence to `/var/log/t531-initramfs.log` on the card rootfs.
+
 The explicit `fdt` path avoids lk2nd's existing SM-T531 Wi-Fi DT filename alias;
 no lk2nd modification is needed. The default entry is diagnostic. Change
 `default diagnostic` to `default debian` only after storage and basic boot tests.
@@ -157,37 +175,39 @@ Restore the saved current Android BOOT from Download Mode:
 heimdall flash --BOOT /home/paul/t531/private/device/BOOT.img
 ```
 
-Neither flash command has been executed. Download Mode and PIT were checked
+lk2nd 23.1 was installed successfully using the BOOT-only command above. The
+restore command has not been executed. Download Mode and PIT were checked
 on the tablet: BOOT identifier 14, start sector 209536, 20480 sectors; RECOVERY
 identifier 15, start 230016, 20480 sectors; EFS identifier 11, start 168576,
 28672 sectors (512-byte sectors). PIT SHA-256:
 `3668fb5d80416a9c774666202cb027c7567d6d80b9566ff289374aa00d96e0e9`.
 After `download-pit --no-reboot`, use `heimdall flash --resume --BOOT ...`
 for the next action in the same Download Mode session; fresh sessions omit
-`--resume`. Owner approval is still required for the BOOT replacement.
+`--resume`. Installation was authorized after verified backups and PIT checks.
 The build also packs `diagnostic-boot.img` (legacy Android v0, single appended
 DTB). After lk2nd starts, test it only with
 `fastboot boot .work/artifacts/current/diagnostic-boot.img`. It exceeds the
-10 MiB BOOT partition and must never be flashed. Kernel, initrd and DT load
-addresses are 0x8000, 0x02e00000 and 0x03000000; the uncompressed kernel plus
-relocated compressed payload fit below the initrd. Through
+10 MiB BOOT partition and must never be flashed. The kernel loads at 0x8000. Initrd and DT addresses are calculated using
+lk2nd extlinux placement: initrd ends below 50 MiB on a 4 KiB boundary, with
+2 MiB reserved immediately below it for DT. The previous RAM test placed the
+initrd at 46 MiB; overlap during decompression is under investigation. Through
 lk2nd, `fastboot flash boot` writes at 512 KiB offset; it is not used here.
 
 ## State and acceptance tests
 
 | Component | Mainline implementation | Actual tablet acceptance |
 |---|---|---|
-| Kernel / DT / initramfs | Built and artifact hashes checked | Not booted |
-| Four CPU cores | Upstream Qualcomm SMP, OPP and TSENS | Not tested in mainline; full clocks/voltage incomplete |
-| eMMC / microSD | Common DTS SDHCI and regulators | Not tested in mainline |
-| USB / buttons / touch / backlight | Existing upstream drivers and board DT | Not tested in mainline |
+| Kernel / DT / initramfs | Built and artifact hashes checked | USB diagnostic shell executed commands; Debian not booted |
+| Four CPU cores | Upstream Qualcomm SMP, OPP and TSENS | Four CPUs online in saved mainline log; OPP/thermal/stability tests pending |
+| eMMC / microSD | Common DTS SDHCI and regulators | Linux mounted microSD ext2 and saved logs; eMMC enumerated, ext4/stress tests pending |
+| USB / buttons / touch / backlight | Existing upstream drivers and board DT | USB ACM shell command exchange tested; Ethernet and input tests pending |
 | Display | Inherited boot framebuffer | Native DSI/LVDS DRM chain not implemented |
 | Adreno 305 | Upstream msm DRM/OCMEM; GPU DT remains disabled | No acceleration test |
 | Wi-Fi / Bluetooth | WCNSS research; no enabled radio DT | Not implemented in this port |
 | Battery / charging | Existing SMB358 support identified | Battery DT/policy not implemented |
 | Audio | Tapan source identified | Deferred |
 | Suspend / thermal / shutdown | Upstream baseline, incomplete board validation | Not tested |
-| Debian | armhf rootfs built with package manifest | Not booted |
+| Debian | armhf rootfs built and deployed to microSD ext4 | Not booted |
 | Plasma Mobile | Awaiting usable accelerated graphics | Not installed |
 
 Validation order: lk2nd Fastboot → extlinux/card detection → correct model in
@@ -197,8 +217,87 @@ and hardware renderer → Plasma Mobile → repeated cold boots, thermal/charge,
 shutdown/reboot and suspend/resume. Save sanitized results, not raw device logs.
 For missing display, collect lk2nd logs with `fastboot oem log` then
 `fastboot get_staged /home/paul/t531/private/lk2nd.log`, and test USB ACM; no UART wiring or ramoops
-reservation is invented. Compiled pstore support alone provides no persistent
-RAM log until a safe reserved region is established.
+reservation is invented. The verified lk2nd region is 512 KiB at
+`0x2ff80000`; console data starts at `0x2ffc0000`. Linux registration is
+confirmed in the card log, but retention across restart remains unverified.
 
-No component is `WORKING` or `VERIFIED` in mainline without a physical functional
-test. Current device observations establish wiring, not Linux readiness.
+Boot-chain audit: Samsung BOOT contains lk2nd 23.1; the selected SD entry is
+`diagnostic`, loading the project zImage, explicit SM-T531 DTB and initramfs.
+USB ACM/ECM creation demonstrates that `/init` ran. Debian is not selected.
+The owner observed console output followed by a blue flash and black display.
+No panic log was obtained; ACM shell and USB Ethernet traffic did not respond.
+The original USB diagnostic attempt left no rootfs log; a later USB-free log
+collector successfully wrote boot evidence to the card boot partition. Display clock/power teardown
+is a hypothesis: inherited simple-framebuffer has no clocks property, and
+native panel support is absent. Framebuffer RAM is reserved by common DTSI.
+
+A single-variable extlinux test added `clk_ignore_unused` with unchanged
+kernel, DTB and initramfs hashes. The owner observed the same blue flash and
+black display; ACM returned no data and USB Ethernet did not answer. This
+test did not support unused-clock gating as the sole cause. DRM/MSM is a
+module absent from this initramfs; an MDP5 driver underrun panic is therefore
+not established.
+
+The first appended-DTB RAM tests were accepted by lk2nd, but USB was not
+observed within the initial observation window. A subsequent RAM test used a
+legacy QCDT v2 container with the same mainline kernel and board DTB; the host
+did enumerate the diagnostic USB gadget while the screen retained Fastboot.
+This establishes initramfs execution for that test, not console usability.
+ACM returned no data and USB Ethernet remained unreachable. A first ramoops
+read after an earlier RAM test returned an all-zero region; it cannot prove
+absence of panic because startup and RAM retention were not established.
+The host uses USB/IP, so attachment delay and stale screen contents must be
+distinguished from kernel progress.
+
+USB control requests (device descriptor, configuration and status) repeatedly
+completed after the display went black. This establishes active kernel USB
+request handling, not a usable userspace console. ACM class requests succeeded,
+but bulk IN/OUT timed out; the upstream serial gadget queues receive buffers
+only while its terminal is open. A pre-open test did not restore a usable terminal.
+A separate RAM boot with `fw_devlink=off` did not enumerate diagnostic USB
+within 25 seconds; disabling dependency links is not an established fix.
+
+Card logging test: adding `lk2nd.pass-ramoops` produced a reserved-memory node
+at `0x2ff80000` and Linux registered ramoops/pstore console at boot. The
+USB-free `t531.logonly` initramfs path mounted `LABEL=T531_BOOT` and saved
+`t531-boot.log` and `t531-dmesg.log` on the external ext2 partition. Raw logs
+remain outside Git. Saved evidence shows all four CPUs online, SD SDR104
+enumeration and eMMC HS200 enumeration. This does not validate CPU OPP,
+thermal behavior, storage stress, ext4 rootfs or USB data traffic.
+
+For a log-only boot, append `lk2nd.pass-ramoops t531.logonly` to the diagnostic
+entry. It skips gadget creation, attempts card logging and requests reboot
+after 30 seconds. Hold Volume Down during the restart to enter lk2nd Fastboot;
+automatic reboot and RAM retention are not yet validated. Read the fixed-size
+region before issuing any new boot: `fastboot oem ramoops raw`, then
+`fastboot get_staged /home/paul/t531/private/ramoops.raw`. Never use
+`lk2nd.pass-ramoops=zap` when preserving a previous failure. A subsequent
+maintenance Android boot can read the external ext2 logs without writing
+internal partitions. USB-free logs passed the reported device-link errors
+and reached `/init`, so those errors are not themselves proof of a panic.
+
+An instrumented USB test also saved `t531-usb-dmesg.log` and a process/IRQ
+snapshot to the external boot partition. UDC binding and `ttyGS0` opening
+returned successfully. The later process snapshot contained the collector
+but no interactive USB shell; timer interrupts were present on all four CPUs.
+The cause of shell exit is not established. Waiting for USB `configured` and restarting an exited shell restored ACM
+command exchange on the tablet. `echo READY` and `uname -a` returned results;
+a runtime query reported CPUs `0-3` and available frequencies
+300/384/600/787.2 MHz. Frequency transitions, thermal behavior and stability
+remain untested. No full stacks were recorded in that snapshot; it contains wait-channel
+names.
+The requested automatic restart did not occur in the observed test; no
+claim of preserved ramoops across a warm restart is made.
+
+The `usb-log` entry selects the tested diagnostic path in `scripts/init-usblog`.
+It waits for the card, saves USB boot/process/IRQ logs to `T531_BOOT`, waits
+for USB configuration and restarts an exited interactive shell. It stays
+online after collection. On the host, connect with
+`sudo picocom --baud 115200 --flow n /dev/ttyACM0` (exit: Ctrl-A, Ctrl-X).
+Only one host reader should use the terminal at a time. Use a terminal emulator
+for BusyBox line editing; a raw reader must handle cursor-position requests.
+This is a root initramfs diagnostic shell, not Debian or a graphics session.
+
+Only demonstrated functions are validated: initramfs boot, ACM command
+exchange and microSD ext2 log writes. Complete USB support, CPU power
+management, Debian and graphics remain unvalidated.
