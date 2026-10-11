@@ -199,9 +199,9 @@ lk2nd, `fastboot flash boot` writes at 512 KiB offset; it is not used here.
 |---|---|---|
 | Kernel / DT / initramfs | Built and artifact hashes checked | USB diagnostic shell executed commands; Debian not booted |
 | Four CPU cores | Upstream Qualcomm SMP, OPP and TSENS | Four CPUs online in saved mainline log; OPP/thermal/stability tests pending |
-| eMMC / microSD | Common DTS SDHCI and regulators | Linux mounted microSD ext2 and saved logs; eMMC enumerated, ext4/stress tests pending |
+| eMMC / microSD | Common DTS SDHCI and regulators | eMMC enumerated; SD logs saved, but SDR104 command timeouts and write failures recur; unreliable |
 | USB / buttons / touch / backlight | Existing upstream drivers and board DT | USB ACM shell command exchange tested; Ethernet and input tests pending |
-| Display | Inherited boot framebuffer | Native DSI/LVDS DRM chain not implemented |
+| Display | Boot framebuffer retains MDSS clocks/domain and DSI supplies | Owner observed continuing output past former failure; brief blue handover remains; native DRM and repeated boots untested |
 | Adreno 305 | Upstream msm DRM/OCMEM; GPU DT remains disabled | No acceleration test |
 | Wi-Fi / Bluetooth | WCNSS research; no enabled radio DT | Not implemented in this port |
 | Battery / charging | Existing SMB358 support identified | Battery DT/policy not implemented |
@@ -301,3 +301,25 @@ This is a root initramfs diagnostic shell, not Debian or a graphics session.
 Only demonstrated functions are validated: initramfs boot, ACM command
 exchange and microSD ext2 log writes. Complete USB support, CPU power
 management, Debian and graphics remain unvalidated.
+
+Display resource test (2026-10-12): the original framebuffer lacked MDSS
+clock, power-domain and supply references. Its blank flag was zero while
+MDSS was off (`GDSCR=0x00282001`). `pd_ignore_unused` alone did not help.
+A power-domain reference alone brought MDSS on but produced a blue screen.
+With clock references and the vendor-confirmed L4/L5/L8 DSI supplies added,
+the owner observed continuing display output beyond the former failure,
+with a brief blue transition at startup. Runtime showed MDSS on
+(`GDSCR=0xa0282000`) and framebuffer clock/supply consumers. USB shell
+remained responsive after 170 seconds. These tests retained the existing
+`clk_ignore_unused` parameter; operation without it is not verified.
+Patch 0003 records this board-specific change using existing upstream
+interfaces. This is inherited framebuffer bring-up, not native DRM/KMS.
+
+The same boot reported repeated SD command timeouts and `mmcblk1: recovery
+failed`, followed by writeback failures on the ext2 boot filesystem. These
+are observed I/O failures, not evidence of a kernel panic. The boot filesystem
+was repaired once from a local image using e2fsck and its writeback hash was
+verified, but card I/O errors recurred. Logs remain local; SD reliability
+must be fixed before Debian boot or further sustained writes. Inter-test
+reboots were explicitly requested through the runtime shell; an independent
+spontaneous reboot has not been established by a saved panic/reset log.

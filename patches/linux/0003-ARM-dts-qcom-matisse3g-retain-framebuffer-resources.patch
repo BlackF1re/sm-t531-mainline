@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sun, 11 Oct 2026 17:34:23 +0000
+Subject: [PATCH] ARM: dts: qcom: matisse3g: retain boot framebuffer resources
+
+The inherited framebuffer has no consumers for the MDSS clocks, power
+domain or DSI supplies. On SM-T531 the early console disappears during
+resource handover, while the kernel continues running through USB ACM.
+
+Describe its resources using the existing simple-framebuffer interfaces.
+The DSI supply mapping is confirmed in the SM-T531 revision 02 vendor DT.
+Keep the common Matisse description unchanged and retain the bootloader's
+mode; this does not enable the native DRM display pipeline.
+
+Tested on SM-T531: MDSS remains on, the framebuffer holds its clocks and
+supplies, and the owner observes continued display output beyond the
+previous failure point. A brief blue transition during handover remains.
+MicroSD I/O failures are a separate unresolved limitation.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -87,3 +87,19 @@
+ &modem {
+ 	status = "disabled";
+ };
++
++&framebuffer0 {
++	clocks = <&mmcc MDSS_AHB_CLK>,
++		 <&mmcc MDSS_AXI_CLK>,
++		 <&mmcc MDSS_BYTE0_CLK>,
++		 <&mmcc MDSS_MDP_CLK>,
++		 <&mmcc MDSS_PCLK0_CLK>,
++		 <&mmcc MDSS_VSYNC_CLK>,
++		 <&mmcc MDSS_ESC0_CLK>,
++		 <&mmcc MDSS_MDP_LUT_CLK>;
++	power-domains = <&mmcc MDSS_GDSC>;
++
++	vdda-supply = <&pm8226_l4>;
++	vddio-supply = <&pm8226_l5>;
++	vddiol8-supply = <&pm8226_l8>;
++};
+-- 
+2.53.0
