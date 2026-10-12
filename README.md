@@ -203,13 +203,13 @@ lk2nd, `fastboot flash boot` writes at 512 KiB offset. See the bootstrap gate be
 | eMMC / microSD | Common DTS SDHCI and regulators | eMMC enumerated; SD passed two 32 MiB ext4 write/unmount/readback tests after load-vote fix at 50 MHz; UHS and long stress unverified |
 | USB / buttons / touch / backlight | Existing upstream drivers and board DT | USB ACM shell command exchange tested; Ethernet and input tests pending |
 | Display | Boot framebuffer retains MDSS clocks/domain and DSI supplies | Owner observed continuing output past former failure; brief blue handover remains; native DRM and repeated boots untested |
-| Adreno 305 | msm DRM/OCMEM and ARM SMMU; Mesa Freedreno | Render node and FD305 EGL initialized; glmark2 fences hang, acceleration not working |
+| Adreno 305 | msm DRM/OCMEM and ARM SMMU; Mesa Freedreno | FD305 OpenGL ES 3.0 renders glmark2 after MSM8226 SMMU AFE correction; long-term stability pending |
 | Wi-Fi / Bluetooth | Pronto WCNSS, wcn36xx, stock firmware; software-scan fallback | Wi-Fi autoconnect and SSH traffic verified; scan offload fails; Bluetooth untested |
 | Battery / charging | SMB358, source detection, hardware AICL and PMIC thermistor guard | Charging and thermistor verified; hardware AICL selected 2 A on SDP; termination/recharge enabled; full-cycle measurement pending |
 | Audio | Tapan source identified | Deferred |
 | Suspend / thermal / shutdown | Upstream baseline, incomplete board validation | Not tested |
 | Debian | Debian 13.7 armhf on microSD ext4 | Native systemd reports `running`; USB ACM root console tested |
-| Plasma Mobile | Awaiting usable accelerated graphics | Not installed |
+| Plasma Mobile | Debian plasma-mobile-full, KWin Wayland and SDDM | Installed; accelerated session acceptance in progress |
 
 Validation order: lk2nd Fastboot → extlinux/card detection → correct model in
 Linux → four CPUs/timers/interrupts → OPP/TSENS/cooling/stability → card ext4 →
@@ -477,7 +477,26 @@ adapter from [AsteroidOS](https://github.com/AsteroidOS/meta-asteroid/tree/c5b82
 with the library path adapted to Debian armhf. It delegates to the existing
 Mesa render-only loader; it does not supply GPU rendering itself.
 `ROOTFS_PROFILE=mobile make rootfs` additionally installs
-`plasma-mobile-full`, SDDM and XWayland.
+`plasma-mobile-full`, SDDM and XWayland and enables automatic login for `t531`.
+`scripts/configure-plasma.sh` applies the same configuration to an existing
+installation. KWin selects the stable simpledrm KMS path and Qt Quick uses
+OpenGL; Mesa renders through the separate Adreno node. Scanout still uses
+the inherited framebuffer, rather than native MDP5/DSI modesetting.
+
+The MSM8226 SMMU patch clears SCTLR.AFE for this SoC only, preserving full
+AP permission checking. On the tablet, AFE produced access-flag faults with
+valid short descriptors; changing only this bit made hardware translation
+and GPU submissions succeed. The SD kernel applies this setting whenever
+the context is programmed, without runtime register overrides.
+
+Run the DRM benchmark with SDDM stopped:
+
+```sh
+sudo systemctl stop sddm
+sudo glmark2-es2-drm --visual-config alpha=0 \
+    --winsys-options drm-device=/dev/dri/by-path/platform-3200000.framebuffer-card
+sudo systemctl start sddm
+```
 
 ### Wi-Fi and charging policy
 
@@ -488,7 +507,13 @@ pass `WIFI_CONFIG=/private/wpa.conf` and
 `scripts/configure-network.sh` configures autoconnect and, by owner request,
 empty-password SSH for `root` and `t531`, listening only on the Wi-Fi address.
 Autoconnect after reboot and authentication without a key or password were
-verified on the tablet. Bluetooth and suspend remain untested.
+verified on the tablet. Bluetooth remains untested. One RTC-woken s2idle cycle restored Wi-Fi and
+GPU access; deep suspend and repeated resume remain unverified.
+The mobile profile uses NetworkManager so Plasma can manage connections;
+the base profile uses wpa_supplicant and systemd-networkd. For an existing
+mobile installation, run the network configuration with `NETWORK_MANAGER=1`
+from a local console or detached service, because changing managers can
+interrupt SSH and change the DHCP address.
 
 `scripts/configure-charging.sh` installs an explicit SDP-current override:
 500/700/1000/1200/1500/1800/2000 mA input ceilings, one step per second.
@@ -515,8 +540,9 @@ and package installation succeeded. No certificate verification is disabled.
 RTC writes currently fail. RTC_HCTOSYS is disabled in the SD kernel so
 late RTC registration cannot overwrite the restored NTP timestamp. After
 reboot, automatic time recovery and HTTPS apt update were verified.
-Persistent bring-up services are wpa_supplicant (association), networkd
-(DHCP), the Wi-Fi-address SSH listener, and the one-second charger policy.
+Persistent bring-up services are NetworkManager (mobile profile), or
+wpa_supplicant and networkd (base profile), the Wi-Fi-address SSH listener,
+and the one-second charger policy.
 The latter polls only power_supply properties; on-chip AICL performs droop
 detection. Idle overhead and suspend integration remain unmeasured.
 
@@ -528,3 +554,42 @@ is a controller result, not an external current measurement. The first
 ramp restarted once during source initialization, then settled at 2 A.
 A weak adapter and a complete battery charge/discharge cycle remain
 unverified. Private logs and factory network identity are kept outside Git.
+
+### Current desktop limitations
+
+KWin and Qt Quick report the FD305 hardware renderer. A complete default
+DRM glmark2 run completed with score 74 after the MSM8226 SMMU AFE fix.
+With Mesa's default batch reordering, complex Qt Quick windows lost text/icons
+while scrolling. `FD_MESA_DEBUG=inorder` disables that optimization while
+retaining the FD305 hardware renderer. Repeated native settings scrolls and
+captured drawer frames retained their text; the owner confirmed that settings
+no longer flickered. The Plasma configuration persists this workaround.
+No software renderer or per-frame `glFinish()` is used in the installed setup.
+The underlying driver ordering failure remains unresolved; this is not full
+GPU conformance or a claim of desktop stability.
+
+On 2026-10-12, repeatable one-second injected touch gestures with passive
+`eglSwapBuffers()` timestamping measured settings at approximately 22 FPS
+and the drawer at 10–12 FPS in this mode. These are application frame
+completion rates, not measured physical scanout or end-to-end input latency.
+The 60 FPS target has not been reached. Disabling KWin's contrast effect did
+not materially improve the drawer. GPU trace retirement timestamps on A3xx
+were zero, so they cannot establish GPU execution cost. Display commits were
+observable through DRM events, but simpledrm does not provide a physical
+vblank counter. The current output still copies/converts an XRGB8888 shadow
+buffer into the inherited RGB888 framebuffer; native MDSS scanout remains
+unfinished. Its exact contribution to frame time has not been isolated.
+
+A private EGL trace of an affected settings window replayed correctly on the
+same GPU. Keeping GPU and SMMU runtime-active did not fix missing text;
+a diagnostic GPU wait did, at about 19 FPS. Neither experiment is installed.
+Mesa 26.1.6 and disabling the Qt shader cache did not resolve the issue.
+The vendor A3xx post-power-collapse shader workaround remains an unverified
+candidate. Occasional GPU recovery was recorded in earlier configurations.
+
+UPower could not start with its standard PrivateUsers sandbox because the
+running kernel lacked CONFIG_USER_NS. A temporary service override restored
+UPower on-device; subsequent builds enable user namespaces. UPower detects
+the SMB358 external supply, but reports battery-missing: the PM8226 BMS is
+not exposed by this port. No valid charge percentage is available yet.
+The PM8916 voltage-mode BMS driver is not evidence of PM8226 compatibility.

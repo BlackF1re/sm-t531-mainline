@@ -15,6 +15,23 @@ install -d -m 755 /etc/sudoers.d /etc/systemd/network /usr/local/sbin
 printf '%s\n' 't531 ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/t531
 chmod 440 /etc/sudoers.d/t531
 visudo -cf /etc/sudoers.d/t531
+if [ "${NETWORK_MANAGER:-0}" = 1 ]; then
+    command -v nmcli >/dev/null
+    ssid=$(sed -n 's/^[[:space:]]*ssid="\(.*\)"$/\1/p' "$1")
+    psk=$(sed -n 's/^[[:space:]]*psk=\([0-9a-fA-F]*\)$/\1/p' "$1")
+    [ -n "$ssid" ] && [ "${#psk}" = 64 ] || { echo 'Expected one SSID and a derived 64-digit PSK'; exit 1; }
+    install -d -m 700 /etc/NetworkManager/system-connections
+    umask 077
+    nmcli --offline connection add type wifi ifname wlan0 con-name t531-wifi \
+        ssid "$ssid" wifi.cloned-mac-address preserve wifi-sec.key-mgmt wpa-psk \
+        wifi-sec.psk "$psk" ipv4.method auto ipv6.method disabled \
+        > /etc/NetworkManager/system-connections/t531-wifi.nmconnection
+    rm -f /etc/NetworkManager/conf.d/20-t531-staging.conf
+    rm -f /etc/systemd/network/20-wlan.network
+    systemctl disable --now t531-wifi.service systemd-networkd.service 2>/dev/null || true
+    wifi_service=NetworkManager.service
+    network_services=NetworkManager
+else
 cat > /etc/systemd/network/20-wlan.network <<'EOF'
 [Match]
 Name=wlan0
@@ -35,6 +52,9 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
+    wifi_service=t531-wifi.service
+    network_services="systemd-networkd t531-wifi"
+fi
 cat > /usr/local/sbin/t531-ssh-wifi <<'EOF'
 #!/bin/sh
 set -eu
@@ -63,11 +83,11 @@ CONFIG
 exec /usr/sbin/sshd -D -e -f /run/sshd-wifi.conf
 EOF
 chmod 755 /usr/local/sbin/t531-ssh-wifi
-cat > /etc/systemd/system/t531-ssh-wifi.service <<'EOF'
+cat > /etc/systemd/system/t531-ssh-wifi.service <<EOF
 [Unit]
 Description=SSH on the Wi-Fi address with empty-password local access
-After=t531-wifi.service systemd-networkd.service
-Wants=t531-wifi.service systemd-networkd.service
+After=$wifi_service
+Wants=$wifi_service
 [Service]
 ExecStart=/usr/local/sbin/t531-ssh-wifi
 Restart=always
@@ -77,7 +97,10 @@ WantedBy=multi-user.target
 EOF
 systemctl disable --now ssh.service ssh.socket wpa_supplicant.service 2>/dev/null || true
 systemctl daemon-reload
-systemctl enable systemd-networkd t531-wifi t531-ssh-wifi
+systemctl enable $network_services t531-ssh-wifi
 if [ "${INSTALL_ONLY:-0}" != 1 ]; then
-    systemctl start systemd-networkd t531-wifi t531-ssh-wifi
+    if [ "${NETWORK_MANAGER:-0}" = 1 ]; then
+        systemctl restart NetworkManager
+    fi
+    systemctl start $network_services t531-ssh-wifi
 fi

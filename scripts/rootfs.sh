@@ -37,20 +37,9 @@ case "${ROOTFS_PROFILE:-base}" in
         if [ "${ROOTFS_PROFILE}" = mobile ]; then
             sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
                 plasma-mobile-full sddm xwayland
-            if ! sudo chroot "$root" id t531 >/dev/null 2>&1; then
-                sudo chroot "$root" useradd -m -s /bin/bash -G video,render,input t531
-            fi
-            sudo mkdir -p "$root/etc/sddm.conf.d"
-            sudo tee "$root/etc/sddm.conf.d/20-t531.conf" >/dev/null <<'SDDM'
-[General]
-DisplayServer=wayland
-[Autologin]
-User=t531
-Session=plasma-mobile.desktop
-Relogin=false
-SDDM
-            sudo systemctl --root="$root" enable sddm
-            sudo systemctl --root="$root" set-default graphical.target
+            sudo install -m 755 scripts/configure-plasma.sh "$root/tmp/t531-configure-plasma.sh"
+            sudo chroot "$root" env INSTALL_ONLY=1 /tmp/t531-configure-plasma.sh
+            sudo rm -f "$root/tmp/t531-configure-plasma.sh"
         fi
         ;;
     *) echo 'ROOTFS_PROFILE must be base, graphics or mobile'; exit 1;;
@@ -100,7 +89,10 @@ fi
 if [ -n "${WIFI_CONFIG:-}" ]; then
     sudo install -m 600 "$WIFI_CONFIG" "$root/tmp/t531-wifi.conf"
     sudo install -m 755 scripts/configure-network.sh "$root/tmp/t531-configure-network.sh"
-    sudo chroot "$root" env INSTALL_ONLY=1 /tmp/t531-configure-network.sh /tmp/t531-wifi.conf
+    network_manager=0
+    [ "${ROOTFS_PROFILE:-base}" != mobile ] || network_manager=1
+    sudo chroot "$root" env INSTALL_ONLY=1 NETWORK_MANAGER="$network_manager" \
+        /tmp/t531-configure-network.sh /tmp/t531-wifi.conf
     sudo rm -f "$root/tmp/t531-wifi.conf" "$root/tmp/t531-configure-network.sh"
 fi
 sudo chroot "$root" dpkg-query -W '-f=${Package}\t${Version}\t${Architecture}\n' > "$work/artifacts/current/debian-packages.tsv"

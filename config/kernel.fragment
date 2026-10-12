@@ -58,6 +58,10 @@ CONFIG_CFG80211=y
 CONFIG_MAC80211=y
 CONFIG_QCOM_SYSMON=y
 CONFIG_GENERIC_ADC_THERMAL=y
+CONFIG_FUSE_FS=y
 
 # The read-only PMIC RTC returns 1971; use timesyncd saved time and NTP.
 # CONFIG_RTC_HCTOSYS is not set
+
+# UPower uses PrivateUsers in its standard service sandbox.
+CONFIG_USER_NS=y
