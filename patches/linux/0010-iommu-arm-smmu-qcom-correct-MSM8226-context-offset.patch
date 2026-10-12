@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Mon, 12 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: arm-smmu-qcom: correct MSM8226 context bank offset
+
+The SM-T531 GPU SMMU reports a 0x8000 register space through ID1, but
+its three context banks reside at offsets 0x8000, 0x9000 and 0xa000 in
+the 0x10000 vendor register window. Using the advertised half-window
+addresses TLBSTATUS at 0xfdb147f4 and causes an external abort on this
+board. Preserve the standard SMMUv1 driver and correct NUMPAGE in a
+Qualcomm implementation hook selected by a specific compatible.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/arm-smmu-qcom.c b/drivers/iommu/arm/arm-smmu/arm-smmu-qcom.c
+index e2c914fcc..f113a6aef 100644
+--- a/drivers/iommu/arm/arm-smmu/arm-smmu-qcom.c
++++ b/drivers/iommu/arm/arm-smmu/arm-smmu-qcom.c
+@@ -705,6 +705,22 @@ static const struct qcom_smmu_config qcom_smmu_impl0_cfg = {
+ 	.reg_offset = qcom_smmu_impl0_reg_offset,
+ };
+ 
++static int qcom_msm8226_smmu_cfg_probe(struct arm_smmu_device *smmu)
++{
++	/* ID1 reports 0x4000, but the MSM8226 context banks start at 0x8000. */
++	smmu->numpage = 0x8000 >> smmu->pgshift;
++
++	return 0;
++}
++
++static const struct arm_smmu_impl qcom_msm8226_smmu_impl = {
++	.cfg_probe = qcom_msm8226_smmu_cfg_probe,
++};
++
++static const struct qcom_smmu_match_data msm8226_smmu_data = {
++	.impl = &qcom_msm8226_smmu_impl,
++};
++
+ /*
+  * It is not yet possible to use MDP SMMU with the bypass quirk on the msm8996,
+  * there are not enough context banks.
+@@ -740,6 +756,7 @@ static const struct qcom_smmu_match_data qcom_smmu_500_impl0_data = {
+  * special handling and can not be covered by the qcom,smmu-500 entry.
+  */
+ static const struct of_device_id __maybe_unused qcom_smmu_impl_of_match[] = {
++	{ .compatible = "qcom,msm8226-smmu", .data = &msm8226_smmu_data },
+ 	{ .compatible = "qcom,msm8996-smmu-v2", .data = &msm8996_smmu_data },
+ 	{ .compatible = "qcom,msm8998-smmu-v2", .data = &qcom_smmu_v2_data },
+ 	{ .compatible = "qcom,qcm2290-smmu-500", .data = &qcom_smmu_500_impl0_data },
+-- 
+2.43.0

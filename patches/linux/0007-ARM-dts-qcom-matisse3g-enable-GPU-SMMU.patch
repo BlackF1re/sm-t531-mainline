@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Mon, 12 Oct 2026 12:00:00 +0700
+Subject: [PATCH] ARM: dts: qcom: matisse3g: enable GPU and its SMMU
+
+Describe the KGSL SMMU register window, context interrupt and stream ID
+from the SM-T531 vendor MSM8226 device tree. Use the existing ARM SMMU
+and Adreno drivers. Keep MDSS disabled while the GPU is brought up
+independently of the inherited display.
+
+Hardware validation is pending.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -126,3 +126,26 @@
+ 		bias-disable;
+ 	};
+ };
++
++&soc {
++	gpu_smmu: iommu@fdb10000 {
++		compatible = "qcom,msm8226-smmu", "arm,smmu-v1";
++		reg = <0xfdb10000 0x10000>;
++		#iommu-cells = <1>;
++		#global-interrupts = <1>;
++		interrupts = <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>,
++			     <GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>,
++			     <GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>,
++			     <GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&mmcc OXILICX_AHB_CLK>,
++			 <&mmcc OXILICX_AXI_CLK>,
++			 <&mmcc OXILI_GFX3D_CLK>;
++		clock-names = "iface", "bus", "core";
++		power-domains = <&mmcc OXILICX_GDSC>;
++	};
++};
++
++&gpu {
++	status = "okay";
++	iommus = <&gpu_smmu 0>;
++};
+-- 
+2.43.0

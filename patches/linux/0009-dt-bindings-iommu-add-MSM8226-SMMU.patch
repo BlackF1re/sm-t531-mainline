@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Mon, 12 Oct 2026 12:00:00 +0700
+Subject: [PATCH] dt-bindings: iommu: arm-smmu: add MSM8226 compatible
+
+MSM8226 has a nonstandard context bank offset. Add a compatible to
+select its existing Qualcomm SMMU implementation hook.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/Documentation/devicetree/bindings/iommu/arm,smmu.yaml b/Documentation/devicetree/bindings/iommu/arm,smmu.yaml
+index a701dec2f..06ba2a3a9 100644
+--- a/Documentation/devicetree/bindings/iommu/arm,smmu.yaml
++++ b/Documentation/devicetree/bindings/iommu/arm,smmu.yaml
+@@ -160,6 +160,9 @@ properties:
+       - items:
+           - const: arm,mmu-500
+           - const: arm,smmu-v2
++      - items:
++          - const: qcom,msm8226-smmu
++          - const: arm,smmu-v1
+       - items:
+           - enum:
+               - arm,mmu-400
+-- 
+2.43.0

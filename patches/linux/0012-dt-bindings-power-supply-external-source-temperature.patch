@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Mon, 12 Oct 2026 12:00:00 +0700
+Subject: [PATCH] dt-bindings: power: supply: describe SMB358 source and temperature
+
+Describe an optional SMB358 extcon source detector and an external IIO
+battery-temperature channel. Permit the SMB358 1200 mA input code.
+Expose the existing generic ADC thermal IIO channel as a DT provider.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+--- a/Documentation/devicetree/bindings/power/supply/summit,smb347-charger.yaml
++++ b/Documentation/devicetree/bindings/power/supply/summit,smb347-charger.yaml
+@@ -24,6 +24,19 @@
+     maxItems: 1
+ 
+   monitored-battery: true
++
++  io-channels:
++    maxItems: 1
++    description: External battery temperature sensor, in milliCelsius.
++
++  io-channel-names:
++    const: battery-temperature
++
++  extcon:
++    maxItems: 1
++    description:
++      Source detector for SMB358. Standard USB ports are limited to 500 mA;
++      summit,usb-current-limit-microamp is the maximum for a dedicated charger.
+ 
+   summit,enable-usb-charging:
+     type: boolean
+@@ -103,11 +116,11 @@
+     then:
+       properties:
+         summit,mains-current-limit-microamp:
+-          enum: [ 300000, 500000, 700000, 1000000,
++          enum: [ 300000, 500000, 700000, 1000000, 1200000,
+                   1500000, 1800000, 2000000]
+ 
+         summit,usb-current-limit-microamp:
+-          enum: [ 300000, 500000, 700000, 1000000,
++          enum: [ 300000, 500000, 700000, 1000000, 1200000,
+                   1500000, 1800000, 2000000]
+ 
+         summit,charge-current-compensation-microamp:
+--- a/Documentation/devicetree/bindings/thermal/generic-adc-thermal.yaml
++++ b/Documentation/devicetree/bindings/thermal/generic-adc-thermal.yaml
+@@ -20,6 +20,9 @@
+ properties:
+   compatible:
+     const: generic-adc-thermal
++
++  '#io-channel-cells':
++    const: 0
+ 
+   '#thermal-sensor-cells':
+     const: 0

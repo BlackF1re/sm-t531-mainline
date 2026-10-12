@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Mon, 12 Oct 2026 17:00:00 +0700
+Subject: [PATCH] power: supply: smb347: enable SMB358 charge termination
+
+The vendor userspace battery manager leaves hardware termination and
+automatic recharge disabled. A native SMB358 setup must not inherit
+that policy: enable both functions while preserving the programmed
+termination-current and recharge-voltage threshold fields. Hardware
+constant-voltage taper and termination then operate independently of
+the input-current policy. Do not change the other charger variants.
+
+Register reference: LineageOS/android_kernel_samsung_msm8226 commit
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, drivers/power/smb358-charger.c.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+--- a/drivers/power/supply/smb347-charger.c
++++ b/drivers/power/supply/smb347-charger.c
+@@ -53,6 +53,9 @@
+ #define CFG_FLOAT_VOLTAGE_FLOAT_MASK		0x3f
+ #define CFG_FLOAT_VOLTAGE_THRESHOLD_MASK	0xc0
+ #define CFG_FLOAT_VOLTAGE_THRESHOLD_SHIFT	6
++#define CFG_CHARGE_CONTROL			0x04
++#define CFG_CHARGE_CONTROL_AUTO_RECHARGE_DISABLED	BIT(7)
++#define CFG_CHARGE_CONTROL_TERMINATION_DISABLED	BIT(6)
+ #define CFG_STAT				0x05
+ #define CFG_STAT_DISABLED			BIT(5)
+ #define CFG_STAT_ACTIVE_HIGH			BIT(7)
+@@ -881,6 +884,15 @@
+ 	if (ret < 0)
+ 		goto fail;
+ 
++	/* SMB358 must terminate CV charging instead of relying on userspace. */
++	if (smb->id == SMB358) {
++		ret = regmap_clear_bits(smb->regmap, CFG_CHARGE_CONTROL,
++				CFG_CHARGE_CONTROL_AUTO_RECHARGE_DISABLED |
++				CFG_CHARGE_CONTROL_TERMINATION_DISABLED);
++		if (ret < 0)
++			goto fail;
++	}
++
+ 	ret = smb347_set_temp_limits(smb);
+ 	if (ret < 0)
+ 		goto fail;
+@@ -1440,6 +1452,7 @@
+ 	case CFG_CURRENT_LIMIT:
+ 	case CFG_FUNCTIONS:
+ 	case CFG_FLOAT_VOLTAGE:
++	case CFG_CHARGE_CONTROL:
+ 	case CFG_STAT:
+ 	case CFG_PIN:
+ 	case CFG_THERM:

@@ -155,6 +155,7 @@ mkbootimg --header_version 0 --pagesize 2048 --base 0x00000000 \
 (cd "$artifacts"; sha256sum zImage initramfs.cpio.gz > kernel.sha256)
 printf '%s\n' 'console=tty0 console=ttyMSM0,115200 loglevel=7 clk_ignore_unused t531.stage=second' \
     > "$artifacts/kexec.cmdline"
+"$project/scripts/package-sd.sh"
 (cd "$artifacts"; sha256sum zImage *.dtb initramfs.cpio.gz lk2nd-msm8226.img \
-    diagnostic-boot.img kernel.sha256 kexec.cmdline > SHA256SUMS)
+    diagnostic-boot.img sd-kernel.img sd-kernel.sha256 kernel.sha256 kexec.cmdline > SHA256SUMS)
 printf 'Artifacts: %s\n' "$artifacts"

@@ -109,7 +109,7 @@ The diagnostic initramfs provides a USB ACM root shell. Command exchange has
 been tested on the tablet; USB Ethernet is currently disabled during bring-up.
 
 Rootfs contains systemd, udev, SSH, networkd, basic storage/network diagnostics
-and packaged Qualcomm firmware. No desktop is installed. SSH permits keys only;
+and packaged Qualcomm firmware. No desktop is installed. Default SSH permits keys only;
 use `SSH_AUTHORIZED_KEY=/path/to/public-key make rootfs` to install your key.
 SSH host keys are generated on first boot; no shared host identity is distributed.
 Networkd configures device USB Ethernet as `192.168.77.2/24`; configure the host
@@ -198,17 +198,17 @@ lk2nd, `fastboot flash boot` writes at 512 KiB offset. See the bootstrap gate be
 
 | Component | Mainline implementation | Actual tablet acceptance |
 |---|---|---|
-| Kernel / DT / initramfs | Built and artifact hashes checked | Internal UP bootstrap automatically kexecs SD SMP kernel; ACM shell commands verified; Debian not booted |
+| Kernel / DT / initramfs | Built and artifact hashes checked | Internal UP bootstrap automatically kexecs SD SMP kernel; ACM shell commands verified; Debian systemd booted from SD |
 | Four CPU cores | Upstream Qualcomm SMP, OPP and TSENS | Four CPUs online after boot; CPU3 could not return after a hotplug test; OPP/thermal/stability tests pending |
 | eMMC / microSD | Common DTS SDHCI and regulators | eMMC enumerated; SD passed two 32 MiB ext4 write/unmount/readback tests after load-vote fix at 50 MHz; UHS and long stress unverified |
 | USB / buttons / touch / backlight | Existing upstream drivers and board DT | USB ACM shell command exchange tested; Ethernet and input tests pending |
 | Display | Boot framebuffer retains MDSS clocks/domain and DSI supplies | Owner observed continuing output past former failure; brief blue handover remains; native DRM and repeated boots untested |
-| Adreno 305 | Upstream msm DRM/OCMEM; GPU DT remains disabled | No acceleration test |
-| Wi-Fi / Bluetooth | WCNSS research; no enabled radio DT | Not implemented in this port |
-| Battery / charging | Existing SMB358 support identified | Battery DT/policy not implemented |
+| Adreno 305 | msm DRM/OCMEM and ARM SMMU; Mesa Freedreno | Render node and FD305 EGL initialized; glmark2 fences hang, acceleration not working |
+| Wi-Fi / Bluetooth | Pronto WCNSS, wcn36xx, stock firmware; software-scan fallback | Wi-Fi autoconnect and SSH traffic verified; scan offload fails; Bluetooth untested |
+| Battery / charging | SMB358, source detection, hardware AICL and PMIC thermistor guard | Charging and thermistor verified; hardware AICL selected 2 A on SDP; termination/recharge enabled; full-cycle measurement pending |
 | Audio | Tapan source identified | Deferred |
 | Suspend / thermal / shutdown | Upstream baseline, incomplete board validation | Not tested |
-| Debian | armhf rootfs built and deployed to microSD ext4 | Not booted |
+| Debian | Debian 13.7 armhf on microSD ext4 | Native systemd reports `running`; USB ACM root console tested |
 | Plasma Mobile | Awaiting usable accelerated graphics | Not installed |
 
 Validation order: lk2nd Fastboot → extlinux/card detection → correct model in
@@ -418,8 +418,8 @@ make deploy-sd BOOT_MODE=internal BOOT_MOUNT=/mounted/card-boot
 
 This copies the kernel, initramfs, DTB and checksums without creating an SD
 extlinux entry. It refuses an existing active extlinux configuration. The
-loader currently reuses its live DT, so a DT change needs a rebuilt/retested
-internal bootstrap too. Kernel/initramfs-only updates stay on SD.
+loader passes its live DT; the appended-DT container described below allows
+SD kernel and DT updates without changing the internal bootstrap.
 
 Recovery of the exact saved pre-bootstrap lk2nd state from
 Samsung Download Mode is:
@@ -448,4 +448,83 @@ first-stage command line identifies `t531.bootstrap=sd-test`, and the second
 ACM shell reports `t531.stage=second` and CPUs `0-3`. The installed internal
 loader then passed the same chain after the higher-priority SD test entry was
 removed from lookup; its saved first-stage marker is `t531.bootstrap=internal`.
-Debian systemd has not booted. Raw results and both BOOT backups remain outside Git.
+Debian 13.7 armhf subsequently booted from the external ext4 rootfs through
+the installed bootstrap and SD kernel. `systemctl is-system-running` returned
+`running`, with an accessible USB ACM root console. Raw results and both BOOT
+backups remain outside Git.
+
+### Updating the SD kernel without changing the internal bootstrap
+
+The installed bootstrap supplies its own live DT to kexec. `make build` now
+also produces `sd-kernel.img`, an Android v0 container holding the genuine
+`zImage` followed by the updated board DT. The existing kexec-tools Android
+loader preserves the appended DT, and the ARM decompressor selects it.
+This packaging was tested on the tablet: the updated DT and
+`root=LABEL=T531_ROOT` reached Debian systemd. No internal BOOT update is
+needed. The container supplies verified RAM banks and the bootstrap's
+64 MiB initrd placement; ATAG conversion is disabled for this FDT-only path.
+
+`make deploy-sd BOOT_MODE=internal BOOT_MOUNT=/mounted/card-boot` installs
+the container under the immutable bootstrap's expected filename `zImage`
+and installs its matching `kernel.sha256`. The genuine kernel remains
+`zImage` in host artifacts. Keep `/extlinux/extlinux.conf` absent on SD so
+lk2nd selects the installed internal bootstrap.
+
+Graphics rootfs preparation is `ROOTFS_PROFILE=graphics make rootfs`.
+It installs Debian Mesa 25.0.7, glmark2 DRM/Wayland and Weston. The small
+`t531-mesa-simpledrm` Debian package reuses the MIT-licensed KMSRO entry-point
+adapter from [AsteroidOS](https://github.com/AsteroidOS/meta-asteroid/tree/c5b82318a9d065f37d7f4ec90e272721288797b5/recipes-graphics/mesa-dri-simpledrm),
+with the library path adapted to Debian armhf. It delegates to the existing
+Mesa render-only loader; it does not supply GPU rendering itself.
+`ROOTFS_PROFILE=mobile make rootfs` additionally installs
+`plasma-mobile-full`, SDDM and XWayland.
+
+### Wi-Fi and charging policy
+
+Wi-Fi uses the device WCNSS firmware/NV file and factory MAC stored privately
+in EFS. Do not substitute a MAC from another tablet. For rootfs preparation,
+pass `WIFI_CONFIG=/private/wpa.conf` and
+`WIFI_LINK_CONFIG=/private/wlan.link`; neither file belongs in Git.
+`scripts/configure-network.sh` configures autoconnect and, by owner request,
+empty-password SSH for `root` and `t531`, listening only on the Wi-Fi address.
+Autoconnect after reboot and authentication without a key or password were
+verified on the tablet. Bluetooth and suspend remain untested.
+
+`scripts/configure-charging.sh` installs an explicit SDP-current override:
+500/700/1000/1200/1500/1800/2000 mA input ceilings, one step per second.
+SMB358 hardware AICL remains enabled; a completed lower AICL result stops
+the ramp until reconnect. A higher ceiling is not a measured current draw.
+The PMIC USBIN ADC reads about 0.14 V with USB connected and is not used
+as a valid VBUS measurement. The exact hardware droop threshold and
+weak-source behaviour still need measurement. Battery charging is inhibited
+when its temperature cannot be read or falls outside -5..60 C; restart
+requires 0..45 C. The battery current ceiling is 1.8 A and float voltage
+remains 4.34 V. The internal bootstrap and BOOT are not changed.
+
+SMB358 charge termination and automatic recharge are enabled in the SD
+kernel, preserving the inherited 100 mA termination setting and 100 mV
+recharge threshold. This is voltage/current hysteresis, not a claimed SOC
+percentage. Full-charge cutoff and zero battery current during externally
+powered operation still require a full-cycle measurement; no fuel-gauge
+percentage is exposed yet.
+
+`systemd-timesyncd` is enabled for normal NTP synchronization and stores a
+last-known timestamp across boots. The PMIC RTC initially returned 1971;
+setting system time restored authenticated HTTPS, `apt update` completed,
+and package installation succeeded. No certificate verification is disabled.
+RTC writes currently fail. RTC_HCTOSYS is disabled in the SD kernel so
+late RTC registration cannot overwrite the restored NTP timestamp. After
+reboot, automatic time recovery and HTTPS apt update were verified.
+Persistent bring-up services are wpa_supplicant (association), networkd
+(DHCP), the Wi-Fi-address SSH listener, and the one-second charger policy.
+The latter polls only power_supply properties; on-chip AICL performs droop
+detection. Idle overhead and suspend integration remain unmeasured.
+
+The final SD kernel on 2026-10-12 reported an input ceiling and completed
+AICL result of 2000000 uA, a charge-current ceiling of 1800000 uA and
+4340000 uV float voltage. Readback of SMB358 registers 0x01=0x74 and
+0x04=0x00 confirmed the 2 A code and enabled termination/recharge. This
+is a controller result, not an external current measurement. The first
+ramp restarted once during source initialization, then settled at 2 A.
+A weak adapter and a complete battery charge/discharge cycle remain
+unverified. Private logs and factory network identity are kept outside Git.

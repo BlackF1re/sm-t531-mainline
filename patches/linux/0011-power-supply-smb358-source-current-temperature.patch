@@ -1,0 +1,470 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Mon, 12 Oct 2026 12:00:00 +0700
+Subject: [PATCH] power: supply: smb347: support SMB358 source current and temperature
+
+SMB358 has one input current limit in bits 7:4, and its eight-code table
+includes 1200 mA. Correct the field and table using the Qualcomm driver
+as register documentation. Expose the configured ceiling and hardware
+AICL result through the standard power_supply properties.
+
+An optional extcon source detector permits the board ceiling only for
+a dedicated charger; SDP defaults to USB 2.0 500 mA. An explicit
+userspace override can request up to 2 A with AICL active. Reject
+high-current requests while temperature inhibits charging. Restart
+hardware AICL from that mode before changing the ceiling. Preserve
+voltage, charge-current and on-chip thermistor settings.
+
+An optional IIO battery-temperature channel inhibits charging on read
+failure or outside the monitored battery operating range. Resume only
+inside the alert range. Keep an inhibited source at 500 mA. Serialize
+limit changes and unregister notifiers before cancelling managed work.
+Retain the existing SMB347 ABI.
+
+Register reference: LineageOS/android_kernel_samsung_msm8226 commit
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, drivers/power/smb358-charger.c.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+--- a/drivers/power/supply/smb347-charger.c
++++ b/drivers/power/supply/smb347-charger.c
+@@ -10,6 +10,10 @@
+ 
+ #include <linux/delay.h>
+ #include <linux/err.h>
++#include <linux/extcon.h>
++#include <linux/iio/consumer.h>
++#include <linux/mutex.h>
++#include <linux/workqueue.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
+@@ -43,6 +47,8 @@
+ #define CFG_CURRENT_LIMIT_DC_MASK		0xf0
+ #define CFG_CURRENT_LIMIT_DC_SHIFT		4
+ #define CFG_CURRENT_LIMIT_USB_MASK		0x0f
++#define CFG_FUNCTIONS				0x02
++#define CFG_FUNCTIONS_AICL_ENABLED		BIT(4)
+ #define CFG_FLOAT_VOLTAGE			0x03
+ #define CFG_FLOAT_VOLTAGE_FLOAT_MASK		0x3f
+ #define CFG_FLOAT_VOLTAGE_THRESHOLD_MASK	0xc0
+@@ -99,6 +105,8 @@
+ #define CMD_A_OTG_ENABLED			BIT(4)
+ #define CMD_A_ALLOW_WRITE			BIT(7)
+ #define CMD_B					0x31
++#define CMD_B_USB_HC				BIT(0)
++#define CMD_B_USB_500				BIT(1)
+ #define CMD_C					0x33
+ 
+ /* Interrupt Status registers */
+@@ -194,6 +202,17 @@
+  * values, pass in %SMB3XX_TEMP_USE_DEFAULT instead.
+  */
+ struct smb347_charger {
++	struct iio_channel *temperature_channel;
++	struct delayed_work temperature_work;
++	bool temperature_allowed;
++	bool stopping;
++
++	struct extcon_dev *extcon;
++	struct notifier_block extcon_nb;
++	struct work_struct source_work;
++	struct mutex input_lock;
++	unsigned int dcp_current_limit;
++
+ 	struct device		*dev;
+ 	struct regmap		*regmap;
+ 	struct power_supply	*mains;
+@@ -266,8 +285,8 @@
+ 		     1800000, 2000000, 2000000, 2000000, 2000000 },
+ 	[SMB347] = {  300000,  500000,  700000,  900000, 1200000,
+ 		     1500000, 1800000, 2000000, 2200000, 2500000 },
+-	[SMB358] = {  300000,  500000,  700000, 1000000, 1500000,
+-		     1800000, 2000000, 2000000, 2000000, 2000000 },
++	[SMB358] = {  300000,  500000,  700000, 1000000, 1200000,
++		     1500000, 1800000, 2000000, 2000000, 2000000 },
+ };
+ 
+ /* Charge current compensation in uA */
+@@ -402,7 +421,8 @@
+ 	 * disable or enable the charging. We do it manually because it
+ 	 * depends on how the platform has configured the valid inputs.
+ 	 */
+-	if (smb347_is_ps_online(smb)) {
++	if (smb347_is_ps_online(smb) &&
++	    (!smb->temperature_channel || smb->temperature_allowed)) {
+ 		ret = smb347_charging_enable(smb);
+ 		if (ret < 0)
+ 			dev_err(smb->dev, "failed to enable charging\n");
+@@ -467,7 +487,8 @@
+ 	int ret;
+ 
+ 	if (smb->mains_current_limit) {
+-		ret = current_to_hw(icl_tbl[id], ARRAY_SIZE(icl_tbl[id]),
++		ret = current_to_hw(icl_tbl[id],
++				    id == SMB358 ? 8 : ARRAY_SIZE(icl_tbl[id]),
+ 				    smb->mains_current_limit);
+ 		if (ret < 0)
+ 			return ret;
+@@ -480,13 +501,20 @@
+ 	}
+ 
+ 	if (smb->usb_hc_current_limit) {
+-		ret = current_to_hw(icl_tbl[id], ARRAY_SIZE(icl_tbl[id]),
++		ret = current_to_hw(icl_tbl[id],
++				    id == SMB358 ? 8 : ARRAY_SIZE(icl_tbl[id]),
+ 				    smb->usb_hc_current_limit);
+ 		if (ret < 0)
+ 			return ret;
+ 
+-		ret = regmap_update_bits(smb->regmap, CFG_CURRENT_LIMIT,
+-					 CFG_CURRENT_LIMIT_USB_MASK, ret);
++		/* SMB358 has one input; its limit occupies the upper nibble. */
++		if (id == SMB358)
++			ret = regmap_update_bits(smb->regmap, CFG_CURRENT_LIMIT,
++						CFG_CURRENT_LIMIT_DC_MASK,
++						ret << CFG_CURRENT_LIMIT_DC_SHIFT);
++		else
++			ret = regmap_update_bits(smb->regmap, CFG_CURRENT_LIMIT,
++						CFG_CURRENT_LIMIT_USB_MASK, ret);
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+@@ -534,6 +562,10 @@
+ 	bool enable_therm_monitor = false;
+ 	int ret = 0;
+ 	int val;
++
++	/* An external battery thermistor is monitored by software. */
++	if (smb->temperature_channel)
++		return 0;
+ 
+ 	if (smb->chip_temp_threshold) {
+ 		val = smb->chip_temp_threshold;
+@@ -695,6 +727,133 @@
+ 		enable_irq(client->irq);
+ 
+ 	return ret;
++}
++
++static int smb358_set_input_limit(struct smb347_charger *smb, unsigned int ua)
++{
++	unsigned int old_limit = smb->usb_hc_current_limit;
++	int ret;
++
++	if (ua < 300000 || ua > 2000000)
++		return -EINVAL;
++	if (ua > 500000 && smb->temperature_channel &&
++	    !smb->temperature_allowed)
++		return -EAGAIN;
++
++	mutex_lock(&smb->input_lock);
++	old_limit = smb->usb_hc_current_limit;
++	ret = smb347_set_writable(smb, true, true);
++	if (ret)
++		goto unlock;
++
++	ret = regmap_update_bits(smb->regmap, CMD_B,
++				 CMD_B_USB_HC | CMD_B_USB_500, CMD_B_USB_500);
++	if (ret)
++		goto out;
++	ret = regmap_clear_bits(smb->regmap, CFG_FUNCTIONS,
++				CFG_FUNCTIONS_AICL_ENABLED);
++	if (ret)
++		goto out;
++
++	smb->usb_hc_current_limit = ua;
++	ret = smb347_set_current_limits(smb);
++	if (ret)
++		goto out;
++
++	/* AICL performs the voltage-based ramp in high-current mode. */
++	ret = regmap_set_bits(smb->regmap, CFG_FUNCTIONS,
++			      CFG_FUNCTIONS_AICL_ENABLED);
++	if (ret)
++		goto out;
++
++	/* This USB 2.0 peripheral never requests USB 3.0 current. */
++	ret = regmap_clear_bits(smb->regmap, CFG_SYSOK, BIT(5));
++	if (ret)
++		goto out;
++
++	ret = regmap_update_bits(smb->regmap, CMD_B,
++				 CMD_B_USB_HC | CMD_B_USB_500,
++				 ua != 500000 ? CMD_B_USB_HC : CMD_B_USB_500);
++out:
++	if (ret)
++		smb->usb_hc_current_limit = old_limit;
++	smb347_set_writable(smb, false, true);
++unlock:
++	mutex_unlock(&smb->input_lock);
++	return ret;
++}
++
++static void smb358_source_work(struct work_struct *work)
++{
++	struct smb347_charger *smb = container_of(work, struct smb347_charger,
++						 source_work);
++	unsigned int ua = 500000;
++	int ret;
++
++	if (extcon_get_state(smb->extcon, EXTCON_CHG_USB_DCP) > 0 &&
++	    (!smb->temperature_channel || smb->temperature_allowed))
++		ua = smb->dcp_current_limit;
++
++	ret = smb358_set_input_limit(smb, ua);
++	if (ret) {
++		dev_err(smb->dev, "failed to set source current limit: %d\n", ret);
++		return;
++	}
++
++	smb347_update_ps_status(smb);
++	smb347_start_stop_charging(smb);
++	power_supply_changed(smb->usb);
++}
++
++static int smb358_extcon_notify(struct notifier_block *nb,
++			       unsigned long event, void *ptr)
++{
++	struct smb347_charger *smb = container_of(nb, struct smb347_charger,
++						 extcon_nb);
++
++	schedule_work(&smb->source_work);
++	return NOTIFY_OK;
++}
++
++static void smb358_cancel_source_work(void *data)
++{
++	struct smb347_charger *smb = data;
++
++	smb->stopping = true;
++	cancel_delayed_work_sync(&smb->temperature_work);
++	cancel_work_sync(&smb->source_work);
++}
++
++static void smb358_temperature_work(struct work_struct *work)
++{
++	struct smb347_charger *smb = container_of(to_delayed_work(work),
++					 struct smb347_charger, temperature_work);
++	bool allowed = smb->temperature_allowed;
++	int temp, ret;
++
++	ret = iio_read_channel_processed(smb->temperature_channel, &temp);
++	if (ret < 0) {
++		allowed = false;
++		dev_err_ratelimited(smb->dev, "battery temperature read failed: %d\n", ret);
++	} else if (allowed) {
++		if (temp < smb->hard_cold_temp_limit * 1000 ||
++		    temp > smb->hard_hot_temp_limit * 1000)
++			allowed = false;
++	} else if (temp >= smb->soft_cold_temp_limit * 1000 &&
++		   temp <= smb->soft_hot_temp_limit * 1000) {
++		allowed = true;
++	}
++
++	if (allowed != smb->temperature_allowed) {
++		smb->temperature_allowed = allowed;
++		if (smb->extcon)
++			schedule_work(&smb->source_work);
++		else
++			smb347_start_stop_charging(smb);
++		power_supply_changed(smb->usb);
++	}
++	if (!smb->stopping)
++		schedule_delayed_work(&smb->temperature_work, msecs_to_jiffies(1000));
+ }
+ 
+ static int smb347_hw_init(struct smb347_charger *smb)
+@@ -1100,6 +1259,39 @@
+ 	int ret;
+ 
+ 	switch (prop) {
++	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT: {
++		unsigned int raw;
++
++		if (smb->id != SMB358)
++			return -EINVAL;
++		ret = regmap_read(smb->regmap, CFG_CURRENT_LIMIT, &raw);
++		if (ret)
++			return ret;
++		val->intval = icl_tbl[SMB358][(raw >> 4) & 7];
++		break;
++	}
++
++	case POWER_SUPPLY_PROP_CURRENT_MAX: {
++		unsigned int raw, mode;
++
++		if (smb->id != SMB358)
++			return -EINVAL;
++		ret = regmap_read(smb->regmap, CMD_B, &mode);
++		if (ret)
++			return ret;
++		if (!(mode & CMD_B_USB_HC)) {
++			val->intval = mode & CMD_B_USB_500 ? 500000 : 100000;
++			break;
++		}
++		ret = regmap_read(smb->regmap, STAT_E, &raw);
++		if (ret)
++			return ret;
++		if (!(raw & BIT(4)))
++			return -ENODATA;
++		val->intval = icl_tbl[SMB358][raw & 7];
++		break;
++	}
++
+ 	case POWER_SUPPLY_PROP_STATUS:
+ 		ret = smb347_get_charging_status(smb, psy);
+ 		if (ret < 0)
+@@ -1172,12 +1364,37 @@
+ 	if (!smb->irq_unsupported)
+ 		disable_irq(client->irq);
+ 
++	if (smb->irq_unsupported) {
++		ret = smb347_update_ps_status(smb);
++		if (ret < 0)
++			return ret;
++	}
+ 	ret = smb347_get_property_locked(psy, prop, val);
+ 
+ 	if (!smb->irq_unsupported)
+ 		enable_irq(client->irq);
+ 
+ 	return ret;
++}
++
++static int smb347_property_is_writeable(struct power_supply *psy,
++					 enum power_supply_property prop)
++{
++	struct smb347_charger *smb = power_supply_get_drvdata(psy);
++
++	return smb->id == SMB358 && prop == POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT;
++}
++
++static int smb347_set_property(struct power_supply *psy,
++			      enum power_supply_property prop,
++			      const union power_supply_propval *val)
++{
++	struct smb347_charger *smb = power_supply_get_drvdata(psy);
++
++	if (!smb347_property_is_writeable(psy, prop))
++		return -EINVAL;
++
++	return smb358_set_input_limit(smb, val->intval);
+ }
+ 
+ static enum power_supply_property smb347_properties[] = {
+@@ -1186,6 +1403,16 @@
+ 	POWER_SUPPLY_PROP_ONLINE,
+ 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
+ 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
++};
++
++static enum power_supply_property smb358_usb_properties[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_CHARGE_TYPE,
++	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
++	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
++	POWER_SUPPLY_PROP_CURRENT_MAX,
+ };
+ 
+ static bool smb347_volatile_reg(struct device *dev, unsigned int reg)
+@@ -1211,6 +1438,7 @@
+ 	switch (reg) {
+ 	case CFG_CHARGE_CURRENT:
+ 	case CFG_CURRENT_LIMIT:
++	case CFG_FUNCTIONS:
+ 	case CFG_FLOAT_VOLTAGE:
+ 	case CFG_STAT:
+ 	case CFG_PIN:
+@@ -1515,6 +1743,16 @@
+ 	.num_properties	= ARRAY_SIZE(smb347_properties),
+ };
+ 
++static const struct power_supply_desc smb358_usb_desc = {
++	.name = "smb358-usb",
++	.type = POWER_SUPPLY_TYPE_USB,
++	.get_property = smb347_get_property,
++	.set_property = smb347_set_property,
++	.property_is_writeable = smb347_property_is_writeable,
++	.properties = smb358_usb_properties,
++	.num_properties = ARRAY_SIZE(smb358_usb_properties),
++};
++
+ static const struct regulator_desc smb347_usb_vbus_regulator_desc = {
+ 	.name		= "smb347-usb-vbus",
+ 	.of_match	= of_match_ptr("usb-vbus"),
+@@ -1543,8 +1781,26 @@
+ 	smb->dev = &client->dev;
+ 	smb->id = id->driver_data;
+ 	i2c_set_clientdata(client, smb);
++	mutex_init(&smb->input_lock);
++	INIT_WORK(&smb->source_work, smb358_source_work);
++	INIT_DELAYED_WORK(&smb->temperature_work, smb358_temperature_work);
++	smb->extcon_nb.notifier_call = smb358_extcon_notify;
+ 
+ 	smb347_dt_parse_dev_info(smb);
++	if (smb->id == SMB358 && device_property_present(dev, "io-channels")) {
++		smb->temperature_channel = devm_iio_channel_get(dev, "battery-temperature");
++		if (IS_ERR(smb->temperature_channel))
++			return dev_err_probe(dev, PTR_ERR(smb->temperature_channel),
++					     "failed to get battery temperature\n");
++	}
++	if (smb->id == SMB358 && device_property_present(dev, "extcon")) {
++		smb->extcon = extcon_get_edev_by_phandle(dev, 0);
++		if (IS_ERR(smb->extcon))
++			return dev_err_probe(dev, PTR_ERR(smb->extcon),
++					     "failed to get source detector\n");
++		smb->dcp_current_limit = smb->usb_hc_current_limit;
++		smb->usb_hc_current_limit = 500000;
++	}
+ 	if (!smb->use_mains && !smb->use_usb)
+ 		return -EINVAL;
+ 
+@@ -1562,7 +1818,8 @@
+ 	}
+ 
+ 	if (smb->use_usb) {
+-		smb->usb = devm_power_supply_register(dev, &smb347_usb_desc,
++		smb->usb = devm_power_supply_register(dev, smb->id == SMB358 ?
++						&smb358_usb_desc : &smb347_usb_desc,
+ 						      &mains_usb_cfg);
+ 		if (IS_ERR(smb->usb))
+ 			return PTR_ERR(smb->usb);
+@@ -1579,6 +1836,25 @@
+ 	ret = smb347_irq_init(smb, client);
+ 	if (ret)
+ 		return ret;
++
++	if (smb->id == SMB358 && smb->usb_hc_current_limit) {
++		ret = smb358_set_input_limit(smb, smb->usb_hc_current_limit);
++		if (ret)
++			return ret;
++	}
++
++	if (smb->extcon || smb->temperature_channel) {
++		ret = devm_add_action_or_reset(dev, smb358_cancel_source_work, smb);
++		if (ret)
++			return ret;
++	}
++	if (smb->extcon) {
++		ret = devm_extcon_register_notifier_all(dev, smb->extcon,
++						      &smb->extcon_nb);
++		if (ret)
++			return ret;
++		schedule_work(&smb->source_work);
++	}
+ 
+ 	usb_rdev_cfg.dev = dev;
+ 	usb_rdev_cfg.driver_data = smb;
+@@ -1591,6 +1867,9 @@
+ 		smb347_irq_disable(smb);
+ 		return PTR_ERR(smb->usb_rdev);
+ 	}
++
++	if (smb->temperature_channel)
++		schedule_delayed_work(&smb->temperature_work, 0);
+ 
+ 	return 0;
+ }

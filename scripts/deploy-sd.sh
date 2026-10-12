@@ -13,5 +13,9 @@ a=.work/artifacts/current
 [ "$mode" != sd ] || mkdir -p "$1/extlinux"
 cp "$a/zImage" "$a/qcom-msm8226-samsung-matisse3g.dtb" "$a/initramfs.cpio.gz" \
    "$a/kernel.sha256" "$a/kexec.cmdline" "$1/"
+if [ "$mode" = internal ]; then
+    cp "$a/sd-kernel.img" "$1/zImage"
+    cp "$a/sd-kernel.sha256" "$1/kernel.sha256"
+fi
 [ "$mode" != sd ] || cp "$a/extlinux.conf" "$1/extlinux/"
 sync

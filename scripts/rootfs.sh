@@ -8,7 +8,7 @@ mkdir -p "$work/artifacts/current"
 if [ ! -f "$root/debootstrap/debootstrap" ] && [ ! -f "$root/etc/debian_version" ]; then
     sudo debootstrap --arch=armhf --foreign --variant=minbase --components=main,contrib,non-free,non-free-firmware \
         --keyring=/usr/share/keyrings/debian-archive-keyring.gpg \
-        --include=systemd-sysv,openssh-server,iproute2,iputils-ping,kmod,udev,procps,util-linux,e2fsprogs,ca-certificates,firmware-qcom-soc \
+        --include=systemd-sysv,openssh-server,iproute2,iputils-ping,kmod,udev,procps,util-linux,e2fsprogs,ca-certificates,firmware-qcom-soc,wpasupplicant,iw,sudo,systemd-timesyncd,dbus,util-linux-extra \
         trixie "$root" "$snapshot"
 fi
 # binfmt with the F flag uses the host interpreter; otherwise copy static qemu.
@@ -21,6 +21,40 @@ fi
 sudo tee "$root/etc/apt/sources.list" >/dev/null <<SOURCES
 deb [check-valid-until=no] $snapshot trixie main contrib non-free non-free-firmware
 SOURCES
+sudo chroot "$root" apt-get update
+sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    --no-install-recommends systemd-timesyncd dbus util-linux-extra wpasupplicant iw sudo
+sudo systemctl --root="$root" enable systemd-timesyncd
+case "${ROOTFS_PROFILE:-base}" in
+    base) ;;
+    graphics|mobile)
+        sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            --no-install-recommends libgl1-mesa-dri libegl-mesa0 libgbm1 \
+            mesa-utils libdrm-tests glmark2-es2-drm glmark2-es2-wayland weston
+        ./scripts/mesa-simpledrm.sh
+        sudo cp .work/artifacts/current/t531-mesa-simpledrm_0.20261012-1_armhf.deb "$root/tmp/"
+        sudo chroot "$root" dpkg -i /tmp/t531-mesa-simpledrm_0.20261012-1_armhf.deb
+        if [ "${ROOTFS_PROFILE}" = mobile ]; then
+            sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                plasma-mobile-full sddm xwayland
+            if ! sudo chroot "$root" id t531 >/dev/null 2>&1; then
+                sudo chroot "$root" useradd -m -s /bin/bash -G video,render,input t531
+            fi
+            sudo mkdir -p "$root/etc/sddm.conf.d"
+            sudo tee "$root/etc/sddm.conf.d/20-t531.conf" >/dev/null <<'SDDM'
+[General]
+DisplayServer=wayland
+[Autologin]
+User=t531
+Session=plasma-mobile.desktop
+Relogin=false
+SDDM
+            sudo systemctl --root="$root" enable sddm
+            sudo systemctl --root="$root" set-default graphical.target
+        fi
+        ;;
+    *) echo 'ROOTFS_PROFILE must be base, graphics or mobile'; exit 1;;
+esac
 sudo tee "$root/etc/fstab" >/dev/null <<'FSTAB'
 LABEL=T531_ROOT / ext4 defaults,noatime 0 1
 FSTAB
@@ -56,6 +90,18 @@ sudo systemctl --root="$root" enable systemd-networkd ssh t531-ssh-keys.service 
 if [ -d "$work/artifacts/current/modules/lib/modules" ]; then
     sudo mkdir -p "$root/lib/modules"
     sudo cp -a "$work/artifacts/current/modules/lib/modules/." "$root/lib/modules/"
+fi
+sudo install -m 755 scripts/configure-charging.sh "$root/tmp/t531-configure-charging.sh"
+sudo chroot "$root" env INSTALL_ONLY=1 /tmp/t531-configure-charging.sh
+sudo rm -f "$root/tmp/t531-configure-charging.sh"
+if [ -n "${WIFI_LINK_CONFIG:-}" ]; then
+    sudo install -m 600 "$WIFI_LINK_CONFIG" "$root/etc/systemd/network/10-wlan.link"
+fi
+if [ -n "${WIFI_CONFIG:-}" ]; then
+    sudo install -m 600 "$WIFI_CONFIG" "$root/tmp/t531-wifi.conf"
+    sudo install -m 755 scripts/configure-network.sh "$root/tmp/t531-configure-network.sh"
+    sudo chroot "$root" env INSTALL_ONLY=1 /tmp/t531-configure-network.sh /tmp/t531-wifi.conf
+    sudo rm -f "$root/tmp/t531-wifi.conf" "$root/tmp/t531-configure-network.sh"
 fi
 sudo chroot "$root" dpkg-query -W '-f=${Package}\t${Version}\t${Architecture}\n' > "$work/artifacts/current/debian-packages.tsv"
 sudo chroot "$root" apt-get clean
