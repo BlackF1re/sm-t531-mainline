@@ -40,5 +40,13 @@ systemctl daemon-reload
 systemctl enable sddm
 systemctl set-default graphical.target
 if [ "${INSTALL_ONLY:-0}" != 1 ]; then
-    systemctl restart sddm
+    # SDDM alone can leave the previous user compositor holding the old VT.
+    systemctl stop sddm
+    user_uid=$(id -u t531)
+    if [ -S "/run/user/$user_uid/bus" ]; then
+        runuser -u t531 -- env XDG_RUNTIME_DIR="/run/user/$user_uid" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$user_uid/bus" \
+            systemctl --user stop graphical-session.target plasma-kwin_wayland.service
+    fi
+    systemctl start sddm
 fi
