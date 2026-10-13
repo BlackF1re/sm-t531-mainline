@@ -240,9 +240,11 @@ sysfs/RTC tests did not cover this complete session and display recovery path.
 System sleep is therefore disabled at the owner's request by
 `/etc/systemd/sleep.conf.d/20-t531-bringup.conf` (`AllowSuspend`,
 `AllowHibernation`, `AllowHybridSleep`, `AllowSuspendThenHibernate` all `no`).
-`CanSuspend` returns `no`. This leaves normal display blanking, CPU idle and
-frequency scaling available. Remove that drop-in only for further controlled
-sleep diagnostics; native display recovery remains incomplete.
+`CanSuspend` returns `no`. PowerDevil's AC, Battery and LowBattery profiles
+also disable idle dimming, idle display-off and automatic suspend through
+normal `powerdevilrc` settings. Manual DRM blanking, CPU idle and frequency
+scaling remain available. Remove the drop-in and restore profile settings only
+for controlled sleep diagnostics; native display recovery remains incomplete.
 
 For boot failures, use USB ACM, private card logs and lk2nd logs, not screen
 appearance alone. `sudo picocom --baud 115200 --flow n /dev/ttyACM0` accesses

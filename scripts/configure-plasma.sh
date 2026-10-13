@@ -4,6 +4,7 @@ umask 022
 [ "$(id -u)" = 0 ] || { echo 'Run as root'; exit 1; }
 command -v startplasmamobile >/dev/null
 command -v kwin_wayland >/dev/null
+command -v kwriteconfig6 >/dev/null
 if ! id t531 >/dev/null 2>&1; then
     useradd -m -s /bin/bash t531
 fi
@@ -46,6 +47,16 @@ AllowHibernation=no
 AllowHybridSleep=no
 AllowSuspendThenHibernate=no
 CONFIG
+# Keep the display visible while firmware scanout recovery is incomplete.
+for profile in AC Battery LowBattery; do
+    for key in DimDisplayWhenIdle TurnOffDisplayWhenIdle; do
+        runuser -u t531 -- kwriteconfig6 --file powerdevilrc \
+            --group "$profile" --group Display --key "$key" --type bool false
+    done
+    runuser -u t531 -- kwriteconfig6 --file powerdevilrc \
+        --group "$profile" --group SuspendAndShutdown \
+        --key AutoSuspendAction --type int 0
+done
 systemctl daemon-reload
 systemctl enable sddm
 systemctl set-default graphical.target
