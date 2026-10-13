@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 15:00:00 +0700
+Subject: [PATCH] dt-bindings: display: simple-framebuffer: describe backlight
+
+A firmware-configured display can have an independently controlled
+backlight. Describe it with the standard optional backlight phandle so
+its illumination can follow the framebuffer display state. This does not
+imply control of the firmware-owned panel, display controller or their
+scanout configuration.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/Documentation/devicetree/bindings/display/simple-framebuffer.yaml b/Documentation/devicetree/bindings/display/simple-framebuffer.yaml
+--- a/Documentation/devicetree/bindings/display/simple-framebuffer.yaml
++++ b/Documentation/devicetree/bindings/display/simple-framebuffer.yaml
+@@ -118,6 +118,10 @@
+       - x8r8g8b8
+       - x8b8g8r8
+ 
++  backlight:
++    $ref: /schemas/types.yaml#/definitions/phandle
++    description: Backlight associated with the firmware framebuffer
++
+   display:
+     $ref: /schemas/types.yaml#/definitions/phandle
+     description: Primary display hardware node
+-- 
+2.53.0

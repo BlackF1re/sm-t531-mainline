@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 15:00:00 +0700
+Subject: [PATCH] ARM: dts: qcom: matisse3g: use register backlight control
+
+Use the populated LP8556's supported register-only brightness mode,
+keeping the existing Matisse current/channel configuration unchanged. A
+stopped CAMSS GP0 PWM clock cannot guarantee the output level needed for
+darkness. Register brightness and BL_CTL provide an explicit off state
+instead.
+
+Connect the firmware framebuffer to this backlight so DRM screen-off and
+system suspend can disable illumination through the existing LP855x
+driver. Disable the unused PWM adapter. No GPIO wiring assumptions are
+introduced.
+
+Reference: TI LP8556 SNVS871 Device Control BRT_MODE=10 and BL_CTL;
+captured SM-T531 LP8556 at I2C address 0x2c; existing Matisse common DTS
+configuration.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -89,6 +89,7 @@
+ };
+ 
+ &framebuffer0 {
++	backlight = <&lcd_backlight>;
+ 	clocks = <&mmcc MDSS_AHB_CLK>,
+ 		 <&mmcc MDSS_AXI_CLK>,
+ 		 <&mmcc MDSS_BYTE0_CLK>,
+@@ -449,3 +450,18 @@
+ 		};
+ 	};
+ };
++
++/ {
++	i2c-backlight {
++		lcd_backlight: backlight@2c {
++			/* Register-only control has a defined off state. */
++			dev-ctrl = /bits/ 8 <0x85>;
++			/delete-property/ pwms;
++			/delete-property/ pwm-names;
++		};
++	};
++};
++
++&backlight_pwm {
++	status = "disabled";
++};
+-- 
+2.53.0

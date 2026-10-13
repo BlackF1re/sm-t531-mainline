@@ -169,6 +169,7 @@ Compilation and probe messages do not constitute hardware acceptance.
 | System suspend | QUP noirq and sensor quiescing fix the observed external abort; RTC-woken s2idle returns with USB/Wi-Fi and active Plasma | Three RTC cycles and physical Power wake pass; full RPM/L2 deep sleep and power consumption remain unverified |
 | Storage | Two 32 MiB ext4 write/unmount/cache-drop/readback tests after regulator load-vote fix; rootfs boots | SD remains limited to 50 MHz/no 1.8 V; sustained stress and hotplug |
 | Display / touch | Continuing 1280×800 output; desktop touch interaction observed | Inherited simpledrm framebuffer; native MDP5/DSI scanout unfinished |
+| Backlight | LP8556 register-only control: DRM screen-off and sysfs power-off disable illumination; two 20-second RTC sleeps restore brightness and the same compositor | Native panel/bridge/scanout power-off remains unfinished |
 | GPU / desktop | FD305 GLES 3.0; full historic glmark2 score 74; three post-sleep scenes complete (score 106); accelerated Plasma | Mesa ordering workaround; post-sleep GPU recovery resolved in tested cycles; desktop 60 FPS unverified |
 | Wi-Fi / Bluetooth | Pronto/wcn36xx autoconnect and SSH traffic | Firmware scan-offload fails; software fallback; Bluetooth untested |
 | Charging / battery | SMB358 charging and thermistor read; AICL selected 2 A input ceiling | Actual source current not measured; full-cycle termination/recharge and accurate battery percentage unverified |
@@ -260,6 +261,23 @@ preload is installed. The underlying Mesa ordering problem is unresolved.
 Measured application swap rates were about 22 FPS in settings and 10–12 FPS
 in the drawer before the CPU changes, not physical scanout or input latency.
 Simpledrm copies/converts XRGB8888 to the inherited RGB888 framebuffer.
+
+LP8556 now uses its existing I2C brightness path rather than a stopped CAMSS
+PWM clock whose inactive output level is unspecified. The driver honours
+`bl_power` through `backlight_get_brightness()` and clears LP8556 BL_CTL for
+zero brightness in register-only mode. The optional framebuffer backlight
+phandle connects DRM CRTC disable/enable to standard backlight helpers.
+Physical observation confirmed that register brightness 0/control `0x84`
+extinguishes illumination. Two DRM off/on cycles and sysfs power-off read back
+that state; restoring the display reads brightness 63/control `0x85` without
+losing the requested level. Two further RTC-woken sleeps lasted 20.94 and
+20.72 seconds with successful I2C off/on transactions in the suspend trace,
+the same KWin process, four CPUs online, schedutil and Wi-Fi SSH restored.
+This fixes illumination; it does not claim native display-engine power-off
+or RPM/L2 deep sleep. The internal BOOT readback remains unchanged.
+The post-sleep three-scene Wayland glmark2 workload also completes on FD305:
+35/33/46 FPS, short-workload score 37. It validates resumed hardware rendering,
+not 60 FPS desktop performance or comparability with the direct-DRM suite.
 
 With SDDM stopped, run `sudo glmark2-es2-drm --visual-config alpha=0
 --winsys-options drm-device=/dev/dri/by-path/platform-3200000.framebuffer-card`.

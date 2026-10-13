@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 15:00:00 +0700
+Subject: [PATCH] backlight: lp855x: honour power state and LP8556 register off
+
+Use the standard brightness helper so bl_power, framebuffer blanking and
+system sleep all select zero brightness without losing the requested
+level. The previous implementation ignored bl_power completely.
+
+In LP8556 register-only mode also clear BL_CTL for zero brightness and
+set it when restoring a nonzero level. This explicitly enters the chip's
+off state instead of relying on a stopped PWM clock's output level.
+Preserve other control bits and the behaviour of PWM mode and other chip
+variants.
+
+Reference: TI LP8556 datasheet SNVS871, Device Control register 01h. On
+SM-T531, writes of brightness 0 and control 0x84 read back correctly and
+physically extinguish the backlight; restoring control 0x85 restores it.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+--- a/drivers/video/backlight/lp855x_bl.c
++++ b/drivers/video/backlight/lp855x_bl.c
+@@ -240,17 +240,25 @@
+ static int lp855x_bl_update_status(struct backlight_device *bl)
+ {
+ 	struct lp855x *lp = bl_get_data(bl);
+-	int brightness = bl->props.brightness;
+-
+-	if (bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
+-		brightness = 0;
++	int brightness = backlight_get_brightness(bl);
++	int ret;
+ 
+ 	if (lp->mode == PWM_BASED)
+ 		return lp855x_pwm_ctrl(lp, brightness,
+ 				      bl->props.max_brightness);
+-	else if (lp->mode == REGISTER_BASED)
+-		return lp855x_write_byte(lp, lp->cfg->reg_brightness,
+-					(u8)brightness);
++	else if (lp->mode == REGISTER_BASED) {
++		ret = lp855x_write_byte(lp, lp->cfg->reg_brightness,
++				       (u8)brightness);
++		if (ret)
++			return ret;
++
++		/* LP8556 BL_CTL gates the backlight in register-only mode. */
++		if (lp->chip_id == LP8556 &&
++		    (lp->pdata->device_control & GENMASK(2, 1)) == BIT(2))
++			return lp855x_update_bit(lp, LP855X_DEVICE_CTRL, BIT(0),
++						brightness ? BIT(0) : 0);
++		return 0;
++	}
+ 	return -EINVAL;
+ }
+ 
+-- 
+2.53.0
