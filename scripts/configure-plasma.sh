@@ -36,6 +36,16 @@ CONFIG
 chmod 644 /etc/sddm.conf.d/20-t531.conf \
     /etc/environment.d/60-t531-graphics.conf \
     /etc/systemd/system/sddm.service.d/20-t531-graphics.conf
+# Firmware-owned scanout is not reliably restored after system sleep.
+# Keep normal screen blanking, CPU frequency scaling and CPU idle available.
+install -d /etc/systemd/sleep.conf.d
+cat > /etc/systemd/sleep.conf.d/20-t531-bringup.conf <<'CONFIG'
+[Sleep]
+AllowSuspend=no
+AllowHibernation=no
+AllowHybridSleep=no
+AllowSuspendThenHibernate=no
+CONFIG
 systemctl daemon-reload
 systemctl enable sddm
 systemctl set-default graphical.target

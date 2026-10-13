@@ -166,10 +166,10 @@ Compilation and probe messages do not constitute hardware acceptance.
 | CPU frequency / voltage | All seven stock frequencies under four-worker checksum load; SAW acknowledgments match 1.14/1.15/1.28 V targets; schedutil reaches 1190.4 MHz under load | Closed-loop CPR, fuse-based voltage reduction and sustained thermal stress |
 | CPU idle | Existing upstream standalone power-collapse sequence; thousands of successful entries and residency on all four cores | L2 remains powered; full RPM/L2 suspend absent |
 | CPU hotplug | CPU1, CPU2 and CPU3 each pass offline→online; verified collapse re-runs the existing ACC release path | Repeated long-duration stress pending |
-| System suspend | QUP noirq and sensor quiescing fix the observed external abort; RTC-woken s2idle returns with USB/Wi-Fi and active Plasma | Three RTC cycles and physical Power wake pass; full RPM/L2 deep sleep and power consumption remain unverified |
+| System suspend | CPU/USB/Wi-Fi return in tested s2idle cycles; longer system-managed sleep exposes failed physical display recovery | Disabled through standard systemd sleep policy; native display recovery, RPM/L2 sleep and power consumption unfinished |
 | Storage | Two 32 MiB ext4 write/unmount/cache-drop/readback tests after regulator load-vote fix; rootfs boots | SD remains limited to 50 MHz/no 1.8 V; sustained stress and hotplug |
 | Display / touch | Continuing 1280×800 output; desktop touch interaction observed | Inherited simpledrm framebuffer; native MDP5/DSI scanout unfinished |
-| Backlight | LP8556 register-only control: DRM screen-off and sysfs power-off disable illumination; two 20-second RTC sleeps restore brightness and the same compositor | Native panel/bridge/scanout power-off remains unfinished |
+| Backlight | LP8556 register control follows DRM blanking and sysfs power-off; actual_brightness reads the chip and reports zero while BL_CTL is off | Illumination control does not prove recovered panel/scanout after sleep |
 | GPU / desktop | FD305 GLES 3.0; full historic glmark2 score 74; three post-sleep scenes complete (score 106); accelerated Plasma | Mesa ordering workaround; post-sleep GPU recovery resolved in tested cycles; desktop 60 FPS unverified |
 | Wi-Fi / Bluetooth | Pronto/wcn36xx autoconnect and SSH traffic | Firmware scan-offload fails; software fallback; Bluetooth untested |
 | Charging / battery | SMB358 charging and thermistor read; AICL selected 2 A input ceiling | Actual source current not measured; full-cycle termination/recharge and accurate battery percentage unverified |
@@ -231,6 +231,19 @@ retention after power removal or every possible hardware reset.
 A successful suspend counter alone cannot validate recovered graphics, input,
 networking, charging or actual deep-sleep power.
 
+Later system-managed sleep returned a lit black panel even though KWin could
+render a desktop screenshot and populate the physical RGB framebuffer. A
+mobile lockscreen was also active: `Autolock=false` did not disable the default
+`LockOnResume=true`. Administrative `loginctl unlock-session` restored desktop
+capture, but the user still observed missing physical output. The earlier raw
+sysfs/RTC tests did not cover this complete session and display recovery path.
+System sleep is therefore disabled at the owner's request by
+`/etc/systemd/sleep.conf.d/20-t531-bringup.conf` (`AllowSuspend`,
+`AllowHibernation`, `AllowHybridSleep`, `AllowSuspendThenHibernate` all `no`).
+`CanSuspend` returns `no`. This leaves normal display blanking, CPU idle and
+frequency scaling available. Remove that drop-in only for further controlled
+sleep diagnostics; native display recovery remains incomplete.
+
 For boot failures, use USB ACM, private card logs and lk2nd logs, not screen
 appearance alone. `sudo picocom --baud 115200 --flow n /dev/ttyACM0` accesses
 the root diagnostic shell; inspect all ACM ports after USB re-enumeration.
@@ -275,6 +288,12 @@ losing the requested level. Two further RTC-woken sleeps lasted 20.94 and
 the same KWin process, four CPUs online, schedutil and Wi-Fi SSH restored.
 This fixes illumination; it does not claim native display-engine power-off
 or RPM/L2 deep sleep. The internal BOOT readback remains unchanged.
+The LP855x get_brightness callback now reads the register brightness and,
+for LP8556 register-only mode, its BL_CTL bit. This avoids reporting requested
+brightness 63 as actual illumination while the chip is off; I2C errors remain
+visible. No polling or userspace backlight override is installed.
+After rebuilding and booting, levels 32/96/63 read back correctly; two DRM
+off/on cycles report actual brightness 0/63 with requested brightness intact.
 The post-sleep three-scene Wayland glmark2 workload also completes on FD305:
 35/33/46 FPS, short-workload score 37. It validates resumed hardware rendering,
 not 60 FPS desktop performance or comparability with the direct-DRM suite.

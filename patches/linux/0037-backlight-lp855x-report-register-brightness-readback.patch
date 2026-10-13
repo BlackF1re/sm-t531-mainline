@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 15:48:42 +0700
+Subject: [PATCH] backlight: lp855x: report register brightness readback
+
+Without get_brightness the backlight core reports the requested level as
+actual_brightness, even while LP8556 BL_CTL is off. This obscures display
+blanking diagnostics: the requested level is retained for unblanking and
+is not necessarily the level applied to the LEDs.
+
+Read the existing brightness register in register-based mode. LP8556
+register-only mode additionally reads BL_CTL and reports zero while it is
+disabled. Propagate I2C errors rather than reporting a cached value. PWM
+mode retains the effective software level because its clock-backed PWM
+provider cannot read the hardware duty cycle.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+--- a/drivers/video/backlight/lp855x_bl.c
++++ b/drivers/video/backlight/lp855x_bl.c
+@@ -262,9 +262,30 @@
+ 	return -EINVAL;
+ }
+ 
++static int lp855x_bl_get_brightness(struct backlight_device *bl)
++{
++	struct lp855x *lp = bl_get_data(bl);
++	int ret;
++
++	if (lp->mode == PWM_BASED)
++		return backlight_get_brightness(bl);
++
++	if (lp->chip_id == LP8556 &&
++	    (lp->pdata->device_control & GENMASK(2, 1)) == BIT(2)) {
++		ret = i2c_smbus_read_byte_data(lp->client, LP855X_DEVICE_CTRL);
++		if (ret < 0)
++			return ret;
++		if (!(ret & BIT(0)))
++			return 0;
++	}
++
++	return i2c_smbus_read_byte_data(lp->client, lp->cfg->reg_brightness);
++}
++
+ static const struct backlight_ops lp855x_bl_ops = {
+ 	.options = BL_CORE_SUSPENDRESUME,
+ 	.update_status = lp855x_bl_update_status,
++	.get_brightness = lp855x_bl_get_brightness,
+ };
+ 
+ static int lp855x_backlight_register(struct lp855x *lp)
+-- 
+2.53.0
