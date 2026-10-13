@@ -37,17 +37,18 @@ CONFIG
 chmod 644 /etc/sddm.conf.d/20-t531.conf \
     /etc/environment.d/60-t531-graphics.conf \
     /etc/systemd/system/sddm.service.d/20-t531-graphics.conf
-# Firmware-owned scanout is not reliably restored after system sleep.
-# Keep normal screen blanking, CPU frequency scaling and CPU idle available.
+# Use systemd for sleep and PowerDevil for the graphical power-key policy.
 install -d /etc/systemd/sleep.conf.d
 cat > /etc/systemd/sleep.conf.d/20-t531-bringup.conf <<'CONFIG'
 [Sleep]
-AllowSuspend=no
+AllowSuspend=yes
 AllowHibernation=no
 AllowHybridSleep=no
 AllowSuspendThenHibernate=no
+SuspendState=mem
+MemorySleepMode=s2idle
 CONFIG
-# Keep the display visible while firmware scanout recovery is incomplete.
+# Keep automatic sleep off during bring-up; explicit sleep remains available.
 for profile in AC Battery LowBattery; do
     for key in DimDisplayWhenIdle TurnOffDisplayWhenIdle; do
         runuser -u t531 -- kwriteconfig6 --file powerdevilrc \
@@ -56,7 +57,56 @@ for profile in AC Battery LowBattery; do
     runuser -u t531 -- kwriteconfig6 --file powerdevilrc \
         --group "$profile" --group SuspendAndShutdown \
         --key AutoSuspendAction --type int 0
+    runuser -u t531 -- kwriteconfig6 --file powerdevilrc \
+        --group "$profile" --group SuspendAndShutdown \
+        --key PowerButtonAction --type int 1
+    runuser -u t531 -- kwriteconfig6 --file powerdevilrc \
+        --group "$profile" --group SuspendAndShutdown \
+        --key SleepMode --type int 1
 done
+# Tablet mode assigns Power to display-off in PowerDevil by default.
+# Change the standard global shortcut to its existing Suspend action.
+runuser -u t531 -- kwriteconfig6 --file kglobalshortcutsrc \
+    --group org_kde_powerdevil --key 'Turn Off Screen' \
+    'none,Power Off,Turn Off Screen'
+runuser -u t531 -- kwriteconfig6 --file kglobalshortcutsrc \
+    --group org_kde_powerdevil --key Sleep 'Power Off,Sleep,Suspend'
+user_uid=$(id -u t531)
+if [ -f /usr/lib/t531-powerdevil/powerdevil/action/powerdevil_suspendsessionaction.so ]; then
+    dropin=/home/t531/.config/systemd/user/plasma-powerdevil.service.d
+    install -d -o t531 -g t531 "$dropin"
+    cat > "$dropin/20-t531-suspend.conf" <<'CONFIG'
+[Service]
+Environment=QT_PLUGIN_PATH=/usr/lib/t531-powerdevil
+CONFIG
+    chown t531:t531 "$dropin/20-t531-suspend.conf"
+    chmod 644 "$dropin/20-t531-suspend.conf"
+    if [ -S "/run/user/$user_uid/bus" ]; then
+        runuser -u t531 -- env XDG_RUNTIME_DIR="/run/user/$user_uid" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$user_uid/bus" \
+            systemctl --user daemon-reload
+    fi
+fi
+if [ -S "/run/user/$user_uid/bus" ]; then
+    for action in 'Turn Off Screen' Sleep; do
+        if [ "$action" = Sleep ]; then
+            # Qt::Key_PowerOff; setForeignShortcut saves the live assignment.
+            set -- 1 16777399
+        else
+            set -- 0
+        fi
+        runuser -u t531 -- env XDG_RUNTIME_DIR="/run/user/$user_uid" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$user_uid/bus" \
+            busctl --user call org.kde.kglobalaccel /kglobalaccel \
+            org.kde.KGlobalAccel setForeignShortcut asai 4 \
+            org_kde_powerdevil "$action" 'Power Management' "$action" "$@"
+    done
+fi
+install -d /etc/systemd/logind.conf.d
+cat > /etc/systemd/logind.conf.d/20-t531-power-key.conf <<'CONFIG'
+[Login]
+HandlePowerKey=suspend
+CONFIG
 systemctl daemon-reload
 systemctl enable sddm
 systemctl set-default graphical.target

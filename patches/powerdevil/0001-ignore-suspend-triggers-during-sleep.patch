@@ -1,0 +1,62 @@
+From 1935d5e405f126c1a517af7bcf623138d3cb7261 Mon Sep 17 00:00:00 2001
+From: Myrrh Periwinkle <myrrhperiwinkle@qtmlabs.xyz>
+Date: Fri, 6 Jun 2025 13:06:08 +0700
+Subject: [PATCH] Don't suspend while already suspending
+
+Various events can be generated during suspend-then-hibernate when the
+system periodically wakes up to check the current power status, some of
+which can trigger a system suspend. This may cause powerdevil to
+erronously trigger a re-suspend after a full system wakeup.
+
+This is especially likely if user process freezing during sleep is
+enabled, since powerdevil will only process these events after a full
+system wakeup.
+
+Fix this by ignoring suspension triggers if the system is not currently
+fully awake.
+---
+ daemon/actions/bundled/suspendsession.cpp | 10 ++++++++++
+ daemon/actions/bundled/suspendsession.h   |  1 +
+ 2 files changed, 11 insertions(+)
+
+diff --git a/daemon/actions/bundled/suspendsession.cpp b/daemon/actions/bundled/suspendsession.cpp
+index 6f0e91016..a1bb177ed 100644
+--- a/daemon/actions/bundled/suspendsession.cpp
++++ b/daemon/actions/bundled/suspendsession.cpp
+@@ -35,7 +35,12 @@ SuspendSession::SuspendSession(QObject *parent)
+ 
+     setRequiredPolicies(PowerDevil::PolicyAgent::InterruptSession);
+ 
++    connect(core()->suspendController(), &SuspendController::aboutToSuspend, this, [this]() {
++        m_isAboutToSuspend = true;
++    });
+     connect(core()->suspendController(), &SuspendController::resumeFromSuspend, this, [this]() {
++        m_isAboutToSuspend = false;
++
+         KIdleTime::instance()->simulateUserActivity();
+ 
+         PowerDevil::PolicyAgent::instance()->setupSystemdInhibition();
+@@ -81,6 +86,11 @@ void SuspendSession::triggerImpl(const QVariantMap &args)
+             qCDebug(POWERDEVIL) << "Not suspending because a shutdown is in progress";
+             return;
+         }
++        // don't suspend if suspending
++        if (m_isAboutToSuspend) {
++            qCDebug(POWERDEVIL) << "Not suspending because a suspend is in progress";
++            return;
++        }
+     }
+ 
+     // Switch for real action
+diff --git a/daemon/actions/bundled/suspendsession.h b/daemon/actions/bundled/suspendsession.h
+index d1777d483..2a7277dae 100644
+--- a/daemon/actions/bundled/suspendsession.h
++++ b/daemon/actions/bundled/suspendsession.h
+@@ -47,6 +47,7 @@ private Q_SLOTS:
+ 
+ private:
+     std::chrono::milliseconds m_idleTime{0};
++    bool m_isAboutToSuspend = false;
+     PowerDevil::PowerButtonAction m_autoSuspendAction;
+     PowerDevil::SleepMode m_sleepMode = PowerDevil::SleepMode::SuspendToRam;
+     QScopedPointer<PowerDevil::KWinKScreenHelperEffect> m_fadeEffect;

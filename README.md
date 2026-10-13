@@ -164,9 +164,9 @@ Compilation and probe messages do not constitute hardware acceptance.
 |---|---|---|
 | Boot / Debian / SSH | Automatic UP-to-SMP kexec; native Debian, USB ACM command exchange and Wi-Fi SSH | Cold-boot and long-duration reliability |
 | CPU frequency / voltage | All seven stock frequencies under four-worker checksum load; SAW acknowledgments match 1.14/1.15/1.28 V targets; schedutil reaches 1190.4 MHz under load | Closed-loop CPR, fuse-based voltage reduction and sustained thermal stress |
-| CPU idle | Existing upstream standalone power-collapse sequence; thousands of successful entries and residency on all four cores | L2 remains powered; full RPM/L2 suspend absent |
+| CPU idle | Upstream WFI and standalone power collapse; thousands of successful entries on all four cores | Synchronized cluster CPUidle and GDHS remain unimplemented |
 | CPU hotplug | CPU1, CPU2 and CPU3 each pass offline→online; verified collapse re-runs the existing ACC release path | Repeated long-duration stress pending |
-| System suspend | CPU/USB/Wi-Fi return in tested s2idle cycles; longer system-managed sleep exposes failed physical display recovery | Disabled through standard systemd sleep policy; native display recovery, RPM/L2 sleep and power consumption unfinished |
+| System suspend | System-managed s2idle, standby and standalone CPU/L2 collapse return CPU/USB/Wi-Fi; physical desktop/touch recovery confirmed; Power wake completes one cycle after the PowerDevil backport | RPM-assisted collapse failed validation and is excluded; synchronized cluster idle/GDHS, native display power-off and suspend power consumption unfinished |
 | Storage | Two 32 MiB ext4 write/unmount/cache-drop/readback tests after regulator load-vote fix; rootfs boots | SD remains limited to 50 MHz/no 1.8 V; sustained stress and hotplug |
 | Display / touch | Continuing 1280×800 output; desktop touch interaction observed | Inherited simpledrm framebuffer; native MDP5/DSI scanout unfinished |
 | Backlight | LP8556 register control follows DRM blanking and sysfs power-off; actual_brightness reads the chip and reports zero while BL_CTL is off | Illumination control does not prove recovered panel/scanout after sleep |
@@ -237,14 +237,86 @@ mobile lockscreen was also active: `Autolock=false` did not disable the default
 `LockOnResume=true`. Administrative `loginctl unlock-session` restored desktop
 capture, but the user still observed missing physical output. The earlier raw
 sysfs/RTC tests did not cover this complete session and display recovery path.
-System sleep is therefore disabled at the owner's request by
-`/etc/systemd/sleep.conf.d/20-t531-bringup.conf` (`AllowSuspend`,
-`AllowHibernation`, `AllowHybridSleep`, `AllowSuspendThenHibernate` all `no`).
-`CanSuspend` returns `no`. PowerDevil's AC, Battery and LowBattery profiles
-also disable idle dimming, idle display-off and automatic suspend through
-normal `powerdevilrc` settings. Manual DRM blanking, CPU idle and frequency
-scaling remain available. Remove the drop-in and restore profile settings only
-for controlled sleep diagnostics; native display recovery remains incomplete.
+Matched 45-second system-managed RTC tests isolated loss of the firmware-owned
+display domain: retaining MDSS through a temporary genpd notifier returned a
+visible, responsive desktop, while the control without retention returned the
+lit black panel with the same unlocked session. Simpledrm now vetoes removal
+of its attached power domains until native-driver takeover; its normal DRM
+and backlight suspend/resume callbacks still blank and restore the display.
+This preserves hardware state; it does not reconstruct it after power loss or
+achieve native display-engine power-off. Independent framebuffer CX voting and
+active-only CPU PLL voting remain research changes, excluded from this tested
+configuration together with the unfinished RPM integration.
+
+System sleep is enabled again through `/etc/systemd/sleep.conf.d/20-t531-bringup.conf`.
+Hibernation, hybrid sleep and suspend-then-hibernate remain disabled because
+they have no validated ARM resume/storage path. PowerDevil's AC, Battery and
+LowBattery profiles use Suspend for Power. Tablet mode separately assigns
+Power to its "Turn Off Screen" global shortcut by default; the standard
+KGlobalAccel assignment now moves Power to the existing "Sleep" action.
+`HandlePowerKey=suspend` provides logind's fallback outside the desktop.
+The wake key initially caused another suspend after CPU resume. Backporting
+[PowerDevil's upstream transition guard](https://github.com/KDE/powerdevil/commit/1935d5e405f126c1a517af7bcf623138d3cb7261)
+fixed the queued wake-key request. The physical two-press test now completed
+one 14-second s2idle cycle (success count 6→7), returned visible output and
+stayed awake; the journal rejected the duplicate trigger while suspension
+was in progress. Original upstream authorship is preserved.
+The `t531-powerdevil-suspend` package supplies only the patched action through
+PowerDevil's Qt plugin search path; Debian-owned files remain intact. Build it
+with `make rootfs` (once for the ARM build environment), then `make powerdevil`.
+Build dependencies are temporary and removed afterwards. Install
+`.work/artifacts/current/t531-powerdevil-suspend_0.20261013-1_armhf.deb` with
+`sudo dpkg -i`, rerun `sudo env INSTALL_ONLY=1 scripts/configure-plasma.sh`, and
+restart `plasma-powerdevil.service` in the graphical user's systemd instance.
+The mobile rootfs profile builds and installs this package automatically.
+The package targets PowerDevil 6.3.x; reevaluate the backport before upgrading
+Plasma. Remove its user service drop-in and package to use Debian's action.
+Automatic display-off/dimming and automatic system sleep remain disabled during
+bring-up; explicit sleep, manual blanking, CPU idle and frequency scaling work
+independently. No key-watching daemon or userspace register override is used.
+
+The kernel exports `freeze standby mem` in `/sys/power/state` and
+`s2idle shallow deep` in `/sys/power/mem_sleep`. `freeze` uses the existing
+per-core WFI/standalone-collapse idle states; `standby` (`shallow`) offlines
+CPU1–3 and selects the captured L2 retention sequence; `deep` saves CPU/cluster
+state and requests CPU0/L2 collapse through SCM. The captured no-RPM sequence
+passed a 20-second RTC round trip with successful voltage restoration and all
+four CPUs online afterwards; desktop/touch recovery was confirmed physically.
+The final deployed two-patch sleep configuration also completed consecutive
+system-managed RTC tests of s2idle, shallow and deep (15-second alarms) in one
+boot: successful suspend count rose from 1 to 4, CPU1–3 returned online,
+`schedutil`, USB ACM, Wi-Fi and hardware brightness 63 recovered. A repeated
+four-worker checksum test passed every stock CPU frequency after deployment.
+A subsequent windowed Wayland glmark2 run used FD305 (Mesa 25.0.7), completed
+build/texture/shading at 40/33/45 FPS (score 38), and logged no GPU fault/hang.
+The default systemd mode is `s2idle`; `shallow` and `deep` are explicit testable
+alternatives. Deep currently means the verified standalone CPU/L2 sequence,
+not RPM-assisted whole-SoC collapse. An MPM/RPM prototype reset during noirq
+suspend; retrying its notification after CPU offlining reached SCM collapse and
+logged a successful SCM return/voltage restoration, but failed to restore
+USB/Wi-Fi by the RTC deadline. It is excluded from the applied patch set.
+Its private pstore and test records are retained for further investigation.
+The captured MPM layout is 64 pins at RPM SRAM offset 0x1d0, with APCS mailbox
+bit 1 and PMIC summary pin 62; stock GIC IDs include 32 private interrupts.
+Synchronized cluster idle/GDHS and lowest-power RPM/XO/DDR states remain
+unimplemented or unverified. Display-domain retention also prevents claiming
+full stock sleep power savings. Hibernation is not a CPU idle state and remains
+disabled. Exported modes and a recovered desktop do not prove those deeper
+hardware states or battery endurance.
+
+Use `sudo systemctl suspend` for normal session-managed sleep. To select a
+mode, write a temporary drop-in `/run/systemd/sleep.conf.d/90-mode.conf`:
+
+```ini
+[Sleep]
+MemorySleepMode=s2idle
+```
+
+Replace `s2idle` with a validated `shallow` or `deep` mode as appropriate;
+remove the temporary drop-in to restore the project default. Root can also
+select `/sys/power/mem_sleep` and write `mem` to `/sys/power/state`, or write
+`freeze` / `standby` directly. Those raw interfaces bypass session-managed
+locking and network preparation. Use a backup PMIC RTC alarm for experiments.
 
 For boot failures, use USB ACM, private card logs and lk2nd logs, not screen
 appearance alone. `sudo picocom --baud 115200 --flow n /dev/ttyACM0` accesses

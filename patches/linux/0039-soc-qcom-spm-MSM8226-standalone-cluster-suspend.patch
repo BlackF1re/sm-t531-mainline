@@ -1,0 +1,252 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 17:30:00 +0700
+Subject: [PATCH] soc: qcom: spm: add MSM8226 standalone cluster sleep
+
+MSM8226 has an L2 SAW distinct from its per-CPU sequencers. Describe the
+captured board's retention and no-RPM L2/APC collapse byte sequences in
+its existing SPM driver. Standby uses CPU0 WFI with L2 retention; memory
+suspend saves CPU/cluster notifier state, flushes caches and asks the
+secure monitor to collapse CPU0 and L2. System suspend has already
+collapsed the secondary CPUs through the existing hotplug path.
+
+Reset the L2 sequence to disabled on return and restore the cached APC
+voltage before secondary CPUs and CPUFreq resume. Register platform
+suspend only on MSM8226 with bound CPU0/L2 SPM and an opted-in L2
+regulator.
+CPU-only idle states remain unchanged. This path does not implement RPM
+notification, MPM wake routing, DDR self-refresh or synchronized cluster
+CPUidle; these require separate integration.
+
+Reference: captured SM-T531 qcom,saw2-spm-cmd-ret/pc-no-rpm; LineageOS
+android_kernel_samsung_msm8226 commit
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, msm8226-v2-pm.dtsi,
+lpm_levels.c and msm-pm.c.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/cpuidle/cpuidle-qcom-spm.c b/drivers/cpuidle/cpuidle-qcom-spm.c
+index 7ab6f68b9..720c7bc81 100644
+--- a/drivers/cpuidle/cpuidle-qcom-spm.c
++++ b/drivers/cpuidle/cpuidle-qcom-spm.c
+@@ -16,11 +16,13 @@
+ #include <linux/platform_device.h>
+ #include <linux/cpuidle.h>
+ #include <linux/cpu_pm.h>
++#include <linux/suspend.h>
+ #include <linux/firmware/qcom/qcom_scm.h>
+ #include <soc/qcom/spm.h>
+ 
+ #include <asm/proc-fns.h>
+ #include <asm/suspend.h>
++#include <asm/cacheflush.h>
+ 
+ #include "dt_idle_states.h"
+ 
+@@ -127,6 +129,109 @@ static int spm_cpuidle_register(struct device *cpuidle_dev, int cpu)
+ 	return cpuidle_register(&data->cpuidle_driver, NULL);
+ }
+ 
++#ifdef CONFIG_SUSPEND
++static struct spm_driver_data *suspend_cpu_spm, *suspend_l2_spm;
++
++static int qcom_l2_collapse(unsigned long unused)
++{
++	flush_cache_all();
++	qcom_scm_cpu_power_down(QCOM_SCM_CPU_PWR_DOWN_L2_OFF);
++	return -EAGAIN;
++}
++
++static int qcom_spm_suspend_enter(suspend_state_t state)
++{
++	int ret, voltage_ret;
++
++	if (num_online_cpus() != 1 || smp_processor_id() != 0)
++		return -EBUSY;
++
++	if (state == PM_SUSPEND_STANDBY) {
++		spm_set_low_power_mode(suspend_l2_spm, PM_SLEEP_MODE_RET);
++		cpu_do_idle();
++		spm_set_low_power_mode(suspend_l2_spm, PM_SLEEP_MODE_STBY);
++		return 0;
++	}
++
++	ret = cpu_pm_enter();
++	if (ret)
++		return ret;
++	ret = cpu_cluster_pm_enter();
++	if (ret)
++		goto cpu_exit;
++
++	spm_set_low_power_mode(suspend_l2_spm, PM_SLEEP_MODE_PC);
++	spm_set_low_power_mode(suspend_cpu_spm, PM_SLEEP_MODE_SPC);
++	pr_info("MSM8226: entering standalone L2 collapse\n");
++	ret = cpu_suspend(0, qcom_l2_collapse);
++	spm_set_low_power_mode(suspend_l2_spm, PM_SLEEP_MODE_STBY);
++	spm_set_low_power_mode(suspend_cpu_spm, PM_SLEEP_MODE_STBY);
++	voltage_ret = spm_restore_cpu_voltage(suspend_l2_spm);
++	pr_info("MSM8226: L2 collapse returned %d, voltage restore %d\n",
++		ret, voltage_ret);
++	if (!ret)
++		ret = voltage_ret;
++	cpu_cluster_pm_exit();
++cpu_exit:
++	cpu_pm_exit();
++	return ret;
++}
++
++static int qcom_spm_suspend_valid(suspend_state_t state)
++{
++	return state == PM_SUSPEND_STANDBY || state == PM_SUSPEND_MEM;
++}
++
++static const struct platform_suspend_ops qcom_spm_suspend_ops = {
++	.valid = qcom_spm_suspend_valid,
++	.enter = qcom_spm_suspend_enter,
++};
++
++static struct spm_driver_data *spm_bound_data(struct device_node *node)
++{
++	struct platform_device *pdev = of_find_device_by_node(node);
++	struct spm_driver_data *data;
++
++	if (!pdev)
++		return ERR_PTR(-EPROBE_DEFER);
++	data = device_is_bound(&pdev->dev) ? dev_get_drvdata(&pdev->dev) :
++		ERR_PTR(-EPROBE_DEFER);
++	put_device(&pdev->dev);
++	return data;
++}
++
++static int qcom_spm_suspend_prepare(void)
++{
++	struct device_node *l2_node, *reg_node, *cpu_node, *cpu_spm_node;
++
++	if (!of_machine_is_compatible("qcom,msm8226"))
++		return 0;
++
++	l2_node = of_find_compatible_node(NULL, NULL, "qcom,msm8226-saw2-v2.1-l2");
++	if (!l2_node)
++		return 0;
++	reg_node = of_get_child_by_name(l2_node, "regulator");
++	if (!reg_node) {
++		of_node_put(l2_node);
++		return 0;
++	}
++	of_node_put(reg_node);
++	suspend_l2_spm = spm_bound_data(l2_node);
++	of_node_put(l2_node);
++	if (IS_ERR(suspend_l2_spm))
++		return PTR_ERR(suspend_l2_spm);
++
++	cpu_node = of_cpu_device_node_get(0);
++	cpu_spm_node = of_parse_phandle(cpu_node, "qcom,saw", 0);
++	of_node_put(cpu_node);
++	suspend_cpu_spm = spm_bound_data(cpu_spm_node);
++	of_node_put(cpu_spm_node);
++	if (IS_ERR(suspend_cpu_spm))
++		return PTR_ERR(suspend_cpu_spm);
++	return 0;
++}
++#endif
++
+ static int spm_cpuidle_drv_probe(struct platform_device *pdev)
+ {
+ 	int cpu, ret;
+@@ -134,6 +239,12 @@ static int spm_cpuidle_drv_probe(struct platform_device *pdev)
+ 	if (!qcom_scm_is_available())
+ 		return -EPROBE_DEFER;
+ 
++#ifdef CONFIG_SUSPEND
++	ret = qcom_spm_suspend_prepare();
++	if (ret)
++		return ret;
++#endif
++
+ 	ret = qcom_scm_set_warm_boot_addr(cpu_resume_arm);
+ 	if (ret)
+ 		return dev_err_probe(&pdev->dev, ret, "set warm boot addr failed");
+@@ -146,6 +257,10 @@ static int spm_cpuidle_drv_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++#ifdef CONFIG_SUSPEND
++	if (suspend_l2_spm && suspend_cpu_spm)
++		suspend_set_ops(&qcom_spm_suspend_ops);
++#endif
+ 	return 0;
+ }
+ 
+diff --git a/drivers/soc/qcom/spm.c b/drivers/soc/qcom/spm.c
+index b53c34170..1dda952b3 100644
+--- a/drivers/soc/qcom/spm.c
++++ b/drivers/soc/qcom/spm.c
+@@ -227,9 +227,11 @@ static const u16 spm_reg_offset_8226_l2[SPM_REG_NR] = {
+ 	[SPM_REG_PMIC_STS]	= 0x14,
+ 	[SPM_REG_RST]		= 0x18,
+ 	[SPM_REG_VCTL]		= 0x1c,
++	[SPM_REG_SPM_CTL]	= 0x30,
+ 	[SPM_REG_DLY]		= 0x34,
+ 	[SPM_REG_PMIC_DATA_0]	= 0x40,
+ 	[SPM_REG_PMIC_DATA_1]	= 0x44,
++	[SPM_REG_SEQ_ENTRY]	= 0x80,
+ };
+ 
+ static void smp_set_vdd_8226(void *data);
+@@ -243,6 +245,14 @@ static const struct spm_reg_data spm_reg_8226_l2 = {
+ 	.spm_cfg = 0x14,
+ 	.spm_dly = 0x3c102800,
+ 	.pmic_data = { 0x02030080, 0x00030000 },
++	/* Retention, then standalone APC/L2 collapse without RPM handshake. */
++	.seq = { 0x00, 0x03, 0x00, 0x0f,
++		 0x00, 0x32, 0xb0, 0x10, 0xe0, 0xd0, 0x6b, 0xc0,
++		 0x42, 0xf0, 0x11, 0x03, 0x01, 0xb0, 0x50, 0x4e,
++		 0x02, 0x02, 0xc0, 0xd0, 0x12, 0xe0, 0x6b, 0x02,
++		 0x32, 0x50, 0xf0, 0x0f },
++	.start_index[PM_SLEEP_MODE_RET] = 0,
++	.start_index[PM_SLEEP_MODE_PC] = 4,
+ 	.set_vdd = smp_set_vdd_8226,
+ 	.range = &spm_8226_regulator_range,
+ 	.init_uV = 1280000,
+@@ -327,6 +337,11 @@ void spm_set_low_power_mode(struct spm_driver_data *drv,
+ 	start_index = drv->reg_data->start_index[mode];
+ 
+ 	ctl_val = spm_register_read(drv, SPM_REG_SPM_CTL);
++	/* An active MSM8226 cluster must not run its L2 sequence on WFI. */
++	if (drv->reg_data == &spm_reg_8226_l2 && mode == PM_SLEEP_MODE_STBY) {
++		spm_register_write_sync(drv, SPM_REG_SPM_CTL, ctl_val & ~SPM_CTL_EN);
++		return;
++	}
+ 	ctl_val &= ~(SPM_CTL_INDEX << SPM_CTL_INDEX_SHIFT);
+ 	ctl_val |= start_index << SPM_CTL_INDEX_SHIFT;
+ 	ctl_val |= SPM_CTL_EN;
+@@ -460,6 +475,17 @@ static void smp_set_vdd_8226(void *data)
+ 		dev_err_ratelimited(drv->dev, "CPU voltage acknowledgment timed out\n");
+ }
+ 
++int spm_restore_cpu_voltage(struct spm_driver_data *drv)
++{
++	/* Restore APC before secondary CPUs and CPUFreq resume after collapse. */
++	if (!drv->reg_data->set_vdd || drv->reg_cpu != smp_processor_id())
++		return -EINVAL;
++
++	drv->volt_set_status = 0;
++	drv->reg_data->set_vdd(drv);
++	return drv->volt_set_status;
++}
++
+ static int spm_get_cpu(struct device *dev)
+ {
+ 	int cpu;
+diff --git a/include/soc/qcom/spm.h b/include/soc/qcom/spm.h
+index 5b263c685..161067776 100644
+--- a/include/soc/qcom/spm.h
++++ b/include/soc/qcom/spm.h
+@@ -16,6 +16,7 @@ enum pm_sleep_mode {
+ };
+ 
+ struct spm_driver_data;
++int spm_restore_cpu_voltage(struct spm_driver_data *drv);
+ void spm_set_low_power_mode(struct spm_driver_data *drv,
+ 			    enum pm_sleep_mode mode);
+ 

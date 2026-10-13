@@ -37,6 +37,10 @@ case "${ROOTFS_PROFILE:-base}" in
         if [ "${ROOTFS_PROFILE}" = mobile ]; then
             sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
                 plasma-mobile-full sddm xwayland
+            ./scripts/build-powerdevil.sh
+            sudo cp .work/artifacts/current/t531-powerdevil-suspend_0.20261013-1_armhf.deb "$root/tmp/"
+            sudo chroot "$root" dpkg -i /tmp/t531-powerdevil-suspend_0.20261013-1_armhf.deb
+            sudo python3 -c 'import pathlib,sys; pathlib.Path(sys.argv[1]).unlink()' "$root/tmp/t531-powerdevil-suspend_0.20261013-1_armhf.deb"
             sudo install -m 755 scripts/configure-plasma.sh "$root/tmp/t531-configure-plasma.sh"
             sudo chroot "$root" env INSTALL_ONLY=1 /tmp/t531-configure-plasma.sh
             sudo rm -f "$root/tmp/t531-configure-plasma.sh"

@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 17:00:00 +0700
+Subject: [PATCH] drm/simpledrm: preserve firmware power domains during sleep
+
+The firmware framebuffer needs its power domains to retain the bootloader
+scanout configuration throughout the driver's lifetime. Runtime-PM links
+alone do not prevent genpd from powering them off during system suspend.
+The simpledrm resume helper restores DRM state but cannot program a display
+engine that lost its register state. On SM-T531, system-managed s2idle then
+returns a lit black panel despite a populated framebuffer and live KWin.
+
+Use the existing genpd pre-power-off notifier to protect the framebuffer's
+attached domains, including the single domain attached by driver core.
+Remove each notifier before detaching its domain at driver teardown. No
+SoC-specific register save/restore or wakeup-source fiction is introduced.
+Backlight and DRM blanking still work; the native display driver must take
+over to support display-engine power collapse and lower suspend power.
+
+A temporary consumer notifier on the tablet preserved visible, responsive
+Plasma after a 45-second RTC sleep. The matched control without the
+notifier lost physical output with the same unlocked session and
+backlight state.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/sysfb/simpledrm.c b/drivers/gpu/drm/sysfb/simpledrm.c
+index 60f588365..41ffbb3e1 100644
+--- a/drivers/gpu/drm/sysfb/simpledrm.c
++++ b/drivers/gpu/drm/sysfb/simpledrm.c
+@@ -501,6 +501,41 @@ static int simpledrm_device_init_regulators(struct simpledrm_device *sdev)
+  * complain and carry on, and hope that the user actually gets a working fb at
+  * the end of things.
+  */
++/* Firmware scanout cannot be reconstructed after a domain power loss. */
++static int simpledrm_genpd_notify(struct notifier_block *nb,
++				  unsigned long action, void *data)
++{
++	if (action == GENPD_NOTIFY_PRE_OFF)
++		return NOTIFY_BAD;
++
++	return NOTIFY_OK;
++}
++
++static void simpledrm_genpd_remove_notifier(void *res)
++{
++	dev_pm_genpd_remove_notifier(res);
++}
++
++static int simpledrm_genpd_keep_on(struct simpledrm_device *sdev,
++				   struct device *power_dev)
++{
++	struct device *dev = sdev->sysfb.dev.dev;
++	struct notifier_block *nb;
++	int ret;
++
++	nb = devm_kzalloc(dev, sizeof(*nb), GFP_KERNEL);
++	if (!nb)
++		return -ENOMEM;
++
++	nb->notifier_call = simpledrm_genpd_notify;
++	ret = dev_pm_genpd_add_notifier(power_dev, nb);
++	if (ret)
++		return ret;
++
++	return devm_add_action_or_reset(dev, simpledrm_genpd_remove_notifier,
++					power_dev);
++}
++
+ static void simpledrm_device_detach_genpd(void *res)
+ {
+ 	int i;
+@@ -567,11 +602,39 @@ static int simpledrm_device_attach_genpd(struct simpledrm_device *sdev)
+ 
+ 	return devm_add_action_or_reset(dev, simpledrm_device_detach_genpd, sdev);
+ }
++
++static int simpledrm_device_keep_genpd_on(struct simpledrm_device *sdev)
++{
++	struct device *dev = sdev->sysfb.dev.dev;
++	int i, ret;
++
++	if (sdev->pwr_dom_count <= 0)
++		return 0;
++
++	if (sdev->pwr_dom_count == 1)
++		return simpledrm_genpd_keep_on(sdev, dev);
++
++	for (i = 0; i < sdev->pwr_dom_count; i++) {
++		if (IS_ERR_OR_NULL(sdev->pwr_dom_devs[i]))
++			continue;
++
++		ret = simpledrm_genpd_keep_on(sdev, sdev->pwr_dom_devs[i]);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
+ #else
+ static int simpledrm_device_attach_genpd(struct simpledrm_device *sdev)
+ {
+ 	return 0;
+ }
++
++static int simpledrm_device_keep_genpd_on(struct simpledrm_device *sdev)
++{
++	return 0;
++}
+ #endif
+ 
+ /*
+@@ -688,6 +751,9 @@ static struct simpledrm_device *simpledrm_device_create(struct drm_driver *drv,
+ 	if (ret)
+ 		return ERR_PTR(ret);
+ 	ret = simpledrm_device_attach_genpd(sdev);
++	if (ret)
++		return ERR_PTR(ret);
++	ret = simpledrm_device_keep_genpd_on(sdev);
+ 	if (ret)
+ 		return ERR_PTR(ret);
+ 
