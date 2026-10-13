@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 00:35:00 +0700
+Subject: [PATCH] iio: st_accel: quiesce active triggers across system sleep
+
+An active LIS2HH12 buffer keeps its level-triggered data-ready interrupt
+asserted during system sleep. Its thread can run during early resume,
+before the parent bus is available. QUP now rejects those transfers rather
+than faulting, but repeated samples-available errors remain.
+
+Add shared accelerometer system-sleep callbacks for I2C and SPI. Drain and
+mask the sensor IRQ before its parent suspends, stop an enabled sensor,
+and restore its previous enable state and IRQ after the parent resumes.
+Reuse the existing ODR lock and power register operations; preserve the
+configured buffer and sampling rate.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iio/accel/st_accel.h b/drivers/iio/accel/st_accel.h
+index 2659f536c..d7d35c2fd 100644
+--- a/drivers/iio/accel/st_accel.h
++++ b/drivers/iio/accel/st_accel.h
+@@ -55,4 +55,6 @@ static inline int st_accel_allocate_ring(struct iio_dev *indio_dev)
+ #define ST_ACCEL_TRIGGER_SET_STATE NULL
+ #endif /* CONFIG_IIO_BUFFER */
+ 
++extern const struct dev_pm_ops st_accel_pm_ops;
++
+ #endif /* ST_ACCEL_H */
+diff --git a/drivers/iio/accel/st_accel_core.c b/drivers/iio/accel/st_accel_core.c
+index 1a9447c81..1e042a4fa 100644
+--- a/drivers/iio/accel/st_accel_core.c
++++ b/drivers/iio/accel/st_accel_core.c
+@@ -9,6 +9,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
+ #include <linux/mutex.h>
+ #include <linux/sysfs.h>
+ #include <linux/slab.h>
+@@ -1616,6 +1617,46 @@ int st_accel_common_probe(struct iio_dev *indio_dev)
+ }
+ EXPORT_SYMBOL_NS(st_accel_common_probe, "IIO_ST_SENSORS");
+ 
++static int __maybe_unused st_accel_suspend(struct device *dev)
++{
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct st_sensor_data *adata = iio_priv(indio_dev);
++	int ret = 0;
++
++	if (adata->irq > 0)
++		disable_irq(adata->irq);
++	mutex_lock(&adata->odr_lock);
++	adata->enabled_before_suspend = adata->enabled;
++	if (adata->enabled)
++		ret = st_sensors_set_enable(indio_dev, false);
++	mutex_unlock(&adata->odr_lock);
++	if (ret && adata->irq > 0)
++		enable_irq(adata->irq);
++	return ret;
++}
++
++static int __maybe_unused st_accel_resume(struct device *dev)
++{
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct st_sensor_data *adata = iio_priv(indio_dev);
++	int ret = 0;
++
++	mutex_lock(&adata->odr_lock);
++	if (adata->enabled_before_suspend)
++		ret = st_sensors_set_enable(indio_dev, true);
++	mutex_unlock(&adata->odr_lock);
++	if (ret)
++		return ret;
++	if (adata->irq > 0)
++		enable_irq(adata->irq);
++	return 0;
++}
++
++const struct dev_pm_ops st_accel_pm_ops = {
++	SYSTEM_SLEEP_PM_OPS(st_accel_suspend, st_accel_resume)
++};
++EXPORT_SYMBOL_NS_GPL(st_accel_pm_ops, "IIO_ST_SENSORS");
++
+ MODULE_AUTHOR("Denis Ciocca <denis.ciocca@st.com>");
+ MODULE_DESCRIPTION("STMicroelectronics accelerometers driver");
+ MODULE_LICENSE("GPL v2");
+diff --git a/drivers/iio/accel/st_accel_i2c.c b/drivers/iio/accel/st_accel_i2c.c
+index 99522a885..97d31f68f 100644
+--- a/drivers/iio/accel/st_accel_i2c.c
++++ b/drivers/iio/accel/st_accel_i2c.c
+@@ -9,6 +9,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
+ #include <linux/i2c.h>
+ #include <linux/iio/iio.h>
+ 
+@@ -203,6 +204,7 @@ static int st_accel_i2c_probe(struct i2c_client *client)
+ 
+ static struct i2c_driver st_accel_driver = {
+ 	.driver = {
++		.pm = pm_sleep_ptr(&st_accel_pm_ops),
+ 		.name = "st-accel-i2c",
+ 		.of_match_table = st_accel_of_match,
+ 		.acpi_match_table = st_accel_acpi_match,
+diff --git a/drivers/iio/accel/st_accel_spi.c b/drivers/iio/accel/st_accel_spi.c
+index e6bf8d0d4..f6efd56f8 100644
+--- a/drivers/iio/accel/st_accel_spi.c
++++ b/drivers/iio/accel/st_accel_spi.c
+@@ -9,6 +9,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
+ #include <linux/spi/spi.h>
+ #include <linux/iio/iio.h>
+ 
+@@ -172,6 +173,7 @@ MODULE_DEVICE_TABLE(spi, st_accel_id_table);
+ 
+ static struct spi_driver st_accel_driver = {
+ 	.driver = {
++		.pm = pm_sleep_ptr(&st_accel_pm_ops),
+ 		.name = "st-accel-spi",
+ 		.of_match_table = st_accel_of_match,
+ 	},
+diff --git a/include/linux/iio/common/st_sensors.h b/include/linux/iio/common/st_sensors.h
+index 1ba496f0f..09578aed3 100644
+--- a/include/linux/iio/common/st_sensors.h
++++ b/include/linux/iio/common/st_sensors.h
+@@ -228,6 +228,7 @@ struct st_sensor_settings {
+  * @current_fullscale: Maximum range of measure by the sensor.
+  * @regmap: Pointer to specific sensor regmap configuration.
+  * @enabled: Status of the sensor (false->off, true->on).
++ * @enabled_before_suspend: Sensor enable state saved across system sleep.
+  * @odr: Output data rate of the sensor [Hz].
+  * @num_data_channels: Number of data channels used in buffer.
+  * @drdy_int_pin: Redirect DRDY on pin 1 (1) or pin 2 (2).
+@@ -247,6 +248,7 @@ struct st_sensor_data {
+ 	struct regmap *regmap;
+ 
+ 	bool enabled;
++	bool enabled_before_suspend;
+ 
+ 	unsigned int odr;
+ 	unsigned int num_data_channels;

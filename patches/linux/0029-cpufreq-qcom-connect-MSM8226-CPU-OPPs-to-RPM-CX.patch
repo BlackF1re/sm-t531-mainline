@@ -1,0 +1,178 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 02:15:00 +0700
+Subject: [PATCH] cpufreq: qcom: connect MSM8226 CPU OPPs to RPM CX
+
+The MSM8226 stock SR2 CPU PLL requires CX SVS_SOC through 1 GHz and
+NORMAL through 1.9 GHz. Raising only the APC rail leaves this digital
+supply dependency uncontrolled when GPU and wireless votes are absent.
+The analog PLL rail PM8226 L8 is already held at 1.8 V by the framebuffer.
+
+Reuse the Qualcomm cpufreq wrapper's performance-domain attachment and
+required-OPP plumbing with the board's generic, fixed conservative OPPs.
+Match only MSM8226 for generic OPP acceptance. Enable the wrapper only
+when a CPU perf domain is described, preserving generic cpufreq-dt on
+existing MSM8226 boards. Associate all four CPUs with the shared RPM CX
+provider and vote the stock frequency-dependent levels. Select 300 MHz
+as the suspend OPP; ordinary cpufreq suspend/resume saves/restores policy.
+
+Reference: LineageOS/android_kernel_samsung_msm8226
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256,
+arch/arm/mach-msm/clock-8226.c vdd_sr2_levels and a7sspll.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+index f6fe1b740..d4d888b5a 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -345,6 +345,8 @@ channel@30 {
+ 
+ /* The stock speed0 plan supports all seven frequencies through 1190.4 MHz. */
+ &cpu0 {
++	power-domains = <&rpmpd MSM8226_VDDCX>;
++	power-domain-names = "perf";
+ 	cpu-supply = <&vdd_cpu>;
+ };
+ 
+@@ -362,32 +364,40 @@ vdd_cpu: regulator {
+ 
+ &cpu_opp_table {
+ 	opp-300000000 {
++		required-opps = <&rpmpd_opp_svs_soc>;
++		opp-suspend;
+ 		opp-microvolt = <1140000>;
+ 	};
+ 
+ 	opp-384000000 {
++		required-opps = <&rpmpd_opp_svs_soc>;
+ 		opp-microvolt = <1140000>;
+ 	};
+ 
+ 	opp-600000000 {
++		required-opps = <&rpmpd_opp_svs_soc>;
+ 		opp-microvolt = <1150000>;
+ 	};
+ 
+ 	opp-787200000 {
++		required-opps = <&rpmpd_opp_svs_soc>;
+ 		opp-microvolt = <1150000>;
+ 	};
+ 
+ 	opp-998400000 {
++		required-opps = <&rpmpd_opp_svs_soc>;
+ 		opp-hz = /bits/ 64 <998400000>;
+ 		opp-microvolt = <1280000>;
+ 	};
+ 
+ 	opp-1094400000 {
++		required-opps = <&rpmpd_opp_nom>;
+ 		opp-hz = /bits/ 64 <1094400000>;
+ 		opp-microvolt = <1280000>;
+ 	};
+ 
+ 	opp-1190400000 {
++		required-opps = <&rpmpd_opp_nom>;
+ 		opp-hz = /bits/ 64 <1190400000>;
+ 		opp-microvolt = <1280000>;
+ 	};
+@@ -411,14 +421,20 @@ &cpu0 {
+ };
+ 
+ &cpu1 {
++	power-domains = <&rpmpd MSM8226_VDDCX>;
++	power-domain-names = "perf";
+ 	cpu-idle-states = <&cpu_spc>;
+ };
+ 
+ &cpu2 {
++	power-domains = <&rpmpd MSM8226_VDDCX>;
++	power-domain-names = "perf";
+ 	cpu-idle-states = <&cpu_spc>;
+ };
+ 
+ &cpu3 {
++	power-domains = <&rpmpd MSM8226_VDDCX>;
++	power-domain-names = "perf";
+ 	cpu-idle-states = <&cpu_spc>;
+ };
+ 
+diff --git a/drivers/cpufreq/cpufreq-dt-platdev.c b/drivers/cpufreq/cpufreq-dt-platdev.c
+index ff1204c66..2eab57b08 100644
+--- a/drivers/cpufreq/cpufreq-dt-platdev.c
++++ b/drivers/cpufreq/cpufreq-dt-platdev.c
+@@ -233,6 +233,14 @@ static int __init cpufreq_dt_platdev_init(void)
+ 		goto create_pdev;
+ 	}
+ 
++	/* The Qualcomm wrapper connects required CPU OPPs to RPM on MSM8226. */
++	if (of_machine_is_compatible("qcom,msm8226")) {
++		struct device_node *np __free(device_node) = of_cpu_device_node_get(0);
++
++		if (of_property_match_string(np, "power-domain-names", "perf") >= 0)
++			return -ENODEV;
++	}
++
+ 	if (cpu0_node_has_opp_v2_prop() && !of_machine_device_match(blocklist))
+ 		goto create_pdev;
+ 
+diff --git a/drivers/cpufreq/qcom-cpufreq-nvmem.c b/drivers/cpufreq/qcom-cpufreq-nvmem.c
+index e6d28d162..895f7fbef 100644
+--- a/drivers/cpufreq/qcom-cpufreq-nvmem.c
++++ b/drivers/cpufreq/qcom-cpufreq-nvmem.c
+@@ -432,6 +432,11 @@ static const struct qcom_cpufreq_match_data match_data_krait = {
+ 	.get_version = qcom_cpufreq_krait_name_version,
+ };
+ 
++static const struct qcom_cpufreq_match_data match_data_msm8226 = {
++	.pd_names = (const char *[]) { "perf" },
++	.num_pd_names = 1,
++};
++
+ static const struct qcom_cpufreq_match_data match_data_msm8909 = {
+ 	.get_version = qcom_cpufreq_simple_get_version,
+ 	.pd_names = (const char *[]) { "perf" },
+@@ -487,8 +492,11 @@ static int qcom_cpufreq_probe(struct platform_device *pdev)
+ 	if (!np)
+ 		return -ENOENT;
+ 
++	match = pdev->dev.platform_data;
+ 	ret = of_device_is_compatible(np, "operating-points-v2-kryo-cpu") ||
+-	      of_device_is_compatible(np, "operating-points-v2-krait-cpu");
++	      of_device_is_compatible(np, "operating-points-v2-krait-cpu") ||
++	      (match->data == &match_data_msm8226 &&
++	       of_device_is_compatible(np, "operating-points-v2"));
+ 	if (!ret)
+ 		return -ENOENT;
+ 
+@@ -497,7 +505,6 @@ static int qcom_cpufreq_probe(struct platform_device *pdev)
+ 	if (!drv)
+ 		return -ENOMEM;
+ 
+-	match = pdev->dev.platform_data;
+ 	drv->data = match->data;
+ 	if (!drv->data)
+ 		return -ENODEV;
+@@ -615,6 +622,7 @@ static struct platform_driver qcom_cpufreq_driver = {
+ 
+ static const struct of_device_id qcom_cpufreq_match_list[] __initconst __maybe_unused = {
+ 	{ .compatible = "qcom,apq8096", .data = &match_data_kryo },
++	{ .compatible = "qcom,msm8226", .data = &match_data_msm8226 },
+ 	{ .compatible = "qcom,msm8909", .data = &match_data_msm8909 },
+ 	{ .compatible = "qcom,msm8996", .data = &match_data_kryo },
+ 	{ .compatible = "qcom,qcs404", .data = &match_data_qcs404 },
+@@ -646,6 +654,14 @@ static int __init qcom_cpufreq_init(void)
+ 	if (!match)
+ 		return -ENODEV;
+ 
++	/* Old MSM8226 DTs without a performance domain still use cpufreq-dt. */
++	if (match->data == &match_data_msm8226) {
++		struct device_node *np __free(device_node) = of_cpu_device_node_get(0);
++
++		if (of_property_match_string(np, "power-domain-names", "perf") < 0)
++			return -ENODEV;
++	}
++
+ 	ret = platform_driver_register(&qcom_cpufreq_driver);
+ 	if (unlikely(ret < 0))
+ 		return ret;

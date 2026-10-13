@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Mon, 12 Oct 2026 23:35:00 +0700
+Subject: [PATCH] ARM: dts: qcom: matisse3g: describe standalone CPU collapse
+
+The upstream MSM8226 SPM driver already contains the CPU standalone
+power-collapse sequence used by SM-T531. Connect its existing CPUidle
+driver to the four cores. The stock DT specifies 500 us latency and a
+broadcast timer for standalone collapse. Use a conservative 2 ms minimum
+residency, above the stock 1200 us time overhead.
+
+This keeps the L2 cache powered and does not implement system-wide RPM
+sleep or L2 power collapse.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+index 44ba2dc07..ac38f3d67 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -392,3 +392,32 @@ opp-1190400000 {
+ 		opp-microvolt = <1280000>;
+ 	};
+ };
++
++/ {
++	cpus {
++		idle-states {
++			cpu_spc: cpu-spc {
++				compatible = "qcom,idle-state-spc", "arm,idle-state";
++				wakeup-latency-us = <500>;
++				min-residency-us = <2000>;
++				local-timer-stop;
++			};
++		};
++	};
++};
++
++&cpu0 {
++	cpu-idle-states = <&cpu_spc>;
++};
++
++&cpu1 {
++	cpu-idle-states = <&cpu_spc>;
++};
++
++&cpu2 {
++	cpu-idle-states = <&cpu_spc>;
++};
++
++&cpu3 {
++	cpu-idle-states = <&cpu_spc>;
++};

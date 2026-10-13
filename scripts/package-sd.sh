@@ -9,7 +9,7 @@ work=$PWD/.work
 cp "$a/qcom-msm8226-samsung-matisse3g.dtb" "$work/sd-kernel.dtb"
 # RAM banks verified from the SM-T531 bootloader's live device tree.
 fdtput -t x "$work/sd-kernel.dtb" /memory@0 reg 0 40000000 40000000 20000000
-cmdline='console=tty0 console=ttyMSM0,115200 loglevel=7 clk_ignore_unused msm.separate_gpu_kms=1 root=LABEL=T531_ROOT rootwait rw t531.stage=second'
+cmdline='console=tty0 loglevel=7 sysctl.kernel.sysrq=0 clk_ignore_unused msm.separate_gpu_kms=1 root=LABEL=T531_ROOT rootwait rw t531.stage=second'
 fdtput -t s "$work/sd-kernel.dtb" /chosen bootargs "$cmdline"
 # The immutable bootstrap uses --image-size=0x04000000, loading the
 # ramdisk at 0x04008000. Its appended DT must describe that same ramdisk.

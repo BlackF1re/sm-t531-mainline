@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 02:00:00 +0700
+Subject: [PATCH] drm/msm/a3xx: halt only the three A305B VBIF clients
+
+After the upstream VBIF drain change, system suspend on SM-T531 fails
+with -EBUSY. Its A305B acknowledgment register reads 0x00070000 after
+the halt request is cleared, indicating the three implemented clients;
+the existing VBIF read/write limit configuration likewise has three
+client fields. Waiting for six acknowledgment bits cannot complete.
+
+Select the three-client halt mask for A305B without altering other A3xx
+variants. Report the mask and acknowledgment when a drain really fails,
+retaining the upstream refusal to cut power with outstanding requests.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/adreno/a3xx_gpu.c b/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
+index 0259e60b8..6831106a5 100644
+--- a/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
+@@ -500,18 +500,24 @@ static u64 a3xx_gpu_busy(struct msm_gpu *gpu, unsigned long *out_sample_rate)
+ 
+ static int a3xx_vbif_halt(struct msm_gpu *gpu)
+ {
++	struct adreno_gpu *adreno_gpu = to_adreno_gpu(gpu);
++	u32 mask = A3XX_VBIF_XIN_HALT_CTRL0_MASK;
+ 	u32 ack;
+ 	int ret;
+ 
+-	gpu_write(gpu, REG_A3XX_VBIF_XIN_HALT_CTRL0,
+-		  A3XX_VBIF_XIN_HALT_CTRL0_MASK);
++	if (adreno_is_a305b(adreno_gpu))
++		mask = GENMASK(2, 0);
++
++	gpu_write(gpu, REG_A3XX_VBIF_XIN_HALT_CTRL0, mask);
+ 	ret = spin_until(((ack = gpu_read(gpu, REG_A3XX_VBIF_XIN_HALT_CTRL1)) &
+-			  A3XX_VBIF_XIN_HALT_CTRL0_MASK) ==
+-			 A3XX_VBIF_XIN_HALT_CTRL0_MASK);
++			  mask) == mask);
+ 	gpu_write(gpu, REG_A3XX_VBIF_XIN_HALT_CTRL0, 0);
+ 
+-	if (ret)
++	if (ret) {
++		DRM_DEV_ERROR(gpu->dev->dev, "VBIF halt mask %#x acknowledgment %#x\n",
++			      mask, ack);
+ 		return -EBUSY;
++	}
+ 
+ 	return 0;
+ }

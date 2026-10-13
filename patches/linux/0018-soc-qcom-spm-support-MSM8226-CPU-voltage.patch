@@ -1,0 +1,239 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Mon, 12 Oct 2026 23:10:00 +0700
+Subject: [PATCH] soc: qcom: spm: support MSM8226 shared CPU voltage control
+
+The MSM8226 L2 SAW controls PM8226 S2 for all four CPU cores. Implement
+its voltage request and acknowledgment in the existing SPM regulator
+framework, using the stock SAW2 register layout and PMIC data. Propagate
+timeouts so cpufreq cannot raise the clock after an unacknowledged request.
+
+Connect the SM-T531 CPU supply and add the three remaining stock OPPs,
+up to 1190.4 MHz. Use the conservative slow-process corner ceilings from
+the captured stock DT (1.14/1.15/1.28 V). Closed-loop CPR and fuse-based
+voltage reduction are not implemented by this change. Memory and PLL
+power-domain scaling remain unimplemented; do not claim stock power
+management or deep suspend from this frequency support alone.
+
+Reference: LineageOS/android_kernel_samsung_msm8226 commit
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, arch/arm/mach-msm/spm-v2.c,
+and the captured SM-T531 clock-a7, CPR and PM8226 S2 device-tree nodes.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+index 295484942..68c2f688c 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -342,3 +342,51 @@ channel@30 {
+ 		label = "batt_therm";
+ 	};
+ };
++
++/* The stock speed0 plan supports all seven frequencies through 1190.4 MHz. */
++&cpu0 {
++	cpu-supply = <&vdd_cpu>;
++};
++
++&saw_l2 {
++	vdd_cpu: regulator {
++		regulator-name = "vdd_cpu";
++		regulator-min-microvolt = <900000>;
++		regulator-max-microvolt = <1330000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++};
++
++&cpu_opp_table {
++	opp-300000000 {
++		opp-microvolt = <1140000>;
++	};
++
++	opp-384000000 {
++		opp-microvolt = <1140000>;
++	};
++
++	opp-600000000 {
++		opp-microvolt = <1150000>;
++	};
++
++	opp-787200000 {
++		opp-microvolt = <1150000>;
++	};
++
++	opp-998400000 {
++		opp-hz = /bits/ 64 <998400000>;
++		opp-microvolt = <1280000>;
++	};
++
++	opp-1094400000 {
++		opp-hz = /bits/ 64 <1094400000>;
++		opp-microvolt = <1280000>;
++	};
++
++	opp-1190400000 {
++		opp-hz = /bits/ 64 <1190400000>;
++		opp-microvolt = <1280000>;
++	};
++};
+diff --git a/drivers/soc/qcom/spm.c b/drivers/soc/qcom/spm.c
+index f75659fff..d7ef4494f 100644
+--- a/drivers/soc/qcom/spm.c
++++ b/drivers/soc/qcom/spm.c
+@@ -85,6 +85,7 @@ struct spm_driver_data {
+ 	struct device *dev;
+ 	unsigned int volt_sel;
+ 	int reg_cpu;
++	int volt_set_status;
+ };
+ 
+ static const u16 spm_reg_offset_v4_1[SPM_REG_NR] = {
+@@ -218,6 +219,34 @@ static const struct spm_reg_data spm_reg_8226_cpu  = {
+ 	.start_index[PM_SLEEP_MODE_SPC] = 5,
+ };
+ 
++/* MSM8226 L2 SAW is the voltage-control master for the shared CPU rail. */
++static const u16 spm_reg_offset_8226_l2[SPM_REG_NR] = {
++	[SPM_REG_CFG]		= 0x08,
++	[SPM_REG_PMIC_STS]	= 0x14,
++	[SPM_REG_RST]		= 0x18,
++	[SPM_REG_VCTL]		= 0x1c,
++	[SPM_REG_DLY]		= 0x34,
++	[SPM_REG_PMIC_DATA_0]	= 0x40,
++	[SPM_REG_PMIC_DATA_1]	= 0x44,
++};
++
++static void smp_set_vdd_8226(void *data);
++
++/* PM8226 S2 uses the inherited FTS voltage range: 10 mV per code. */
++static struct linear_range spm_8226_regulator_range =
++	REGULATOR_LINEAR_RANGE(700000, 0, 134, 10000);
++
++static const struct spm_reg_data spm_reg_8226_l2 = {
++	.reg_offset = spm_reg_offset_8226_l2,
++	.spm_cfg = 0x14,
++	.spm_dly = 0x3c102800,
++	.pmic_data = { 0x02030080, 0x00030000 },
++	.set_vdd = smp_set_vdd_8226,
++	.range = &spm_8226_regulator_range,
++	.init_uV = 1280000,
++	.ramp_delay = 1250,
++};
++
+ static const u16 spm_reg_offset_v1_1[SPM_REG_NR] = {
+ 	[SPM_REG_CFG]		= 0x08,
+ 	[SPM_REG_STS0]		= 0x0c,
+@@ -305,11 +334,19 @@ void spm_set_low_power_mode(struct spm_driver_data *drv,
+ static int spm_set_voltage_sel(struct regulator_dev *rdev, unsigned int selector)
+ {
+ 	struct spm_driver_data *drv = rdev_get_drvdata(rdev);
++	unsigned int old_sel = drv->volt_sel;
++	int ret;
+ 
+ 	drv->volt_sel = selector;
++	drv->volt_set_status = 0;
+ 
+ 	/* Always do the SAW register writes on the corresponding CPU */
+-	return smp_call_function_single(drv->reg_cpu, drv->reg_data->set_vdd, drv, true);
++	ret = smp_call_function_single(drv->reg_cpu, drv->reg_data->set_vdd, drv, true);
++	if (!ret)
++		ret = drv->volt_set_status;
++	if (ret)
++		drv->volt_sel = old_sel;
++	return ret;
+ }
+ 
+ static int spm_get_voltage_sel(struct regulator_dev *rdev)
+@@ -385,6 +422,26 @@ static void smp_set_vdd_v1_1(void *data)
+ 	}
+ }
+ 
++static void smp_set_vdd_8226(void *data)
++{
++	struct spm_driver_data *drv = data;
++	unsigned int vlevel = drv->volt_sel + 70;
++	u32 vctl, status;
++
++	/* Preserve the PMIC voltage range; SAW changes only the set point. */
++	vctl = spm_register_read(drv, SPM_REG_VCTL);
++	vctl = (vctl & ~0x700ff) | vlevel;
++	spm_register_write(drv, SPM_REG_RST, 1);
++	spm_register_write(drv, SPM_REG_VCTL, vctl);
++	spm_register_write(drv, SPM_REG_PMIC_DATA_0, drv->reg_data->pmic_data[0]);
++	spm_register_write(drv, SPM_REG_PMIC_DATA_1, drv->reg_data->pmic_data[1]);
++	drv->volt_set_status = read_poll_timeout_atomic(spm_register_read,
++		status, (status & 0xff) == vlevel, 1, 50, false,
++		drv, SPM_REG_PMIC_STS);
++	if (drv->volt_set_status)
++		dev_err_ratelimited(drv->dev, "CPU voltage acknowledgment timed out\n");
++}
++
+ static int spm_get_cpu(struct device *dev)
+ {
+ 	int cpu;
+@@ -406,7 +463,11 @@ static int spm_get_cpu(struct device *dev)
+ 			return cpu;
+ 	}
+ 
+-	/* L2 SPM is not bound to any CPU, voltage setting is not supported */
++	/* MSM8226 has one shared CPU rail controlled by the L2 SAW. */
++	if (of_device_is_compatible(dev->of_node, "qcom,msm8226-saw2-v2.1-l2"))
++		return 0;
++
++	/* Other L2 SPMs do not support CPU voltage setting here. */
+ 
+ 	return -EOPNOTSUPP;
+ }
+@@ -463,7 +524,9 @@ static int spm_register_regulator(struct device *dev, struct spm_driver_data *dr
+ 	}
+ 
+ 	/* Always do the SAW register writes on the corresponding CPU */
+-	smp_call_function_single(drv->reg_cpu, drv->reg_data->set_vdd, drv, true);
++	ret = smp_call_function_single(drv->reg_cpu, drv->reg_data->set_vdd, drv, true);
++	if (ret || drv->volt_set_status)
++		return ret ?: drv->volt_set_status;
+ 
+ 	rdev = devm_regulator_register(dev, rdesc, &config);
+ 	if (IS_ERR(rdev)) {
+@@ -479,6 +542,8 @@ static const struct of_device_id spm_match_table[] = {
+ 	  .data = &spm_reg_660_gold_l2 },
+ 	{ .compatible = "qcom,sdm660-silver-saw2-v4.1-l2",
+ 	  .data = &spm_reg_660_silver_l2 },
++	{ .compatible = "qcom,msm8226-saw2-v2.1-l2",
++	  .data = &spm_reg_8226_l2 },
+ 	{ .compatible = "qcom,msm8226-saw2-v2.1-cpu",
+ 	  .data = &spm_reg_8226_cpu },
+ 	{ .compatible = "qcom,msm8909-saw2-v3.0-cpu",
+@@ -509,6 +574,7 @@ static int spm_dev_probe(struct platform_device *pdev)
+ {
+ 	const struct of_device_id *match_id;
+ 	struct spm_driver_data *drv;
++	struct device_node *reg_node;
+ 	void __iomem *addr;
+ 
+ 	drv = devm_kzalloc(&pdev->dev, sizeof(*drv), GFP_KERNEL);
+@@ -527,10 +593,20 @@ static int spm_dev_probe(struct platform_device *pdev)
+ 	drv->dev = &pdev->dev;
+ 	platform_set_drvdata(pdev, drv);
+ 
++	/* CPU rail control is opt-in for MSM8226 boards. */
++	if (drv->reg_data == &spm_reg_8226_l2) {
++		reg_node = of_get_child_by_name(pdev->dev.of_node, "regulator");
++		if (!reg_node)
++			return 0;
++		of_node_put(reg_node);
++	}
++
+ 	/* Write the SPM sequences first.. */
+-	addr = drv->reg_base + drv->reg_data->reg_offset[SPM_REG_SEQ_ENTRY];
+-	__iowrite32_copy(addr, drv->reg_data->seq,
+-			ARRAY_SIZE(drv->reg_data->seq) / 4);
++	if (drv->reg_data->reg_offset[SPM_REG_SEQ_ENTRY]) {
++		addr = drv->reg_base + drv->reg_data->reg_offset[SPM_REG_SEQ_ENTRY];
++		__iowrite32_copy(addr, drv->reg_data->seq,
++				ARRAY_SIZE(drv->reg_data->seq) / 4);
++	}
+ 
+ 	/*
+ 	 * ..and then the control registers.

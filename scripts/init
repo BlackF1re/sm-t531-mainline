@@ -102,6 +102,7 @@ if mkdir -p "$G" 2>/dev/null; then
         sleep 1
     done
 fi
+[ ! -x /bootstrap-rescue ] || exec /bin/sh /bootstrap-rescue
 case " $(cat /proc/cmdline) " in
     *" t531.kexec "*)
         /bin/sh /kexec-sd.sh --exec

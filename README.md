@@ -1,595 +1,283 @@
 # Samsung Galaxy Tab 4 SM-T531 mainline Linux
 
-Native Linux bring-up for `matisse3g` (MSM8226, ARMv7). Debian armhf lives on
-microSD; Android userspace and its downstream kernel are not runtime dependencies.
-This is a diagnostic port, not a validated daily-use system. Modem and cameras
-are outside the current scope. Bluetooth and audio follow basic stability;
-Plasma Mobile follows real DRM/KMS and Freedreno validation.
+Native ARMv7 Linux for `matisse3g` (MSM8226, four Cortex-A7 cores, Adreno 305B).
+Debian armhf runs from microSD. Android userspace is not a runtime dependency.
+This is a hardware bring-up port, not a validated daily-use system. Modem and
+cameras are outside the current scope; Bluetooth and audio follow stability.
 
-## Fixed inputs
+## Fixed inputs and hardware evidence
 
-| Input | Revision | Purpose |
-|---|---|---|
-| [Linux stable](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tag/?h=v7.2.9) | `v7.2.9`, `5fce161649b4d779d1b76d9fcd52dc77779774b8` | Kernel, MSM8226 and Matisse common DT |
-| [lk2nd](https://github.com/msm8916-mainline/lk2nd/releases/tag/23.1) | `23.1`, `e9c8b21735c13dd7ace808b1e35451638f0a0c6d` | Unmodified release image |
-| [Samsung downstream](https://github.com/LineageOS/android_kernel_samsung_msm8226/tree/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256) | `3fa1853ed5d6c3a8ef5a2fda9822705243bbc256` | SM-T531 revision 00/01/02 wiring and panel sequences; GPL-2.0 source research |
-| [matisse3g device configuration](https://github.com/matissewifi/android_device_samsung_matisse3g/tree/cf5a3b04f9598d6756113b79df64e91aa53868d9) | `cf5a3b04f9598d6756113b79df64e91aa53868d9` | Android product identity research |
-| [Debian snapshot](https://snapshot.debian.org/archive/debian/20261003T000000Z/) | `trixie`, `20261003T000000Z` | Rootfs package inputs |
-| Debian static BusyBox | `1:1.37.0-6+b9`, armhf | Diagnostic initramfs; GPL-2.0, Debian source available |
+| Input | Pinned revision |
+|---|---|
+| [Linux stable](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tag/?h=v7.2.9) | `v7.2.9`, `5fce161649b4d779d1b76d9fcd52dc77779774b8` |
+| [lk2nd](https://github.com/msm8916-mainline/lk2nd/releases/tag/23.1) | `23.1`, `e9c8b21735c13dd7ace808b1e35451638f0a0c6d`, unmodified |
+| [Samsung downstream](https://github.com/LineageOS/android_kernel_samsung_msm8226/tree/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256) | `3fa1853ed5d6c3a8ef5a2fda9822705243bbc256`, hardware research only |
+| [matisse3g product configuration](https://github.com/matissewifi/android_device_samsung_matisse3g/tree/cf5a3b04f9598d6756113b79df64e91aa53868d9) | `cf5a3b04f9598d6756113b79df64e91aa53868d9` |
+| [Debian snapshot](https://snapshot.debian.org/archive/debian/20261003T000000Z/) | Debian 13.7 trixie armhf, `20261003T000000Z` |
+| Static BusyBox / kexec-tools | Debian `1:1.37.0-6+b9` armhf / upstream `2.0.29` |
 
-Sources checked 2026-10-12. Host build used ARM GCC 15.2.0 and binutils 2.46. Linux is GPL-2.0-only; retained upstream DTS code
-is BSD-3-Clause, with original authorship. The downstream tree is research only,
-not copied into the project. [postmarketOS ports](https://gitlab.postmarketos.org/postmarketOS/pmaports)
-are additional research references; related Matisse Wi-Fi/LTE and MSM8916
-Matisse VE ports do not establish SM-T531 wiring.
+Sources checked 2026-10-13. Host builds use ARM GCC 15.2.0 and binutils 2.46.
+Linux is GPL-2.0-only; retained upstream DTS licensing and authorship are
+preserved. The downstream kernel is not copied into this repository.
+Related Matisse Wi-Fi/LTE and MSM8916 Matisse VE ports do not establish wiring.
 
-lk2nd image SHA-256:
-`3e94879473e6136bda826949474525b8d3b9d20365258ba3347878affe7f23bc`.
-Static BusyBox Debian package SHA-256:
-`8b35210e08d559ecc0ddb660dd96f6f9694f69eb27f1dc608f5eeda56d94509e`.
+The connected device reports SM-T531, MSM8226 SoC ID 158 revision 2.0,
+`[MATISSE-3G-OPEN] Rev-02-MTP-v2`, and stock CPU frequencies
+300/384/600/787.2/998.4/1094.4/1190.4 MHz. Its backed-up Android installation
+is rooted Dirty Unicorns Android 6.0.1, not a proven factory image.
+Confirmed wiring includes maXTouch 1188S on I2C5, GPIO17 IRQ, GPIO31/73 power
+and PM8226 GPIO6 reset; TC358764 DSI/LVDS and LP8556 backlight; SM5502 MUIC;
+SMB358 charger; SDC1 eMMC and SDC2 microSD with PM8226 L18/L21 and GPIO38
+card detect. WCNSS firmware and factory calibration come from this device.
+Raw DT, identifiers, credentials, firmware, unsanitized logs and all partition
+backups remain outside Git under `/home/paul/t531/private/`.
 
-## Device evidence
+## Build and deployment
 
-`VERIFIED_DEVICE` means observed on the connected tablet under its current
-Android system, not a mainline acceptance test:
-
-- Model SM-T531, codename matisse3g, bootloader T531XXU1BPK2, Android 6.0.1
-  Dirty Unicorns with root. Recovery and BOOT backups preserve this installation;
-  they are not proven factory Samsung images.
-- SoC ID 158, revision 2.0; four Cortex-A7 cores (`0x41/0xc07`), Android MemTotal 1406012 KiB. Device DT says
-  `[MATISSE-3G-OPEN] Rev-02-MTP-v2`. `/proc/cpuinfo` reports revision `0003`,
-  `ro.revision` reports `0`: those fields must not be conflated with DT board ID.
-- Android CPU frequencies: 300/384/600/787.2/998.4/1094.4/1190.4 MHz.
-  Mainline inherited CPU OPP stops at 787.2 MHz pending speedbin support;
-  it has no per-OPP CPU voltage data. Full frequency/voltage support is unfinished.
-- Live DT: maXTouch 1188S, I2C5 `0x4a`, IRQ GPIO17, power GPIO31/73,
-  reset PM8226 GPIO6. Vendor SM-T531 DTS agrees. No SM-T535 GPIO32 inference.
-- Panel 1280×800, TC358764 DSI-to-LVDS, LP8556 at `0x2c` on GPIO20/21 I2C,
-  PWM GPIO33. Vendor panel sequence uses four DSI lanes, reset GPIO51,
-  enable GPIO25, backlight enable GPIO74 and PMIC GPIO2.
-- microSD wiring: SDC2, PM8226 L18/L21, active-low detect GPIO38.
-  No microSD was detected in the initial collection. The subsequently inserted
-  16 GB SD card has 30253056 sectors; its 48 MiB boot and remaining root
-  partitions are reformatted only with owner authorization. eMMC is SDC1, 8-bit,
-  L17/L6; its Android device name is `016GE2`.
-- SM5502 MUIC `0x25`, I2C GPIO14/15, IRQ GPIO67. SMB358 charger `0x6a`
-  on GPIO10/11 I2C. Android reports Li-ion battery and valid temperature/voltage.
-- WCNSS firmware names `wcnss.mdt`, `wcnss.b*`; Adreno firmware
-  `a300_pfp.fw`, `a300_pm4.fw`. Exact Wi-Fi/BT firmware/calibration handling
-  remains to be implemented. Android audio card is msm8226-tapan-snd-card.
-
-Raw properties, logs, DT, serials, firmware inventories and all partition images
-are only in `/home/paul/t531/private/device`, outside this Git repository.
-
-| Partition | Device | Bytes |
-|---|---|---:|
-| BOOT | `/dev/block/mmcblk0p14` | 10485760 |
-| RECOVERY | `/dev/block/mmcblk0p15` | 10485760 |
-| EFS | `/dev/block/mmcblk0p11` | 14680064 |
-
-All three backups and MODEMST1/2, FSG, FSC, PERSIST, PERSDATA and PARAM were
-verified against a second complete device read and local SHA-256.
-The backed-up Android BOOT has `ANDROID!` header, 2048-byte pages, separate QCDT at
-byte 6072320, four embedded FDT magic occurrences. Live DT was exported from
-`/proc/device-tree`; `/sys/firmware/fdt` was unavailable.
-
-## Build
-
-On Debian/Ubuntu install Git, Make, GCC, `gcc-arm-linux-gnueabihf`, binutils,
-bison, flex, libssl-dev, libelf-dev, bc, Python 3, dtc, cpio, gzip, curl, e2fsprogs,
-Debian debootstrap/keyring, `mkbootimg` and static QEMU ARM with binfmt. `qemu-arm` must
-execute armhf binaries. `ripgrep` is used for collector checks.
+Install Git, Make, GCC, `gcc-arm-linux-gnueabihf`, binutils, bison, flex,
+libssl-dev, libelf-dev, bc, Python 3, dtc, cpio, gzip, curl, e2fsprogs,
+`mkbootimg`, debootstrap, the Debian keyring and static QEMU ARM with binfmt.
+`qemu-arm` must execute armhf binaries.
 
 ```sh
 make build
-# Optional: JOBS=4 make build on a smaller host.
-make rootfs
-make bootstrap  # Compact first-stage kernel and internal BOOT payload.
-```
-
-`multi_v7_defconfig` plus `config/kernel.fragment` is the bring-up baseline.
-It retains unrelated upstream defconfig drivers; it is not a final size-tuned
-production config. Required fragment settings are checked after olddefconfig.
-One source checkout and one out-of-tree build live under `.work/`, ignored by Git.
-The build refuses a different base or conflicting source modifications. It
-applies six format-patch changes: compatible binding, board DTS, inherited
-framebuffer resources, diagnostic SD speed limit, SD regulator load voting and
-card-detect pin configuration. No driver or lk2nd patches are used. The modem is disabled.
-
-Build timestamps, host/user and initramfs ordering/ownership are fixed. BusyBox
-and lk2nd downloads are checked against pinned SHA-256. Rootfs uses signed
-Debian snapshot repositories and emits `debian-packages.tsv`; rootfs tar bytes
-are not yet claimed reproducible because package maintainer scripts generate
-state. Host compiler/package versions also matter for kernel reproducibility.
-
-Current outputs are in `.work/artifacts/current/`: `zImage`,
-`qcom-msm8226-samsung-matisse3g.dtb`, `initramfs.cpio.gz`, installed modules,
-`kernel.config`, `SHA256SUMS`, lk2nd image and Debian tar/manifest.
-The diagnostic initramfs provides a USB ACM root shell. Command exchange has
-been tested on the tablet; USB Ethernet is currently disabled during bring-up.
-
-Rootfs contains systemd, udev, SSH, networkd, basic storage/network diagnostics
-and packaged Qualcomm firmware. No desktop is installed. Default SSH permits keys only;
-use `SSH_AUTHORIZED_KEY=/path/to/public-key make rootfs` to install your key.
-SSH host keys are generated on first boot; no shared host identity is distributed.
-Networkd configures device USB Ethernet as `192.168.77.2/24`; configure the host
-as `192.168.77.1/24`. Persistent service memory/wakeups remain unmeasured.
-
-## microSD layout and startup
-
-Use a card with an ext2 boot partition **larger than 16 MiB** (256 MiB suggested)
-and an ext4 root partition labelled `T531_ROOT`. This repository does not format
-or repartition devices. Identify the exact card and preserve its data first.
-
-```sh
-make deploy-sd BOOT_MOUNT=/mounted/card-boot
+ROOTFS_PROFILE=mobile make rootfs
+# On a positively identified, mounted card:
+make deploy-sd BOOT_MODE=internal BOOT_MOUNT=/mounted/card-boot
 sudo tar --numeric-owner -xpf .work/artifacts/current/debian-armhf.tar.gz \
     -C /mounted/card-root
 ```
 
-For the identified card still inside the rooted Android tablet:
+The build pins Linux, checks its source state, applies ordered format-patch
+files, merges `config/kernel.fragment` into `multi_v7_defconfig`, and builds
+out of tree. `.work/linux`, `.work/out` and `.work/artifacts/current` are the
+single ignored source, build and current artifact directories. Patches reuse
+upstream drivers; driver changes and board limitations are documented below.
+Build timestamp, user/host and initramfs ordering are fixed. Downloads are
+SHA-256 checked. Rootfs inputs use signed Debian snapshots; generated rootfs
+state is not claimed byte-reproducible. Compiler versions matter too.
+
+Outputs include genuine `zImage`, SM-T531 DTB, diagnostic initramfs, modules,
+`kernel.config`, `sd-kernel.img`, checksums and Debian package manifest.
+The installed bootstrap expects the Android-v0 `sd-kernel.img` container under
+the card filename `zImage`; the host artifact `zImage` remains the real kernel.
+The container carries an appended updated DT, verified RAM banks and initrd
+placement at `0x04008000`. Its checksum manifest checks exactly the installed
+kernel container and initramfs. Updating the SD kernel never requires updating
+the internal bootstrap DT.
+
+The identified 16 GB card has 30253056 sectors, a 48 MiB ext2 `T531_BOOT`
+partition and an ext4 `T531_ROOT` partition. Keep SD `/extlinux/extlinux.conf`
+absent when using the internal bootstrap: lk2nd otherwise prefers the card
+entry. `BOOT_MODE=internal` refuses an active SD extlinux entry. Standalone SD
+boot remains available with `BOOT_MODE=sd`. The initramfs waits for the root
+label, mounts ext4 and switches to Debian, with USB ACM diagnostic fallback.
+
+The mobile rootfs profile installs Plasma Mobile, SDDM, XWayland and Mesa.
+`scripts/configure-plasma.sh` applies the same automatic `t531` login to an
+existing system. SDDM stops the previous user graphical session before restart
+so a stale KWin process does not leave only a text console. SSH host keys are
+generated on-device. `scripts/configure-network.sh` accepts private Wi-Fi
+configuration inputs; the owner's installed policy allows empty-password SSH
+on Wi-Fi. Never commit those inputs or factory calibration/MAC data.
+
+## Installed boot chain and recovery
+
+Samsung bootloader → unchanged lk2nd 23.1 → internal UP bootstrap → automatic
+kexec of SD SMP kernel → Debian systemd → SDDM → Plasma Mobile.
+
+The internal BOOT partition is `mmcblk0p14`, 10485760 bytes, start sector
+209536, size 20480 sectors. Its first 524288 bytes are protected lk2nd; the
+remaining 9961472 bytes hold the ext2 bootstrap payload. RECOVERY is p15
+(10485760 bytes); EFS is p11 (14680064 bytes). BOOT, RECOVERY, EFS and other
+critical accessible data were checked against a second complete read and
+SHA-256 before flashing. Download Mode and the actual Samsung PIT were checked.
+BOOT has PIT identifier 14. PIT SHA-256:
+`3668fb5d80416a9c774666202cb027c7567d6d80b9566ff289374aa00d96e0e9`.
+
+Initial lk2nd installation used:
 
 ```sh
-FORMAT_SD=yes make deploy-adb-sd
-```
-
-This erases only the verified `mmcblk1p1`/`mmcblk1p2` external SD partitions,
-checks model, SD type and exact partition boundaries, releases vold mounts,
-uses Android's existing mke2fs and streams Debian via raw ADB. It does not
-write the eMMC partition table or any eMMC partition.
-
-The ext2 root contains `zImage`, DTB, initramfs and `/extlinux/extlinux.conf`.
-Diagnostic initramfs provides an ACM shell through `/dev/ttyACM0` on the host.
-This shell is for bring-up and is not a Debian login service. It also attempts
-to save boot evidence to `/var/log/t531-initramfs.log` on the card rootfs.
-
-The explicit `fdt` path avoids lk2nd's existing SM-T531 Wi-Fi DT filename alias;
-no lk2nd modification is needed. The default entry is diagnostic. Change
-`default diagnostic` to `default debian` only after storage and basic boot tests.
-The initramfs waits for `LABEL=T531_ROOT`, mounts ext4 and uses `switch_root`.
-It falls back to its shell if no suitable rootfs can be mounted.
-
-## Recovery and flashing gate
-
-Read [lk2nd boot documentation](https://github.com/msm8916-mainline/lk2nd/blob/23.1/Documentation/boot.md)
-and [Samsung installation instructions](https://github.com/msm8916-mainline/lk2nd/blob/23.1/README.md).
-Installing lk2nd in BOOT replaces the current Android boot path. Recovery and
-all other internal partitions must remain untouched. A zImage is not a Samsung
-BOOT image. Never flash it with Heimdall.
-
-Before flashing, confirm Download Mode, retrieve PIT, match its BOOT mapping
-and size to the backup, verify image checksum, and obtain owner approval:
-
-```sh
-heimdall detect
-heimdall download-pit --output /home/paul/t531/private/device/device.pit --no-reboot
-heimdall print-pit --file /home/paul/t531/private/device/device.pit
-(cd .work/artifacts/current && sha256sum -c SHA256SUMS)
-# Only after all checks and explicit approval:
 heimdall flash --BOOT .work/artifacts/current/lk2nd-msm8226.img
 ```
 
-Restore the saved current Android BOOT from Download Mode:
+Release image SHA-256:
+`3e94879473e6136bda826949474525b8d3b9d20365258ba3347878affe7f23bc`.
+The validated bootstrap was installed using lk2nd's offset-aware
+`fastboot flash boot .work/artifacts/current/bootstrap-boot.ext2`.
+That command is specific to lk2nd and is not a future kernel-update procedure.
+The original UP kernel and lk2nd remain frozen in internal storage. An
+authorized recovery update replaced only initramfs, DTB and extlinux arguments;
+the kernel file and complete lk2nd prefix stayed byte-identical. Full BOOT
+readback and a private 10 MiB backup were checked. Ordinary automatic kexec to
+Debian and Plasma was verified after the update. `make bootstrap` prepares a
+new complete first stage only; it never flashes it and must not replace the
+frozen kernel as part of an SD update.
+
+Press/hold either volume button during the bootstrap's three-second window to
+enter recovery. Press either button again, or run `boot-sd` in the USB shell,
+to load the card kernel. A failed automatic SD load also enters recovery.
+The button-triggered SD handoff was physically tested in the temporary
+recovery image; permanent automatic handoff was separately tested.
+`mount-sd` mounts both card partitions read-only (ext4 without journal replay);
+`mount-sd rw` explicitly requests writes. `umount-sd` unmounts them.
+`mount-internal-boot` checks the model and partition geometry and mounts only
+the ext2 payload read-only. `save-logs` writes pstore and bootstrap evidence
+to card rootfs `/var/log/t531-rescue`, synchronizes and unmounts it.
+
+`make rescue-initramfs` rebuilds only the recovery initramfs from pinned inputs,
+without compiling or replacing the kernel. It reproduced the installed image
+SHA-256 `7b54015a8a758b95901579f216818e3206b7809c4f9ac1cf1aaf7a1910241cc8`.
+Recovery uses USB ACM; USB Ethernet is not validated.
+
+Before the recovery update, an authorized change edited only the internal
+extlinux command line:
+remove `console=ttyMSM0,115200`, add `sysctl.kernel.sysrq=0`. The reported
+bootloop panic was explicitly `sysrq triggered crash` in the UP first stage,
+not evidence of a fault in the new SMP frequency or idle implementation.
+Upstream MSM UART handles BREAK followed by a SysRq character; the electrical
+source of that input is unknown. Temporary loading with the corrected arguments
+worked. BOOT was backed up before this edit; kernel/initramfs/DTB file hashes
+and the complete protected lk2nd prefix remained identical afterwards.
+The ordinary internal-to-SD boot then restored SSH. Future diagnostic and SD
+images omit that UART console; main builds also disable serial SysRq handling.
+
+From Samsung Download Mode, restore the saved Android installation with:
 
 ```sh
 (cd /home/paul/t531/private/device && sha256sum -c SHA256SUMS)
 heimdall flash --BOOT /home/paul/t531/private/device/BOOT.img
 ```
 
-lk2nd 23.1 was installed successfully using the BOOT-only command above. The
-restore command has not been executed. Download Mode and PIT were checked
-on the tablet: BOOT identifier 14, start sector 209536, 20480 sectors; RECOVERY
-identifier 15, start 230016, 20480 sectors; EFS identifier 11, start 168576,
-28672 sectors (512-byte sectors). PIT SHA-256:
-`3668fb5d80416a9c774666202cb027c7567d6d80b9566ff289374aa00d96e0e9`.
-After `download-pit --no-reboot`, use `heimdall flash --resume --BOOT ...`
-for the next action in the same Download Mode session; fresh sessions omit
-`--resume`. Installation was authorized after verified backups and PIT checks.
-The build also packs `diagnostic-boot.img` (legacy Android v0, single appended
-DTB). After lk2nd starts, test it only with
-`fastboot boot .work/artifacts/current/diagnostic-boot.img`. It exceeds the
-10 MiB BOOT partition and must never be flashed. The kernel loads at 0x8000. Initrd and DT addresses are calculated using
-lk2nd extlinux placement: initrd ends below 50 MiB on a 4 KiB boundary, with
-2 MiB reserved immediately below it for DT. The previous RAM test placed the
-initrd at 46 MiB; overlap during decompression is under investigation. Through
-lk2nd, `fastboot flash boot` writes at 512 KiB offset. See the bootstrap gate below.
+Restore the saved pre-bootstrap lk2nd state with `BOOT-lk2nd.img` instead.
+Neither restoration command has been physically tested. After
+`download-pit --no-reboot`, the next command in the same Download Mode session
+needs `--resume`; a fresh session omits it. Never flash a raw zImage, RECOVERY,
+PIT, bootloader, modem or calibration partitions. See
+[lk2nd boot documentation](https://github.com/msm8916-mainline/lk2nd/blob/23.1/Documentation/boot.md).
 
-## State and acceptance tests
+## Current hardware results
 
-| Component | Mainline implementation | Actual tablet acceptance |
+Compilation and probe messages do not constitute hardware acceptance.
+
+| Component | Observed on the tablet | Remaining limits |
 |---|---|---|
-| Kernel / DT / initramfs | Built and artifact hashes checked | Internal UP bootstrap automatically kexecs SD SMP kernel; ACM shell commands verified; Debian systemd booted from SD |
-| Four CPU cores | Upstream Qualcomm SMP, OPP and TSENS | Four CPUs online after boot; CPU3 could not return after a hotplug test; OPP/thermal/stability tests pending |
-| eMMC / microSD | Common DTS SDHCI and regulators | eMMC enumerated; SD passed two 32 MiB ext4 write/unmount/readback tests after load-vote fix at 50 MHz; UHS and long stress unverified |
-| USB / buttons / touch / backlight | Existing upstream drivers and board DT | USB ACM shell command exchange tested; Ethernet and input tests pending |
-| Display | Boot framebuffer retains MDSS clocks/domain and DSI supplies | Owner observed continuing output past former failure; brief blue handover remains; native DRM and repeated boots untested |
-| Adreno 305 | msm DRM/OCMEM and ARM SMMU; Mesa Freedreno | FD305 OpenGL ES 3.0 renders glmark2 after MSM8226 SMMU AFE correction; long-term stability pending |
-| Wi-Fi / Bluetooth | Pronto WCNSS, wcn36xx, stock firmware; software-scan fallback | Wi-Fi autoconnect and SSH traffic verified; scan offload fails; Bluetooth untested |
-| Battery / charging | SMB358, source detection, hardware AICL and PMIC thermistor guard | Charging and thermistor verified; hardware AICL selected 2 A on SDP; termination/recharge enabled; full-cycle measurement pending |
-| Audio | Tapan source identified | Deferred |
-| Suspend / thermal / shutdown | Upstream baseline, incomplete board validation | Not tested |
-| Debian | Debian 13.7 armhf on microSD ext4 | Native systemd reports `running`; USB ACM root console tested |
-| Plasma Mobile | Debian plasma-mobile-full, KWin Wayland and SDDM | Installed; accelerated session acceptance in progress |
+| Boot / Debian / SSH | Automatic UP-to-SMP kexec; native Debian, USB ACM command exchange and Wi-Fi SSH | Cold-boot and long-duration reliability |
+| CPU frequency / voltage | All seven stock frequencies under four-worker checksum load; SAW acknowledgments match 1.14/1.15/1.28 V targets; schedutil reaches 1190.4 MHz under load | Closed-loop CPR, fuse-based voltage reduction and sustained thermal stress |
+| CPU idle | Existing upstream standalone power-collapse sequence; thousands of successful entries and residency on all four cores | L2 remains powered; full RPM/L2 suspend absent |
+| CPU hotplug | CPU1, CPU2 and CPU3 each pass offline→online; verified collapse re-runs the existing ACC release path | Repeated long-duration stress pending |
+| System suspend | QUP noirq and sensor quiescing fix the observed external abort; RTC-woken s2idle returns with USB/Wi-Fi and active Plasma | Three RTC cycles and physical Power wake pass; full RPM/L2 deep sleep and power consumption remain unverified |
+| Storage | Two 32 MiB ext4 write/unmount/cache-drop/readback tests after regulator load-vote fix; rootfs boots | SD remains limited to 50 MHz/no 1.8 V; sustained stress and hotplug |
+| Display / touch | Continuing 1280×800 output; desktop touch interaction observed | Inherited simpledrm framebuffer; native MDP5/DSI scanout unfinished |
+| GPU / desktop | FD305 GLES 3.0; full historic glmark2 score 74; three post-sleep scenes complete (score 106); accelerated Plasma | Mesa ordering workaround; post-sleep GPU recovery resolved in tested cycles; desktop 60 FPS unverified |
+| Wi-Fi / Bluetooth | Pronto/wcn36xx autoconnect and SSH traffic | Firmware scan-offload fails; software fallback; Bluetooth untested |
+| Charging / battery | SMB358 charging and thermistor read; AICL selected 2 A input ceiling | Actual source current not measured; full-cycle termination/recharge and accurate battery percentage unverified |
+| Sound | Tapan identified from stock sources | Deferred |
 
-Validation order: lk2nd Fastboot → extlinux/card detection → correct model in
-Linux → four CPUs/timers/interrupts → OPP/TSENS/cooling/stability → card ext4 →
-Debian systemd → USB traffic/input/power → panel/backlight/touch → DRM connector
-and hardware renderer → Plasma Mobile → repeated cold boots, thermal/charge,
-shutdown/reboot and suspend/resume. Save sanitized results, not raw device logs.
-For missing display, collect lk2nd logs with `fastboot oem log` then
-`fastboot get_staged /home/paul/t531/private/lk2nd.log`, and test USB ACM; no UART wiring or ramoops
-reservation is invented. The verified lk2nd region is 512 KiB at
-`0x2ff80000`; console data starts at `0x2ffc0000`. Linux registration is
-confirmed in the card log, but retention across restart remains unverified.
+### CPU implementation and diagnostics
 
-Boot-chain audit: Samsung BOOT contains lk2nd 23.1; the selected SD entry is
-`diagnostic`, loading the project zImage, explicit SM-T531 DTB and initramfs.
-USB ACM/ECM creation demonstrates that `/init` ran. Debian is not selected.
-The owner observed console output followed by a blue flash and black display.
-No panic log was obtained; ACM shell and USB Ethernet traffic did not respond.
-The original USB diagnostic attempt left no rootfs log; a later USB-free log
-collector successfully wrote boot evidence to the card boot partition. Display clock/power teardown
-is a hypothesis: inherited simple-framebuffer has no clocks property, and
-native panel support is absent. Framebuffer RAM is reserved by common DTSI.
+The existing SPM driver now supports the MSM8226 L2 SAW voltage controller
+for the shared PM8226 S2 CPU rail. Voltage requests run on CPU0, preserve the
+inherited PMIC range and check the hardware acknowledgment; failures propagate
+to cpufreq. The board uses the actual stock speed0 frequency plan and conservative
+slow-process ceilings from its captured DT. Those targets are not external
+voltage measurements or implementation of CPR. PM8226 L3 is voted higher
+before APC and lower afterwards, following the stock
+corner-ceiling dependency. The existing Qualcomm cpufreq wrapper connects CPU
+OPPs to RPM CX: SVS_SOC through 998.4 MHz and NORMAL above it, matching the
+stock PLL requirements. The analog PLL rail L8 is already held at 1.8 V by the
+inherited framebuffer; independent native-display power integration remains
+future work. The shared policy uses schedutil;
+CPU idle reuses the upstream MSM8226 sequence with stock 500 us wake latency and
+conservative 2 ms minimum residency. The four checksum workers passed at every
+frequency. Temporarily lowering only the passive TSENS threshold produced
+cooling state 4 and clamped CPU maximum/current to 600 MHz; both stock 75 °C
+thresholds were restored. This validates the temperature-to-cpufreq control
+path without heating the tablet to its normal trip point. Sustained hot-device
+stability and external power/voltage measurements remain unverified.
 
-A single-variable extlinux test added `clk_ignore_unused` with unchanged
-kernel, DTB and initramfs hashes. The owner observed the same blue flash and
-black display; ACM returned no data and USB Ethernet did not answer. This
-test did not support unused-clock gating as the sole cause. DRM/MSM is a
-module absent from this initramfs; an MDP5 driver underrun panic is therefore
-not established.
+The first RTC-woken s2idle test exposed an active LIS2HH12 interrupt reading
+physical QUP_STATE `0xf9924004` before the I2C controller's clocks resumed.
+The QUP patch moves system transitions to the noirq phase with runtime-PM
+force helpers and adapter suspension marking, as in upstream Qualcomm GENI.
+Four repeated RTC cycles passed after the QUP fix and sensor input was read
+again. The accelerometer now disables its active data-ready interrupt and
+conversion during system suspend and restores them on resume.
 
-The first appended-DTB RAM tests were accepted by lk2nd, but USB was not
-observed within the initial observation window. A subsequent RAM test used a
-legacy QCDT v2 container with the same mainline kernel and board DTB; the host
-did enumerate the diagnostic USB gadget while the screen retained Fastboot.
-This establishes initramfs execution for that test, not console usability.
-ACM returned no data and USB Ethernet remained unreachable. A first ramoops
-read after an earlier RAM test returned an all-zero region; it cannot prove
-absence of panic because startup and RAM retention were not established.
-The host uses USB/IP, so attachment delay and stale screen contents must be
-distinguished from kernel progress.
+Active Plasma then exposed an A3xx GPU hang after sleep. Backport upstream
+commit [be0e82b8e0c96649b8bc77a99ab0d185243b7659](https://github.com/torvalds/linux/commit/be0e82b8e0c96649b8bc77a99ab0d185243b7659)
+with original authorship to drain VBIF before power-off. A305B implements three
+clients; its acknowledgment register reads `0x00070000` after request clearing.
+The six-client mask failed safely with `-EBUSY`; the A305B-specific three-client
+mask then passed RTC sleep with active Plasma and no new GPU recovery.
+Thermistor and cable-policy work use the freezable queue, avoiding conversion
+attempts while VADC completion IRQs are disabled. Wi-Fi remembers its failed
+firmware scan capability across restart/resume and uses software scanning.
+The Pronto MX vote also allows the stock shared-rail maximum of 1.3375 V;
+its former 1.15 V ceiling conflicted with the CPU turbo voltage requirement.
+Three final-image RTC cycles passed with the same Plasma process, all four
+CPUs online, schedutil restored, immediate Wi-Fi reassociation and no new GPU,
+VADC or accelerometer faults. The post-sleep three-scene glmark2 test reports
+Freedreno FD305 and completes with exit status 0. Its score 106 is for this
+short smoke workload, not directly comparable with the earlier complete suite.
+A subsequent physical Power press woke the device after 13 seconds, before
+the 60-second backup alarm; the PMIC key IRQ advanced and Plasma/SSH returned.
+A controlled SysRq panic with a five-second restart then preserved the actual
+panic record through Samsung/lk2nd, bootstrap and kexec, and automatic Plasma
+startup recovered. The record was saved in both `/var/log/t531-pstore` and
+`/var/lib/systemd/pstore`. This proves that tested reset path; it does not prove
+retention after power removal or every possible hardware reset.
+A successful suspend counter alone cannot validate recovered graphics, input,
+networking, charging or actual deep-sleep power.
 
-USB control requests (device descriptor, configuration and status) repeatedly
-completed after the display went black. This establishes active kernel USB
-request handling, not a usable userspace console. ACM class requests succeeded,
-but bulk IN/OUT timed out; the upstream serial gadget queues receive buffers
-only while its terminal is open. A pre-open test did not restore a usable terminal.
-A separate RAM boot with `fw_devlink=off` did not enumerate diagnostic USB
-within 25 seconds; disabling dependency links is not an established fix.
+For boot failures, use USB ACM, private card logs and lk2nd logs, not screen
+appearance alone. `sudo picocom --baud 115200 --flow n /dev/ttyACM0` accesses
+the root diagnostic shell; inspect all ACM ports after USB re-enumeration.
+Only one host reader may open a terminal. USB/IP attachment delay is separate
+from kernel progress. `fastboot oem log` / `fastboot get_staged` retrieve lk2nd
+logs. The appended SD DT now explicitly reserves the 512 KiB ramoops region at
+`0x2ff80000` with two 128 KiB dump records and a 256 KiB console. The previous
+SD DT replaced lk2nd's DT and lost its runtime reservation; a live bootstrap
+ramoops node did not prove second-stage reservation. Both stages now register
+the backend. Console persistence across kexec, controlled-panic restart retention and
+systemd archival to `/var/lib/systemd/pstore/` are verified. Power-loss
+retention is not expected from RAM. Bootstrap copies available previous pstore records to
+`/var/log/t531-pstore` before kexec. Do not pass `lk2nd.pass-ramoops`: lk2nd 23.1
+would override the static layout with 8 KiB dump records. Its raw Fastboot
+reader remains usable; its dump parser assumes that older layout.
+Do not zap pstore before investigating a failure. Bootstrap/initramfs and
+journald logs persist on SD; unsanitized output stays outside Git.
 
-Card logging test: adding `lk2nd.pass-ramoops` produced a reserved-memory node
-at `0x2ff80000` and Linux registered ramoops/pstore console at boot. The
-USB-free `t531.logonly` initramfs path mounted `LABEL=T531_BOOT` and saved
-`t531-boot.log` and `t531-dmesg.log` on the external ext2 partition. Raw logs
-remain outside Git. Saved evidence shows all four CPUs online, SD SDR104
-enumeration and eMMC HS200 enumeration. This does not validate CPU OPP,
-thermal behavior, storage stress, ext4 rootfs or USB data traffic.
+### Graphics, charging and time limits
 
-For a log-only boot, append `lk2nd.pass-ramoops t531.logonly` to the diagnostic
-entry. It skips gadget creation, attempts card logging and requests reboot
-after 30 seconds. Hold Volume Down during the restart to enter lk2nd Fastboot;
-automatic reboot and RAM retention are not yet validated. Read the fixed-size
-region before issuing any new boot: `fastboot oem ramoops raw`, then
-`fastboot get_staged /home/paul/t531/private/ramoops.raw`. Never use
-`lk2nd.pass-ramoops=zap` when preserving a previous failure. A subsequent
-maintenance Android boot can read the external ext2 logs without writing
-internal partitions. USB-free logs passed the reported device-link errors
-and reached `/init`, so those errors are not themselves proof of a panic.
+MSM8226-specific clearing of SMMU SCTLR.AFE resolved hardware translation
+faults while retaining AP permission checks. Mesa renders through the separate
+Adreno node, using the KMSRO adapter based on the MIT-licensed
+[AsteroidOS implementation](https://github.com/AsteroidOS/meta-asteroid/tree/c5b82318a9d065f37d7f4ec90e272721288797b5/recipes-graphics/mesa-dri-simpledrm).
+`FD_MESA_DEBUG=inorder` prevents observed missing text/icons during scrolling.
+It retains hardware rendering; no pixman, per-frame glFinish or diagnostic
+preload is installed. The underlying Mesa ordering problem is unresolved.
+Measured application swap rates were about 22 FPS in settings and 10–12 FPS
+in the drawer before the CPU changes, not physical scanout or input latency.
+Simpledrm copies/converts XRGB8888 to the inherited RGB888 framebuffer.
 
-An instrumented USB test also saved `t531-usb-dmesg.log` and a process/IRQ
-snapshot to the external boot partition. UDC binding and `ttyGS0` opening
-returned successfully. The later process snapshot contained the collector
-but no interactive USB shell; timer interrupts were present on all four CPUs.
-The cause of shell exit is not established. Waiting for USB `configured` and restarting an exited shell restored ACM
-command exchange on the tablet. `echo READY` and `uname -a` returned results;
-a runtime query reported CPUs `0-3` and available frequencies
-300/384/600/787.2 MHz. Frequency transitions, thermal behavior and stability
-remain untested. No full stacks were recorded in that snapshot; it contains wait-channel
-names.
-The requested automatic restart did not occur in the observed test; no
-claim of preserved ramoops across a warm restart is made.
+With SDDM stopped, run `sudo glmark2-es2-drm --visual-config alpha=0
+--winsys-options drm-device=/dev/dri/by-path/platform-3200000.framebuffer-card`.
+Then start SDDM using the configured session cleanup. Preserve the established
+GPU configuration when investigating CPU power management.
 
-The `usb-log` entry selects the tested diagnostic path in `scripts/init-usblog`.
-It waits for the card, saves USB boot/process/IRQ logs to `T531_BOOT`, waits
-for USB configuration and restarts an exited interactive shell. It stays
-online after collection. On the host, connect with
-`sudo picocom --baud 115200 --flow n /dev/ttyACM0` (exit: Ctrl-A, Ctrl-X).
-Only one host reader should use the terminal at a time. Use a terminal emulator
-for BusyBox line editing; a raw reader must handle cursor-position requests.
-This is a root initramfs diagnostic shell, not Debian or a graphics session.
+The installed charging policy increases the input ceiling through
+500/700/1000/1200/1500/1800/2000 mA at one-second intervals while SMB358 AICL
+handles source droop. A higher ceiling is not measured consumption. The PMIC
+USBIN ADC is not a valid VBUS measurement on this port. Charge ceiling is
+1.8 A, float voltage 4.34 V; hardware termination and recharge are enabled.
+Invalid or unsafe battery-temperature readings inhibit charging. Weak-source,
+full-cycle and suspend charging behaviour remain unverified. UPower detects
+the external supply; PM8226 BMS support and valid SOC percentage are missing.
 
-Only demonstrated functions are validated: initramfs boot, ACM command
-exchange and microSD ext2 log writes. Complete USB support, CPU power
-management, Debian and graphics remain unvalidated.
-
-Display resource test (2026-10-12): the original framebuffer lacked MDSS
-clock, power-domain and supply references. Its blank flag was zero while
-MDSS was off (`GDSCR=0x00282001`). `pd_ignore_unused` alone did not help.
-A power-domain reference alone brought MDSS on but produced a blue screen.
-With clock references and the vendor-confirmed L4/L5/L8 DSI supplies added,
-the owner observed continuing display output beyond the former failure,
-with a brief blue transition at startup. Runtime showed MDSS on
-(`GDSCR=0xa0282000`) and framebuffer clock/supply consumers. USB shell
-remained responsive after 170 seconds. These tests retained the existing
-`clk_ignore_unused` parameter; operation without it is not verified.
-Patch 0003 records this board-specific change using existing upstream
-interfaces. This is inherited framebuffer bring-up, not native DRM/KMS.
-
-The same boot reported repeated SD command timeouts and `mmcblk1: recovery
-failed`, followed by writeback failures on the ext2 boot filesystem. These
-are observed I/O failures, not evidence of a kernel panic. The boot filesystem
-was repaired once from a local image using e2fsck and its writeback hash was
-verified, but card I/O errors recurred. Logs remain local; SD reliability
-must be fixed before Debian boot or further sustained writes. Inter-test
-reboots were explicitly requested through the runtime shell; an independent
-spontaneous reboot has not been established by a saved panic/reset log.
-
-Further runtime checks (2026-10-12): the ACM shell remained responsive for
-more than ten minutes. An observed battery-icon fragment disappeared after
-clearing and redrawing tty1; the owner confirmed normal text afterwards. Both
-initramfs entry points now clear tty1. The origin of the fragment is unknown;
-this does not validate native DRM, cold boots or the rebuilt initramfs.
-
-Patch 0004 limits external SD to 50 MHz without a 1.8 V transition for diagnosis.
-Short 8 MiB write/readback checks passed, but subsequent log writes still caused
-card removal and corrupted the on-card initramfs. The boot partition was
-restored through temporary Android and its complete image hash verified.
-MMC tracing then showed CMD25 completing successfully, followed immediately
-by CMD13 timeouts and card re-enumeration. Runtime tests with vendor-confirmed
-GPIO38 input/no-pull, controller reprobe and 25 MHz did not resolve the failure.
-Patch 0006 subsequently records the vendor GPIO38 input/no-pull pin configuration; hotplug and long-term IRQ behavior remain unverified. Further boot-file updates require persistent
-readback verification; Debian has not booted. Raw logs and partition images
-remain outside Git.
-
-
-## SD write fix and bootstrap kernel
-
-The same card passed a 32 MiB write/unmount/cache-drop/readback under the
-Android driver. With mainline it completed CMD25 data transfers but timed out
-on the following CMD13 and re-enumerated. The board omitted
-`regulator-allow-set-load` on PM8226 L18/L21; the upstream regulator core silently
-ignored SDHCI load requests without that permission. Patch 0005 enables those
-existing upstream requests, without changing supply voltages. Vendor SM-T531
-revision-02 DTS documents active loads of 800000 and 22000 microamps.
-A physical voltage drop was not measured; a defective card is not established.
-
-With only the load-vote DT change, two separate 32 MiB ext4 write tests passed
-sync, unmount, cache drop and remounted SHA-256 verification. MMC error counters
-remained zero in those tests. Updated boot files also passed persistent readback.
-The diagnostic 50 MHz/no-1.8-V limit remains; SDR104 and sustained storage
-reliability still require testing. GPIO38 also generated an interrupt storm in
-an earlier boot. Patch 0006 models the vendor GPIO/no-pull/2 mA configuration;
-this is separate from the demonstrated supply-load fix.
-
-`make bootstrap` reuses the one kernel build directory with `qcom_defconfig`,
-`kernel.fragment` and `bootstrap.fragment`. It emits `bootstrap-zImage`,
-`bootstrap-initramfs.cpio.gz`, `bootstrap-kernel.config` and
-`bootstrap-boot.ext2`, a 9961472-byte ext2 payload fitting the logical BOOT
-space after lk2nd's protected 512 KiB. Run `make build` for ordinary SMP
-artifacts; the two profiles keep their current artifacts under distinct names.
-The first stage is deliberately UP: upstream Qualcomm Cortex-A7 SMP lacks
-`cpu_kill`, so ARM's kexec safety check rejects a load from an SMP kernel.
-The ordinary second-stage kernel remains SMP-enabled; no safety check is bypassed.
-
-The bootstrap uses static ARM kexec-tools 2.0.29 from
-[the kernel.org release directory](https://www.kernel.org/pub/linux/utils/kernel/kexec/),
-archive SHA-256 `67b1ac503aade45a54db0bc79228a8830a35d5d4f83cee932cff3e7a81a4a9ec`.
-It mounts `LABEL=T531_BOOT` read-only, verifies `kernel.sha256` for `zImage`
-and `initramfs.cpio.gz`, reads `kexec.cmdline`, loads and unmounts before kexec.
-It uses a tested 64 MiB image allowance to place initramfs/DT above the normal
-kernel decompression area, and saves addresses plus first-stage dmesg to
-`/var/log/t531-bootstrap.log` on the external rootfs before handoff.
-It reuses `/sys/firmware/fdt` with lk2nd's actual RAM/framebuffer settings;
-DT changes therefore require updating the bootstrap DTB too. A failed load
-returns to the diagnostic shell. Missing-card recovery is not yet physically tested.
-
-Test the bootstrap on SD using `boot/bootstrap-extlinux.conf.in`, replacing
-`t531.bootstrap=internal` with `t531.bootstrap=sd-test`, with the bootstrap
-files alongside the ordinary files and checksum manifest. The saved first-stage
-command line distinguishes the selected loader in subsequent internal tests. Internal
-installation is gated on a successful real UP-to-SMP kexec test. The revised
-loader passed automatic SD-to-SMP loading and was installed with:
-
-```sh
-# Only after real kexec validation and confirmation of the 10 MiB BOOT layout:
-fastboot flash boot .work/artifacts/current/bootstrap-boot.ext2
-```
-
-This command is for lk2nd Fastboot, never stock Fastboot or Heimdall. It must
-preserve the first 512 KiB. The complete current lk2nd BOOT was read and its
-SHA-256 verified before preparing this scheme; its initial release-image bytes
-also match the pinned lk2nd download. Fastboot reported logical BOOT
-`0x980000` and protected lk2nd `0x80000`. After flashing, the complete BOOT,
-protected 512 KiB prefix and payload hashes matched the expected bytes.
-The card's test `/extlinux/extlinux.conf` had priority and was renamed to
-`extlinux.sd-test.conf`. The next boot's saved first-stage log identified
-`t531.bootstrap=internal`; the answering SMP shell identified `t531.stage=second`
-and CPUs `0-3`. The other internal partitions were not written.
-
-Keep `/extlinux/extlinux.conf` absent from the SD boot filesystem when using
-this internal loader, or lk2nd may select the card entry first. Update ordinary
-kernel files from a mounted card with:
-
-```sh
-make build
-make deploy-sd BOOT_MODE=internal BOOT_MOUNT=/mounted/card-boot
-```
-
-This copies the kernel, initramfs, DTB and checksums without creating an SD
-extlinux entry. It refuses an existing active extlinux configuration. The
-loader passes its live DT; the appended-DT container described below allows
-SD kernel and DT updates without changing the internal bootstrap.
-
-Recovery of the exact saved pre-bootstrap lk2nd state from
-Samsung Download Mode is:
-
-```sh
-heimdall flash --BOOT /home/paul/t531/private/device/BOOT-lk2nd.img
-```
-
-Bootstrap loading from SD and UP-to-UP kexec were observed on-device; the
-second UP kernel returned an ACM shell with `t531.stage=up-self`. Re-enumeration
-changed the host port to `/dev/ttyACM1`; inspect all ACM ports. Automatic UP-to-SMP kexec
-reached the first kernel's `Bye!` handoff, but no second-stage console or usable
-USB appeared; the owner reported a USB descriptor error. That first execution
-was unverified. Repeating with only `maxcpus=1` added to the ordinary
-second-stage command line also stopped at `Bye!`, without an answering ACM
-shell. This does not support secondary-CPU startup as the sole cause. A compact
-SMP kernel derived from the successful UP configuration then booted through
-kexec with four CPUs and passed an 8 MiB ext4 write/unmount/readback test.
-The ordinary multi_v7 kernel booted unchanged when kexec used
-`--image-size=0x04000000`: initrd at `0x04008000`, DT at `0x040e5000`, instead
-of `0x02ba5000`/`0x02c82000`. Its ACM shell reported `t531.stage=second`, CPUs
-`0-3`, and passed a 32 MiB ext4 write/unmount/cache-drop/readback test.
-This establishes a placement-dependent failure; the exact overwritten region
-has not been measured. The final loader subsequently passed automatic SD-to-SMP kexec; the saved
-first-stage command line identifies `t531.bootstrap=sd-test`, and the second
-ACM shell reports `t531.stage=second` and CPUs `0-3`. The installed internal
-loader then passed the same chain after the higher-priority SD test entry was
-removed from lookup; its saved first-stage marker is `t531.bootstrap=internal`.
-Debian 13.7 armhf subsequently booted from the external ext4 rootfs through
-the installed bootstrap and SD kernel. `systemctl is-system-running` returned
-`running`, with an accessible USB ACM root console. Raw results and both BOOT
-backups remain outside Git.
-
-### Updating the SD kernel without changing the internal bootstrap
-
-The installed bootstrap supplies its own live DT to kexec. `make build` now
-also produces `sd-kernel.img`, an Android v0 container holding the genuine
-`zImage` followed by the updated board DT. The existing kexec-tools Android
-loader preserves the appended DT, and the ARM decompressor selects it.
-This packaging was tested on the tablet: the updated DT and
-`root=LABEL=T531_ROOT` reached Debian systemd. No internal BOOT update is
-needed. The container supplies verified RAM banks and the bootstrap's
-64 MiB initrd placement; ATAG conversion is disabled for this FDT-only path.
-
-`make deploy-sd BOOT_MODE=internal BOOT_MOUNT=/mounted/card-boot` installs
-the container under the immutable bootstrap's expected filename `zImage`
-and installs its matching `kernel.sha256`. The genuine kernel remains
-`zImage` in host artifacts. Keep `/extlinux/extlinux.conf` absent on SD so
-lk2nd selects the installed internal bootstrap.
-
-Graphics rootfs preparation is `ROOTFS_PROFILE=graphics make rootfs`.
-It installs Debian Mesa 25.0.7, glmark2 DRM/Wayland and Weston. The small
-`t531-mesa-simpledrm` Debian package reuses the MIT-licensed KMSRO entry-point
-adapter from [AsteroidOS](https://github.com/AsteroidOS/meta-asteroid/tree/c5b82318a9d065f37d7f4ec90e272721288797b5/recipes-graphics/mesa-dri-simpledrm),
-with the library path adapted to Debian armhf. It delegates to the existing
-Mesa render-only loader; it does not supply GPU rendering itself.
-`ROOTFS_PROFILE=mobile make rootfs` additionally installs
-`plasma-mobile-full`, SDDM and XWayland and enables automatic login for `t531`.
-`scripts/configure-plasma.sh` applies the same configuration to an existing
-installation. KWin selects the stable simpledrm KMS path and Qt Quick uses
-OpenGL; Mesa renders through the separate Adreno node. Scanout still uses
-the inherited framebuffer, rather than native MDP5/DSI modesetting.
-
-The MSM8226 SMMU patch clears SCTLR.AFE for this SoC only, preserving full
-AP permission checking. On the tablet, AFE produced access-flag faults with
-valid short descriptors; changing only this bit made hardware translation
-and GPU submissions succeed. The SD kernel applies this setting whenever
-the context is programmed, without runtime register overrides.
-
-Run the DRM benchmark with SDDM stopped:
-
-```sh
-sudo systemctl stop sddm
-sudo glmark2-es2-drm --visual-config alpha=0 \
-    --winsys-options drm-device=/dev/dri/by-path/platform-3200000.framebuffer-card
-sudo systemctl start sddm
-```
-
-### Wi-Fi and charging policy
-
-Wi-Fi uses the device WCNSS firmware/NV file and factory MAC stored privately
-in EFS. Do not substitute a MAC from another tablet. For rootfs preparation,
-pass `WIFI_CONFIG=/private/wpa.conf` and
-`WIFI_LINK_CONFIG=/private/wlan.link`; neither file belongs in Git.
-`scripts/configure-network.sh` configures autoconnect and, by owner request,
-empty-password SSH for `root` and `t531`, listening only on the Wi-Fi address.
-Autoconnect after reboot and authentication without a key or password were
-verified on the tablet. Bluetooth remains untested. One RTC-woken s2idle cycle restored Wi-Fi and
-GPU access; deep suspend and repeated resume remain unverified.
-The mobile profile uses NetworkManager so Plasma can manage connections;
-the base profile uses wpa_supplicant and systemd-networkd. For an existing
-mobile installation, run the network configuration with `NETWORK_MANAGER=1`
-from a local console or detached service, because changing managers can
-interrupt SSH and change the DHCP address.
-
-`scripts/configure-charging.sh` installs an explicit SDP-current override:
-500/700/1000/1200/1500/1800/2000 mA input ceilings, one step per second.
-SMB358 hardware AICL remains enabled; a completed lower AICL result stops
-the ramp until reconnect. A higher ceiling is not a measured current draw.
-The PMIC USBIN ADC reads about 0.14 V with USB connected and is not used
-as a valid VBUS measurement. The exact hardware droop threshold and
-weak-source behaviour still need measurement. Battery charging is inhibited
-when its temperature cannot be read or falls outside -5..60 C; restart
-requires 0..45 C. The battery current ceiling is 1.8 A and float voltage
-remains 4.34 V. The internal bootstrap and BOOT are not changed.
-
-SMB358 charge termination and automatic recharge are enabled in the SD
-kernel, preserving the inherited 100 mA termination setting and 100 mV
-recharge threshold. This is voltage/current hysteresis, not a claimed SOC
-percentage. Full-charge cutoff and zero battery current during externally
-powered operation still require a full-cycle measurement; no fuel-gauge
-percentage is exposed yet.
-
-`systemd-timesyncd` is enabled for normal NTP synchronization and stores a
-last-known timestamp across boots. The PMIC RTC initially returned 1971;
-setting system time restored authenticated HTTPS, `apt update` completed,
-and package installation succeeded. No certificate verification is disabled.
-RTC writes currently fail. RTC_HCTOSYS is disabled in the SD kernel so
-late RTC registration cannot overwrite the restored NTP timestamp. After
-reboot, automatic time recovery and HTTPS apt update were verified.
-Persistent bring-up services are NetworkManager (mobile profile), or
-wpa_supplicant and networkd (base profile), the Wi-Fi-address SSH listener,
-and the one-second charger policy.
-The latter polls only power_supply properties; on-chip AICL performs droop
-detection. Idle overhead and suspend integration remain unmeasured.
-
-The final SD kernel on 2026-10-12 reported an input ceiling and completed
-AICL result of 2000000 uA, a charge-current ceiling of 1800000 uA and
-4340000 uV float voltage. Readback of SMB358 registers 0x01=0x74 and
-0x04=0x00 confirmed the 2 A code and enabled termination/recharge. This
-is a controller result, not an external current measurement. The first
-ramp restarted once during source initialization, then settled at 2 A.
-A weak adapter and a complete battery charge/discharge cycle remain
-unverified. Private logs and factory network identity are kept outside Git.
-
-### Current desktop limitations
-
-KWin and Qt Quick report the FD305 hardware renderer. A complete default
-DRM glmark2 run completed with score 74 after the MSM8226 SMMU AFE fix.
-With Mesa's default batch reordering, complex Qt Quick windows lost text/icons
-while scrolling. `FD_MESA_DEBUG=inorder` disables that optimization while
-retaining the FD305 hardware renderer. Repeated native settings scrolls and
-captured drawer frames retained their text; the owner confirmed that settings
-no longer flickered. The Plasma configuration persists this workaround.
-No software renderer or per-frame `glFinish()` is used in the installed setup.
-The underlying driver ordering failure remains unresolved; this is not full
-GPU conformance or a claim of desktop stability.
-
-On 2026-10-12, repeatable one-second injected touch gestures with passive
-`eglSwapBuffers()` timestamping measured settings at approximately 22 FPS
-and the drawer at 10–12 FPS in this mode. These are application frame
-completion rates, not measured physical scanout or end-to-end input latency.
-The 60 FPS target has not been reached. Disabling KWin's contrast effect did
-not materially improve the drawer. GPU trace retirement timestamps on A3xx
-were zero, so they cannot establish GPU execution cost. Display commits were
-observable through DRM events, but simpledrm does not provide a physical
-vblank counter. The current output still copies/converts an XRGB8888 shadow
-buffer into the inherited RGB888 framebuffer; native MDSS scanout remains
-unfinished. Its exact contribution to frame time has not been isolated.
-
-A private EGL trace of an affected settings window replayed correctly on the
-same GPU. Keeping GPU and SMMU runtime-active did not fix missing text;
-a diagnostic GPU wait did, at about 19 FPS. Neither experiment is installed.
-Mesa 26.1.6 and disabling the Qt shader cache did not resolve the issue.
-The vendor A3xx post-power-collapse shader workaround remains an unverified
-candidate. Occasional GPU recovery was recorded in earlier configurations.
-
-UPower could not start with its standard PrivateUsers sandbox because the
-running kernel lacked CONFIG_USER_NS. A temporary service override restored
-UPower on-device; subsequent builds enable user namespaces. UPower detects
-the SMB358 external supply, but reports battery-missing: the PM8226 BMS is
-not exposed by this port. No valid charge percentage is available yet.
-The PM8916 voltage-mode BMS driver is not evidence of PM8226 compatibility.
+Timesyncd persists a last-known time and synchronizes NTP. PMIC RTC initially
+reported 1971 and rejects time writes, so RTC_HCTOSYS is disabled. Correct time
+restored authenticated HTTPS and successful apt update/package installation;
+certificate verification stays enabled. Persistent bring-up services include
+NetworkManager, the Wi-Fi SSH listener and the charging policy. Their idle
+memory, wakeups and production suitability still require measurement.

@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 00:45:00 +0700
+Subject: [PATCH] dt-bindings: soc: qcom: saw2: describe CPU memory supply
+
+The MSM8226 shared CPU SAW regulator must raise the PMIC memory supply
+before raising the CPU voltage. Describe that supply dependency so boards
+can connect their existing RPM-controlled memory rail.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/Documentation/devicetree/bindings/soc/qcom/qcom,saw2.yaml b/Documentation/devicetree/bindings/soc/qcom/qcom,saw2.yaml
+index c2f1f5946..74b2418b9 100644
+--- a/Documentation/devicetree/bindings/soc/qcom/qcom,saw2.yaml
++++ b/Documentation/devicetree/bindings/soc/qcom/qcom,saw2.yaml
+@@ -53,6 +53,9 @@ properties:
+       - description: Base address and size of the alias register region
+     minItems: 1
+ 
++  vdd-mx-supply:
++    description: Memory rail tracking the MSM8226 shared CPU voltage.
++
+   regulator:
+     $ref: /schemas/regulator/regulator.yaml#
+     description: Indicates that this SPM device acts as a regulator device

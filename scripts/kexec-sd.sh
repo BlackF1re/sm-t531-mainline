@@ -38,6 +38,13 @@ trap - EXIT
 if mount -t ext4 -o rw LABEL=T531_ROOT /newroot; then
     mkdir -p /newroot/var/log
     { cat /proc/cmdline; cat /run/t531-kexec.log; dmesg; } > /newroot/var/log/t531-bootstrap.log
+    # Keep the preceding kernel's persistent records before the next boot
+    # reuses the same ramoops area. Do not erase the pstore source.
+    for record in /sys/fs/pstore/*; do
+        [ -f "$record" ] || continue
+        mkdir -p /newroot/var/log/t531-pstore
+        cp "$record" /newroot/var/log/t531-pstore/
+    done
     sync
     umount /newroot
 fi

@@ -82,44 +82,7 @@ cp "$out/arch/arm/boot/zImage" "$artifacts/${prefix}zImage"
 cp "$out/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dtb" "$artifacts/"
 cp "$out/.config" "$artifacts/${prefix}kernel.config"
 cp "$project/boot/extlinux.conf.in" "$artifacts/extlinux.conf"
-# Pinned static Debian armhf BusyBox; no host-architecture binary in initramfs.
-url='https://deb.debian.org/debian/pool/main/b/busybox/busybox-static_1.37.0-6+b9_armhf.deb'
-sha=8b35210e08d559ecc0ddb660dd96f6f9694f69eb27f1dc608f5eeda56d94509e
-mkdir -p "$work/busybox"
-if [ ! -f "$work/busybox.deb" ]; then curl -fL "$url" -o "$work/busybox.deb"; fi
-echo "$sha  $work/busybox.deb" | sha256sum -c -
-dpkg-deb -x "$work/busybox.deb" "$work/busybox"
-if [ "$profile" = bootstrap ]; then
-    kexec_sha=67b1ac503aade45a54db0bc79228a8830a35d5d4f83cee932cff3e7a81a4a9ec
-    [ -f "$work/kexec-tools.tar.xz" ] || curl -fL \
-        https://cdn.kernel.org/pub/linux/utils/kernel/kexec/kexec-tools-2.0.29.tar.xz \
-        -o "$work/kexec-tools.tar.xz"
-    echo "$kexec_sha  $work/kexec-tools.tar.xz" | sha256sum -c -
-    [ -d "$work/kexec-tools-2.0.29" ] || tar -xf "$work/kexec-tools.tar.xz" -C "$work"
-    (cd "$work/kexec-tools-2.0.29";
-     ./configure --host="${cross%-}" --without-zlib --without-lzma --without-xen \
-        CFLAGS=-Os LDFLAGS=-static;
-     make -j"${JOBS:-8}")
-fi
-# gen_init_cpio writes device nodes without root privileges.
-python3 - "$work" "$project" "$profile" > "$work/initramfs.list" <<'PYLIST'
-import subprocess,sys
-work,project,profile=sys.argv[1:]
-for directory in ['bin','sbin','dev','proc','sys','run','tmp','newroot']:
-    print(f'dir /{directory} 755 0 0')
-print('nod /dev/console 600 0 0 c 5 1')
-print('nod /dev/null 666 0 0 c 1 3')
-print(f'file /init {project}/scripts/init 755 0 0')
-print(f'file /init-usblog {project}/scripts/init-usblog 755 0 0')
-print(f'file /bin/busybox {work}/busybox/usr/bin/busybox 755 0 0')
-if profile == 'bootstrap':
-    print(f'file /bin/kexec {work}/kexec-tools-2.0.29/build/sbin/kexec 755 0 0')
-    print(f'file /kexec-sd.sh {project}/scripts/kexec-sd.sh 755 0 0')
-apps=subprocess.check_output(['qemu-arm',work+'/busybox/usr/bin/busybox','--list'],text=True)
-for app in sorted(apps.split()):
-    if app not in ('busybox','kexec'): print(f'slink /bin/{app} busybox 777 0 0')
-PYLIST
-"$out/usr/gen_init_cpio" -t "$SOURCE_DATE_EPOCH" "$work/initramfs.list" | gzip -n -9 > "$artifacts/${prefix}initramfs.cpio.gz"
+"$project/scripts/build-initramfs.sh" "$profile"
 if [ "$profile" = bootstrap ]; then
     staging=$work/bootstrap-root
     mkdir -p "$staging/extlinux"
@@ -150,10 +113,10 @@ tags_offset=$((ramdisk_offset - 0x00200000))
 mkbootimg --header_version 0 --pagesize 2048 --base 0x00000000 \
     --kernel_offset 0x00008000 --ramdisk_offset "$ramdisk_offset" --tags_offset "$tags_offset" \
     --board matisse3g --kernel "$work/zImage-dtb" --ramdisk "$artifacts/initramfs.cpio.gz" \
-    --cmdline 'console=tty0 console=ttyMSM0,115200 loglevel=8 ignore_loglevel clk_ignore_unused lk2nd.pass-ramoops' \
+    --cmdline 'console=tty0 sysctl.kernel.sysrq=0 loglevel=8 ignore_loglevel clk_ignore_unused' \
     --output "$artifacts/diagnostic-boot.img"
 (cd "$artifacts"; sha256sum zImage initramfs.cpio.gz > kernel.sha256)
-printf '%s\n' 'console=tty0 console=ttyMSM0,115200 loglevel=7 clk_ignore_unused t531.stage=second' \
+printf '%s\n' 'console=tty0 sysctl.kernel.sysrq=0 loglevel=7 clk_ignore_unused t531.stage=second' \
     > "$artifacts/kexec.cmdline"
 "$project/scripts/package-sd.sh"
 (cd "$artifacts"; sha256sum zImage *.dtb initramfs.cpio.gz lk2nd-msm8226.img \

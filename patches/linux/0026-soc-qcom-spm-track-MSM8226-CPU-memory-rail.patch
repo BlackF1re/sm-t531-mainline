@@ -1,0 +1,135 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 00:45:00 +0700
+Subject: [PATCH] soc: qcom: spm: track MSM8226 memory voltage before CPU rises
+
+The SM-T531 stock CPR configuration votes PM8226 L3 active-only as VDD_MX
+at the CPU corner ceiling, with a 1337500 uV maximum. This port uses the
+same conservative ceilings as fixed CPU OPP voltages, so MX must track
+those requests even while closed-loop CPR remains absent.
+
+Vote and enable the existing RPM regulator before initializing APC. Raise
+MX before raising APC and lower it only after APC falls. Keep RPM calls
+outside the CPU-local atomic SAW callback and propagate failed upward
+votes. Failed downward votes retain the higher, safe memory voltage.
+Connect the actual SM-T531 supply through a binding property; no new
+regulator driver is introduced.
+
+Reference: captured SM-T531 CPR and 8226_l3_ao DT nodes; LineageOS
+android_kernel_samsung_msm8226 3fa1853ed5d6c3a8ef5a2fda9822705243bbc256,
+arch/arm/mach-msm/cpr-regulator.c cpr_scale_voltage().
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+index 9b0cd5c26..f6fe1b740 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -349,6 +349,8 @@ &cpu0 {
+ };
+ 
+ &saw_l2 {
++	vdd-mx-supply = <&pm8226_l3>;
++
+ 	vdd_cpu: regulator {
+ 		regulator-name = "vdd_cpu";
+ 		regulator-min-microvolt = <900000>;
+diff --git a/drivers/soc/qcom/spm.c b/drivers/soc/qcom/spm.c
+index d7ef4494f..b53c34170 100644
+--- a/drivers/soc/qcom/spm.c
++++ b/drivers/soc/qcom/spm.c
+@@ -20,6 +20,7 @@
+ #include <linux/smp.h>
+ 
+ #include <linux/regulator/driver.h>
++#include <linux/regulator/consumer.h>
+ 
+ #include <soc/qcom/spm.h>
+ 
+@@ -86,6 +87,7 @@ struct spm_driver_data {
+ 	unsigned int volt_sel;
+ 	int reg_cpu;
+ 	int volt_set_status;
++	struct regulator *vdd_mx;
+ };
+ 
+ static const u16 spm_reg_offset_v4_1[SPM_REG_NR] = {
+@@ -337,6 +339,14 @@ static int spm_set_voltage_sel(struct regulator_dev *rdev, unsigned int selector
+ 	unsigned int old_sel = drv->volt_sel;
+ 	int ret;
+ 
++	/* Raise the memory rail before APC, lower it only after APC. */
++	if (drv->vdd_mx && selector > old_sel) {
++		ret = regulator_set_voltage(drv->vdd_mx,
++			700000 + selector * 10000, 1337500);
++		if (ret)
++			return ret;
++	}
++
+ 	drv->volt_sel = selector;
+ 	drv->volt_set_status = 0;
+ 
+@@ -346,6 +356,14 @@ static int spm_set_voltage_sel(struct regulator_dev *rdev, unsigned int selector
+ 		ret = drv->volt_set_status;
+ 	if (ret)
+ 		drv->volt_sel = old_sel;
++	else if (drv->vdd_mx && selector < old_sel) {
++		int mx_ret = regulator_set_voltage(drv->vdd_mx,
++			700000 + selector * 10000, 1337500);
++
++		/* A failed downward vote leaves MX safely above APC. */
++		if (mx_ret)
++			dev_warn_ratelimited(drv->dev, "Memory rail remains high: %d\n", mx_ret);
++	}
+ 	return ret;
+ }
+ 
+@@ -523,6 +541,12 @@ static int spm_register_regulator(struct device *dev, struct spm_driver_data *dr
+ 		return ret;
+ 	}
+ 
++	if (drv->vdd_mx) {
++		ret = regulator_set_voltage(drv->vdd_mx, drv->reg_data->init_uV, 1337500);
++		if (ret)
++			return ret;
++	}
++
+ 	/* Always do the SAW register writes on the corresponding CPU */
+ 	ret = smp_call_function_single(drv->reg_cpu, drv->reg_data->set_vdd, drv, true);
+ 	if (ret || drv->volt_set_status)
+@@ -570,12 +594,18 @@ static const struct of_device_id spm_match_table[] = {
+ };
+ MODULE_DEVICE_TABLE(of, spm_match_table);
+ 
++static void spm_disable_mx(void *data)
++{
++	regulator_disable(data);
++}
++
+ static int spm_dev_probe(struct platform_device *pdev)
+ {
+ 	const struct of_device_id *match_id;
+ 	struct spm_driver_data *drv;
+ 	struct device_node *reg_node;
+ 	void __iomem *addr;
++	int ret;
+ 
+ 	drv = devm_kzalloc(&pdev->dev, sizeof(*drv), GFP_KERNEL);
+ 	if (!drv)
+@@ -599,6 +629,16 @@ static int spm_dev_probe(struct platform_device *pdev)
+ 		if (!reg_node)
+ 			return 0;
+ 		of_node_put(reg_node);
++		drv->vdd_mx = devm_regulator_get(&pdev->dev, "vdd-mx");
++		if (IS_ERR(drv->vdd_mx))
++			return dev_err_probe(&pdev->dev, PTR_ERR(drv->vdd_mx),
++					     "CPU memory rail unavailable\n");
++		ret = regulator_enable(drv->vdd_mx);
++		if (ret)
++			return ret;
++		ret = devm_add_action_or_reset(&pdev->dev, spm_disable_mx, drv->vdd_mx);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	/* Write the SPM sequences first.. */

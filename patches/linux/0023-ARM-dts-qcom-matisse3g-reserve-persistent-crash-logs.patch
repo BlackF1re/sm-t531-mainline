@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 00:50:00 +0700
+Subject: [PATCH] ARM: dts: qcom: matisse3g: reserve persistent crash logging
+
+The appended second-stage DT replaces the bootstrap's live DT. Describe
+the verified lk2nd ramoops address explicitly in that DT so the page
+allocator cannot reuse the region and the second-stage kernel registers
+a persistent-log backend. Previous raw readback contained no valid
+pstore signature or kernel console records.
+
+Reserve 512 KiB at 0x2ff80000, keep the 256 KiB console at lk2nd's existing
+0x2ffc0000 address, and allocate two 128 KiB panic records below it. The
+bootstrap recovery DT must use the same layout. RAM retention still needs
+a real panic/warm-restart acceptance test; this description alone does
+not establish that test result.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+index dee4e58a7..9b0cd5c26 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -419,3 +419,15 @@ &cpu2 {
+ &cpu3 {
+ 	cpu-idle-states = <&cpu_spc>;
+ };
++
++/ {
++	reserved-memory {
++		ramoops@2ff80000 {
++			compatible = "ramoops";
++			reg = <0x2ff80000 0x80000>;
++			record-size = <0x20000>;
++			console-size = <0x40000>;
++			no-map;
++		};
++	};
++};

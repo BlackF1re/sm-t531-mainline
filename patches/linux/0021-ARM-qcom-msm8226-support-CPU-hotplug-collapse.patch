@@ -1,0 +1,221 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 00:25:00 +0700
+Subject: [PATCH] ARM: qcom: use firmware power collapse for MSM8226 hotplug
+
+The existing WFI-only CPU die callback cannot restart an offlined
+MSM8226 core. Use the existing SPM standalone-collapse sequence and
+SCM's hotplug termination flag, with the stock ACC sleep-status check.
+
+Set the offlined CPU's warm vector to secondary_startup_arm without
+changing the other cores' CPUidle vectors. Re-run the existing ACC release
+sequence only after confirmed collapse, since a masked hotplug IPI cannot
+restart the core by itself. Restore cpu_resume_arm and
+standby SPM mode when the core restarts. Refuse offline if the required
+SPM controller or ACC register mapping is unavailable.
+
+The implementation is limited to MSM8226 with built-in SPM and the legacy
+four-core SCM interface. Existing MSM8909/MSM8916 SMP methods remain
+unchanged.
+Reference: LineageOS/android_kernel_samsung_msm8226 commit
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, msm-pm.c and hotplug.c;
+SM-T531 stock DT CPU sleep-status mask and 64 KiB ACC alias spacing.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/mach-qcom/platsmp.c b/arch/arm/mach-qcom/platsmp.c
+index eca2fe0f4..b0d38288b 100644
+--- a/arch/arm/mach-qcom/platsmp.c
++++ b/arch/arm/mach-qcom/platsmp.c
+@@ -12,11 +12,16 @@
+ #include <linux/device.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/of_platform.h>
+ #include <linux/smp.h>
+ #include <linux/io.h>
++#include <linux/iopoll.h>
++#include <linux/platform_device.h>
++#include <soc/qcom/spm.h>
+ #include <linux/firmware/qcom/qcom_scm.h>
+ 
+ #include <asm/smp_plat.h>
++#include <asm/suspend.h>
+ 
+ 
+ #define VDD_SC1_ARRAY_CLAMP_GFS_CTL	0x35a0
+@@ -367,6 +372,91 @@ static void __init qcom_smp_prepare_cpus(unsigned int max_cpus)
+ 	}
+ }
+ 
++#if defined(CONFIG_HOTPLUG_CPU) && IS_BUILTIN(CONFIG_QCOM_SPM)
++static DEFINE_PER_CPU(struct spm_driver_data *, msm8226_spm);
++static DEFINE_PER_CPU(void __iomem *, msm8226_acc);
++
++static void __init msm8226_smp_prepare_cpus(unsigned int max_cpus)
++{
++	struct device_node *cpu_node, *acc_node;
++	int cpu;
++
++	qcom_smp_prepare_cpus(max_cpus);
++	for_each_present_cpu(cpu) {
++		if (!cpu)
++			continue;
++		cpu_node = of_get_cpu_node(cpu, NULL);
++		acc_node = of_parse_phandle(cpu_node, "qcom,acc", 0);
++		of_node_put(cpu_node);
++		if (!acc_node)
++			continue;
++		per_cpu(msm8226_acc, cpu) = of_iomap(acc_node, 0);
++		of_node_put(acc_node);
++	}
++}
++
++static int msm8226_cpu_disable(unsigned int cpu)
++{
++	struct device_node *cpu_node, *saw_node;
++	struct platform_device *pdev;
++	struct spm_driver_data *spm;
++	int ret;
++
++	if (!cpu)
++		return -EPERM;
++	if (!per_cpu(msm8226_acc, cpu))
++		return -ENODEV;
++
++	cpu_node = of_get_cpu_node(cpu, NULL);
++	saw_node = of_parse_phandle(cpu_node, "qcom,saw", 0);
++	of_node_put(cpu_node);
++	pdev = of_find_device_by_node(saw_node);
++	of_node_put(saw_node);
++	if (!pdev)
++		return -ENODEV;
++	spm = dev_get_drvdata(&pdev->dev);
++	put_device(&pdev->dev);
++	if (!spm)
++		return -ENODEV;
++
++	ret = qcom_scm_set_warm_boot_addr_cpu(secondary_startup_arm, cpu);
++	if (ret)
++		return ret;
++	per_cpu(msm8226_spm, cpu) = spm;
++	return 0;
++}
++
++static void msm8226_cpu_die(unsigned int cpu)
++{
++	spm_set_low_power_mode(per_cpu(msm8226_spm, cpu), PM_SLEEP_MODE_SPC);
++	for (;;)
++		qcom_scm_cpu_power_down(QCOM_SCM_CPU_PWR_DOWN_HOTPLUG);
++}
++
++static int msm8226_cpu_kill(unsigned int cpu)
++{
++	u32 status;
++	int ret;
++
++	/* Stock MSM8226 reports completed collapse in ACC status bit 19. */
++	ret = readl_poll_timeout(per_cpu(msm8226_acc, cpu) + 0x08,
++				 status, status & BIT(19), 10, 5000);
++	if (!ret)
++		per_cpu(cold_boot_done, cpu) = false;
++	return !ret;
++}
++
++static void msm8226_secondary_init(unsigned int cpu)
++{
++	struct spm_driver_data *spm = per_cpu(msm8226_spm, cpu);
++
++	if (!spm)
++		return;
++	spm_set_low_power_mode(spm, PM_SLEEP_MODE_STBY);
++	WARN_ON(qcom_scm_set_warm_boot_addr_cpu(cpu_resume_arm, cpu));
++}
++#endif
++
+ static const struct smp_operations smp_msm8660_ops __initconst = {
+ 	.smp_prepare_cpus	= qcom_smp_prepare_cpus,
+ 	.smp_boot_secondary	= msm8660_boot_secondary,
+@@ -383,7 +473,19 @@ static const struct smp_operations qcom_smp_cortex_a7_ops __initconst = {
+ 	.cpu_die		= qcom_cpu_die,
+ #endif
+ };
+-CPU_METHOD_OF_DECLARE(qcom_smp_msm8226, "qcom,msm8226-smp", &qcom_smp_cortex_a7_ops);
++static const struct smp_operations qcom_smp_msm8226_ops __initconst = {
++#if defined(CONFIG_HOTPLUG_CPU) && IS_BUILTIN(CONFIG_QCOM_SPM)
++	.smp_prepare_cpus	= msm8226_smp_prepare_cpus,
++	.smp_secondary_init	= msm8226_secondary_init,
++	.cpu_disable		= msm8226_cpu_disable,
++	.cpu_die		= msm8226_cpu_die,
++	.cpu_kill		= msm8226_cpu_kill,
++#else
++	.smp_prepare_cpus	= qcom_smp_prepare_cpus,
++#endif
++	.smp_boot_secondary	= cortex_a7_boot_secondary,
++};
++CPU_METHOD_OF_DECLARE(qcom_smp_msm8226, "qcom,msm8226-smp", &qcom_smp_msm8226_ops);
+ CPU_METHOD_OF_DECLARE(qcom_smp_msm8909, "qcom,msm8909-smp", &qcom_smp_cortex_a7_ops);
+ CPU_METHOD_OF_DECLARE(qcom_smp_msm8916, "qcom,msm8916-smp", &qcom_smp_cortex_a7_ops);
+ 
+diff --git a/drivers/firmware/qcom/qcom_scm.c b/drivers/firmware/qcom/qcom_scm.c
+index 26bf87247..dd5042fb9 100644
+--- a/drivers/firmware/qcom/qcom_scm.c
++++ b/drivers/firmware/qcom/qcom_scm.c
+@@ -444,6 +444,28 @@ int qcom_scm_set_warm_boot_addr(void *entry)
+ }
+ EXPORT_SYMBOL_GPL(qcom_scm_set_warm_boot_addr);
+ 
++/**
++ * qcom_scm_set_warm_boot_addr_cpu() - Set one legacy CPU's warm boot address
++ * @entry: Entry point function for the CPU
++ * @cpu: Logical CPU number in the legacy four-core boot interface
++ *
++ * Other CPU vectors remain unchanged, so their CPUidle resume paths are safe.
++ */
++int qcom_scm_set_warm_boot_addr_cpu(void *entry, unsigned int cpu)
++{
++	u8 cpu_bits[QCOM_SCM_BOOT_MAX_CPUS] = {};
++
++	if (cpu >= QCOM_SCM_BOOT_MAX_CPUS || !cpu_present(cpu))
++		return -EINVAL;
++	if (__get_convention() != SMC_CONVENTION_LEGACY)
++		return -EOPNOTSUPP;
++
++	cpu_bits[cpu] = qcom_scm_cpu_warm_bits[cpu];
++	return qcom_scm_set_boot_addr(entry, cpu_bits);
++}
++EXPORT_SYMBOL_GPL(qcom_scm_set_warm_boot_addr_cpu);
++
++
+ /**
+  * qcom_scm_set_cold_boot_addr() - Set the cold boot address for all cpus
+  * @entry: Entry point function for the cpus
+@@ -470,7 +492,7 @@ void qcom_scm_cpu_power_down(u32 flags)
+ 	struct qcom_scm_desc desc = {
+ 		.svc = QCOM_SCM_SVC_BOOT,
+ 		.cmd = QCOM_SCM_BOOT_TERMINATE_PC,
+-		.args[0] = flags & QCOM_SCM_FLUSH_FLAG_MASK,
++		.args[0] = flags & (QCOM_SCM_FLUSH_FLAG_MASK | QCOM_SCM_CPU_PWR_DOWN_HOTPLUG),
+ 		.arginfo = QCOM_SCM_ARGS(1),
+ 		.owner = ARM_SMCCC_OWNER_SIP,
+ 	};
+diff --git a/include/linux/firmware/qcom/qcom_scm.h b/include/linux/firmware/qcom/qcom_scm.h
+index 5747bd191..e4057ac4a 100644
+--- a/include/linux/firmware/qcom/qcom_scm.h
++++ b/include/linux/firmware/qcom/qcom_scm.h
+@@ -14,6 +14,7 @@
+ #define QCOM_SCM_VERSION(major, minor)	(((major) << 16) | ((minor) & 0xFF))
+ #define QCOM_SCM_CPU_PWR_DOWN_L2_ON	0x0
+ #define QCOM_SCM_CPU_PWR_DOWN_L2_OFF	0x1
++#define QCOM_SCM_CPU_PWR_DOWN_HOTPLUG	0x10
+ #define QCOM_SCM_HDCP_MAX_REQ_CNT	5
+ 
+ struct qcom_scm_hdcp_req {
+@@ -63,6 +64,7 @@ bool qcom_scm_is_available(void);
+ 
+ int qcom_scm_set_cold_boot_addr(void *entry);
+ int qcom_scm_set_warm_boot_addr(void *entry);
++int qcom_scm_set_warm_boot_addr_cpu(void *entry, unsigned int cpu);
+ void qcom_scm_cpu_power_down(u32 flags);
+ int qcom_scm_set_remote_state(u32 state, u32 id);
+ 

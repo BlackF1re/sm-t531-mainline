@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 02:30:00 +0700
+Subject: [PATCH] power: supply: smb358: freeze polling during system sleep
+
+The software thermistor worker continues executing while system suspend
+has disabled the PMIC VADC completion interrupt. On SM-T531 this causes
+conversion timeouts and a spurious charging-temperature failure before
+other devices have resumed.
+
+Use the existing freezable workqueue for thermistor and cable-policy work.
+The freezer drains these jobs before device suspend and resumes them
+after interrupts and suppliers return. Keep invalid-temperature inhibition,
+current limits and the charger hardware configuration unchanged.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/power/supply/smb347-charger.c b/drivers/power/supply/smb347-charger.c
+index 668c9bf17..2d2ed210d 100644
+--- a/drivers/power/supply/smb347-charger.c
++++ b/drivers/power/supply/smb347-charger.c
+@@ -814,7 +814,7 @@ static int smb358_extcon_notify(struct notifier_block *nb,
+ 	struct smb347_charger *smb = container_of(nb, struct smb347_charger,
+ 						 extcon_nb);
+ 
+-	schedule_work(&smb->source_work);
++	queue_work(system_freezable_wq, &smb->source_work);
+ 	return NOTIFY_OK;
+ }
+ 
+@@ -850,13 +850,14 @@ static void smb358_temperature_work(struct work_struct *work)
+ 	if (allowed != smb->temperature_allowed) {
+ 		smb->temperature_allowed = allowed;
+ 		if (smb->extcon)
+-			schedule_work(&smb->source_work);
++			queue_work(system_freezable_wq, &smb->source_work);
+ 		else
+ 			smb347_start_stop_charging(smb);
+ 		power_supply_changed(smb->usb);
+ 	}
+ 	if (!smb->stopping)
+-		schedule_delayed_work(&smb->temperature_work, msecs_to_jiffies(1000));
++		queue_delayed_work(system_freezable_wq, &smb->temperature_work,
++				   msecs_to_jiffies(1000));
+ }
+ 
+ static int smb347_hw_init(struct smb347_charger *smb)
+@@ -1866,7 +1867,7 @@ static int smb347_probe(struct i2c_client *client)
+ 						      &smb->extcon_nb);
+ 		if (ret)
+ 			return ret;
+-		schedule_work(&smb->source_work);
++		queue_work(system_freezable_wq, &smb->source_work);
+ 	}
+ 
+ 	usb_rdev_cfg.dev = dev;
+@@ -1882,7 +1883,7 @@ static int smb347_probe(struct i2c_client *client)
+ 	}
+ 
+ 	if (smb->temperature_channel)
+-		schedule_delayed_work(&smb->temperature_work, 0);
++		queue_delayed_work(system_freezable_wq, &smb->temperature_work, 0);
+ 
+ 	return 0;
+ }

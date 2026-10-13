@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 00:15:00 +0700
+Subject: [PATCH] i2c: qup: restore clocks before resuming client interrupts
+
+On SM-T531, the active LIS2HH12 trigger thread runs as interrupts are
+reenabled during system resume, before QUP's regular resume callback.
+Runtime PM still describes the controller as active, but its clocks were
+turned off by the system suspend callback. The thread then faults while
+reading QUP_STATE at physical address 0xf9924004.
+
+Move system clock transitions to the noirq phase and use runtime PM's
+force helpers to preserve consistent state and clock references. Mark the
+adapter unavailable across the transition, following the existing GENI
+I2C driver's system-sleep implementation.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/i2c/busses/i2c-qup.c b/drivers/i2c/busses/i2c-qup.c
+index a0e076fc5..45973c54e 100644
+--- a/drivers/i2c/busses/i2c-qup.c
++++ b/drivers/i2c/busses/i2c-qup.c
+@@ -1979,22 +1979,32 @@ static int qup_i2c_pm_resume_runtime(struct device *device)
+ 	return 0;
+ }
+ 
+-static int qup_i2c_suspend(struct device *device)
++static int qup_i2c_suspend_noirq(struct device *device)
+ {
+-	if (!pm_runtime_suspended(device))
+-		return qup_i2c_pm_suspend_runtime(device);
+-	return 0;
++	struct qup_i2c_dev *qup = dev_get_drvdata(device);
++	int ret;
++
++	i2c_mark_adapter_suspended(&qup->adap);
++	ret = pm_runtime_force_suspend(device);
++	if (ret)
++		i2c_mark_adapter_resumed(&qup->adap);
++	return ret;
+ }
+ 
+-static int qup_i2c_resume(struct device *device)
++static int qup_i2c_resume_noirq(struct device *device)
+ {
+-	qup_i2c_pm_resume_runtime(device);
+-	pm_request_autosuspend(device);
++	struct qup_i2c_dev *qup = dev_get_drvdata(device);
++	int ret;
++
++	ret = pm_runtime_force_resume(device);
++	if (ret)
++		return ret;
++	i2c_mark_adapter_resumed(&qup->adap);
+ 	return 0;
+ }
+ 
+ static const struct dev_pm_ops qup_i2c_qup_pm_ops = {
+-	SYSTEM_SLEEP_PM_OPS(qup_i2c_suspend, qup_i2c_resume)
++	NOIRQ_SYSTEM_SLEEP_PM_OPS(qup_i2c_suspend_noirq, qup_i2c_resume_noirq)
+ 	RUNTIME_PM_OPS(qup_i2c_pm_suspend_runtime,
+ 		       qup_i2c_pm_resume_runtime, NULL)
+ };
