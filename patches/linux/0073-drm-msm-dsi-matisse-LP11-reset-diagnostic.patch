@@ -1,0 +1,84 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/msm/dsi: isolate Matisse bridge reset in LP11
+
+The exact Matisse factory host holds LANE_CTRL bits20:16 for one
+millisecond before toggling the bridge reset, then restores the register
+and requests the continuous HS clock. Mainline requests HS clock before
+the bridge's pre_enable reset.
+
+Add an opt-in, board-restricted diagnostic to hold LP11 until the first
+bridge command, after the existing bridge reset has completed. Other
+boards and the default path retain their original behavior. This is an
+isolation experiment, not a production link-power interface.
+
+Source: LineageOS android_kernel_samsung_msm8226,
+commit 3fa1853ed5d6c3a8ef5a2fda9822705243bbc256,
+drivers/video/msm/mdss/mdss_dsi.c, mdss_dsi_on().
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+index 15d28347c..a8c8e89ac 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -36,6 +36,12 @@
+ 
+ static int dsi_populate_dsc_params(struct msm_dsi_host *msm_host, struct drm_dsc_config *dsc);
+ 
++/* Diagnostic: reproduce the Matisse factory reset in LP11. */
++static bool matisse_lp11_reset;
++module_param(matisse_lp11_reset, bool, 0400);
++MODULE_PARM_DESC(matisse_lp11_reset,
++		"Hold Matisse DSI lanes in LP11 until the first bridge command");
++
+ static int dsi_get_version(const void __iomem *base, u32 *major, u32 *minor)
+ {
+ 	u32 ver;
+@@ -172,6 +178,8 @@ struct msm_dsi_host {
+ 	unsigned int lanes;
+ 	enum mipi_dsi_pixel_format format;
+ 	unsigned long mode_flags;
++	bool matisse;
++	bool reset_lp11_pending;
+ 
+ 	/* lane data parsed via DT */
+ 	int dlane_swap;
+@@ -922,7 +930,12 @@ static void dsi_ctrl_enable(struct msm_dsi_host *msm_host,
+ 	dsi_write(msm_host, REG_DSI_LANE_SWAP_CTRL,
+ 		  DSI_LANE_SWAP_CTRL_DLN_SWAP_SEL(msm_host->dlane_swap));
+ 
+-	if (!(flags & MIPI_DSI_CLOCK_NON_CONTINUOUS)) {
++	if (matisse_lp11_reset && msm_host->matisse) {
++		/* Samsung holds all five lanes in LP11 during bridge reset. */
++		dsi_write(msm_host, REG_DSI_LANE_CTRL, GENMASK(20, 16));
++		msm_host->reset_lp11_pending = true;
++		usleep_range(1000, 2000);
++	} else if (!(flags & MIPI_DSI_CLOCK_NON_CONTINUOUS)) {
+ 		lane_ctrl = dsi_read(msm_host, REG_DSI_LANE_CTRL);
+ 
+ 		if (msm_dsi_phy_set_continuous_clock(phy, true))
+@@ -1744,6 +1757,8 @@ static int dsi_host_attach(struct mipi_dsi_host *host,
+ 	msm_host->lanes = dsi->lanes;
+ 	msm_host->format = dsi->format;
+ 	msm_host->mode_flags = dsi->mode_flags;
++	msm_host->matisse = of_device_is_compatible(dsi->dev.of_node,
++						  "samsung,matisse-tc358764");
+ 	if (dsi->dsc)
+ 		msm_host->dsc = dsi->dsc;
+ 
+@@ -1798,6 +1813,14 @@ static ssize_t dsi_host_transfer(struct mipi_dsi_host *host,
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&msm_host->cmd_mutex);
++	if (msm_host->reset_lp11_pending) {
++		/* The downstream bridge has now deasserted reset in LP11. */
++		dsi_write(msm_host, REG_DSI_LANE_CTRL,
++			  DSI_LANE_CTRL_CLKLN_HS_FORCE_REQUEST);
++		/* Allow the clock lane to settle before sending LP commands. */
++		usleep_range(1000, 2000);
++		msm_host->reset_lp11_pending = false;
++	}
+ 	ret = msm_dsi_manager_cmd_xfer(msm_host->id, msg);
+ 	mutex_unlock(&msm_host->cmd_mutex);
+ 

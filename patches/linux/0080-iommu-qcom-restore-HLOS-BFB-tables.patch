@@ -1,0 +1,124 @@
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom_iommu: restore HLOS-owned BFB settings
+
+Restore instance-specific BFB registers after TrustZone configuration.
+Backport the table/helper from Dmitry Baryshkov's MSM8974 series v1,
+patch 10, adapted to this tree's context-restore implementation.
+
+Map only a named HLOS-owned implementation window. Never treat it as
+MSM8916 local registers: offset 0x2000 has a different meaning on MSM8226.
+Replay the table after both runtime-resume and first-context SCM calls.
+This infrastructure alone does not select any register table.
+
+Assisted-by: Claude:claude-fable-5
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Link: https://lore.kernel.org/r/20260809-msm8974-iommu-upstream-v1-10-87f5cd492560@oss.qualcomm.com
+[BlackF1re: separate implementation-only resource; replay after context SCM]
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 554ac1849..f45ec1183 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -27,6 +27,7 @@
+ #include <linux/pm.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/firmware/qcom/qcom_scm.h>
++#include <linux/sizes.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ 
+@@ -43,12 +44,24 @@ enum qcom_iommu_clk {
+ 
+ struct qcom_iommu_ctx;
+ 
++struct qcom_iommu_bfb_reg {
++	u32 offset;
++	u32 value;
++};
++
++struct qcom_iommu_cfg {
++	const struct qcom_iommu_bfb_reg *bfb;
++	unsigned int num_bfb;
++};
++
+ struct qcom_iommu_dev {
+ 	/* IOMMU core code handle */
+ 	struct iommu_device	 iommu;
+ 	struct device		*dev;
+ 	struct clk_bulk_data clks[CLK_NUM];
+ 	void __iomem		*local_base;
++	void __iomem		*impl_base;
++	const struct qcom_iommu_cfg *cfg;
+ 	u32			 sec_id;
+ 	u8			 max_asid;
+ 	bool			 restore_ctx;
+@@ -220,6 +233,25 @@ static irqreturn_t qcom_iommu_fault(int irq, void *dev)
+ 	return IRQ_HANDLED;
+ }
+ 
++static void qcom_iommu_bfb_setup(struct qcom_iommu_dev *qcom_iommu)
++{
++	const struct qcom_iommu_cfg *cfg = qcom_iommu->cfg;
++	unsigned int i;
++
++	if (!cfg || !qcom_iommu->impl_base)
++		return;
++
++	/* HLOS-owned implementation space, separate from secure globals. */
++	for (i = 0; i < cfg->num_bfb; i++) {
++		if (WARN_ON_ONCE(cfg->bfb[i].offset >= SZ_4K))
++			continue;
++
++		writel_relaxed(cfg->bfb[i].value,
++			       qcom_iommu->impl_base + cfg->bfb[i].offset);
++	}
++	wmb();
++}
++
+ static void qcom_iommu_program_ctx(struct qcom_iommu_dev *qcom_iommu,
+ 				   struct qcom_iommu_ctx *ctx)
+ {
+@@ -297,6 +329,7 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 				dev_err(qcom_iommu->dev, "secure init failed: %d\n", ret);
+ 				goto out_clear_iommu;
+ 			}
++			qcom_iommu_bfb_setup(qcom_iommu);
+ 			ctx->secure_init = true;
+ 		}
+ 
+@@ -824,12 +857,22 @@ static int qcom_iommu_device_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	qcom_iommu->max_asid = max_asid;
+ 	qcom_iommu->dev = dev;
++	qcom_iommu->cfg = of_device_get_match_data(dev);
+ 	qcom_iommu->restore_ctx = of_device_is_compatible(dev->of_node,
+ 							"qcom,msm8226-iommu");
+ 	qcom_iommu->short_desc = qcom_iommu->restore_ctx;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "impl");
+ 	if (res) {
++		if (resource_size(res) < SZ_4K)
++			return -EINVAL;
++		qcom_iommu->impl_base = devm_ioremap_resource(dev, res);
++		if (IS_ERR(qcom_iommu->impl_base))
++			return PTR_ERR(qcom_iommu->impl_base);
++	} else {
++		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	}
++	if (res && !qcom_iommu->impl_base) {
+ 		qcom_iommu->local_base = devm_ioremap_resource(dev, res);
+ 		if (IS_ERR(qcom_iommu->local_base))
+ 			return PTR_ERR(qcom_iommu->local_base);
+@@ -942,6 +985,8 @@ static int __maybe_unused qcom_iommu_resume(struct device *dev)
+ 		}
+ 	}
+ 
++	qcom_iommu_bfb_setup(qcom_iommu);
++
+ 	/* MSM8226 loses non-secure context state across MDSS power collapse. */
+ 	if (qcom_iommu->restore_ctx) {
+ 		for (i = 0; i <= qcom_iommu->max_asid; i++) {

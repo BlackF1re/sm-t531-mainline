@@ -1,0 +1,33 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Thu, 15 Oct 2026 03:00:00 +0700
+Subject: [PATCH] ARM: dts: qcom: retain Matisse firmware display supply at handoff
+
+The native profile intentionally uses firmware-powered TC358764 until its
+complete supply/reset wiring is represented. Enabling a boot simplefb
+consumer makes its existing L5 vote subject to regulator_disable() when
+MSM removes the firmware aperture. Neither the DSI host nor its PHY adopts
+L5, leaving no consumer after handoff. A black physical display was
+observed despite active native scanout; supply handoff is under test.
+
+Keep the existing 1.2 V L5 supply enabled in this diagnostic native profile.
+Do not change its voltage or invent a bridge pin assignment. This explicit
+firmware-power limitation must be removed once native bridge supplies and
+suspend sequencing have been validated.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
+@@ -7,6 +7,11 @@
+ 	status = "okay";
+ };
+ 
++&pm8226_l5 {
++	/* Firmware-powered display: retain the old simplefb supply vote. */
++	regulator-always-on;
++};
++
+ &mdp_smmu {
+ 	status = "okay";
+ };

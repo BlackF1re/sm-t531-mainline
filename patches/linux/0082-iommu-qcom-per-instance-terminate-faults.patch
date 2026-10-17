@@ -1,0 +1,42 @@
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom_iommu: allow faulting transactions to terminate
+
+Context banks are programmed with SCTLR.CFCFG, which selects the
+stall model. A faulting transaction is held pending CB_RESUME, preventing
+the micro-MMU from draining and potentially blocking halt and TLBSYNC.
+
+Add a per-instance no_stall flag; leave CFRE and CFIE enabled so faults
+continue to be reported. No instance selects the flag in this patch.
+Backport MSM8974 series v1 patch09 against this tree's small cfg structure.
+
+Assisted-by: Claude:claude-opus-5
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Link: https://lore.kernel.org/r/20260809-msm8974-iommu-upstream-v1-9-87f5cd492560@oss.qualcomm.com
+[BlackF1re: adapt to the BFB-only per-instance configuration structure]
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 1c1571501..190de5957 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -50,6 +50,8 @@ struct qcom_iommu_bfb_reg {
+ };
+ 
+ struct qcom_iommu_cfg {
++	/* Faulting transactions must terminate rather than stall. */
++	bool no_stall;
+ 	const struct qcom_iommu_bfb_reg *bfb;
+ 	unsigned int num_bfb;
+ };
+@@ -362,6 +364,9 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 		if (qcom_iommu->short_desc)
+ 			reg &= ~ARM_SMMU_SCTLR_AFE;
+ 
++		if (qcom_iommu->cfg && qcom_iommu->cfg->no_stall)
++			reg &= ~ARM_SMMU_SCTLR_CFCFG;
++
+ 		if (IS_ENABLED(CONFIG_CPU_BIG_ENDIAN))
+ 			reg |= ARM_SMMU_SCTLR_E;
+ 

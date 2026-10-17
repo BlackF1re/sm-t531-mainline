@@ -1,0 +1,536 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sat, 17 Oct 2026 09:15:00 +0700
+Subject: [PATCH] power: supply: pm8226: estimate charge from real OCV and coulombs
+
+Use a held hardware snapshot of BMS1 OCV, signed 36-bit main coulomb
+counter and average sense voltage. Always restore the previous hold bit,
+including failed reads. Apply the sibling IADC's measured gain correction
+and the board's sense resistance. Track counter wrap in software without
+clearing or reconfiguring the BMS or charger.
+
+Add the original Samsung 6800 mAh cell OCV tables with their GPL-2.0-only
+license and copyright. Use power_supply_battery_info to convert measured
+OCV to an initial charge, subtract the measured discharge coulombs and
+report charge_now, capacity and signed current_now through the normal ABI.
+
+The physical SM-T531's saved cpuinfo reports Revision0003. The exact
+MACH_MATISSE3G_OPEN BSP selects 12200 micro-ohms above revision2. Its old
+installed Android ROM used an inferred12500 micro-ohms; the2.4% difference
+remains a documented model/calibration uncertainty pending measurement.
+The model does not learn cell ageing or usable charge under load; it must
+be validated on real discharge/recharge and cold boot before production.
+
+Register/conversion reference: Samsung MSM8226 BSP
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, drivers/power/qpnp-bms.c.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/power/supply/qcom_pm8226_bms.c b/drivers/power/supply/qcom_pm8226_bms.c
+--- a/drivers/power/supply/qcom_pm8226_bms.c
++++ b/drivers/power/supply/qcom_pm8226_bms.c
+@@ -1,11 +1,17 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Qualcomm PM8226 BMS battery measurements.
++ * Conversion formulas: Copyright (c) 2011-2014, The Linux Foundation.
++ * Original conversion reference licensed GPL-2.0-only.
+  * Register documentation: Samsung MSM8226 BSP, commit
+  * 3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, drivers/power/qpnp-bms.c.
+- * This first stage leaves the firmware's BMS/charger configuration intact.
++ * Charging and BMS configuration are left to firmware. Only the output
++ * snapshot hold bit is temporarily changed, retaining its previous state.
+  */
++#include <linux/delay.h>
+ #include <linux/iio/consumer.h>
++#include <linux/iio/types.h>
++#include <linux/mutex.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+@@ -15,9 +21,20 @@
+ 
+ #define PM8226_BMS_TYPE		0x04
+ #define PM8226_BMS_SUBTYPE	0x05
++#define PM8226_BMS_HOLD		0x42
++#define PM8226_BMS_HOLD_DATA	BIT(0)
++#define PM8226_BMS_CC		0x8a
+ #define PM8226_BMS_OCV		0x90
++#define PM8226_BMS_VSENSE	0x98
+ #define PM8226_BAT_PRESENT	BIT(7)
+ #define PM8226_BMS_POLL_INTERVAL	(30 * HZ)
++
++struct pm8226_bms_sample {
++	int ocv_uv;
++	int current_ua;
++	int charge_uah;
++	int capacity;
++};
+ 
+ struct pm8226_bms {
+ 	struct regmap *regmap;
+@@ -26,6 +43,18 @@
+ 	struct iio_channel *ref625;
+ 	struct iio_channel *ref1250;
+ 	struct iio_channel *temperature;
++	struct iio_channel *current_adc;
++	struct mutex lock;
++	struct pm8226_bms_sample sample;
++	unsigned long sample_expires;
++	u32 rsense_uohm;
++	int gain_num;
++	int gain_den;
++	u16 last_ocv_raw;
++	int last_ocv_temp;
++	s64 last_cc_raw;
++	s64 accumulated_cc;
++	bool cc_valid;
+ 	struct delayed_work work;
+ 	u32 base;
+ 	u32 present_reg;
+@@ -53,13 +82,135 @@
+ 	return 0;
+ }
+ 
++/* The BMS integrates signed sense voltage; positive is discharge. */
++static s64 pm8226_bms_cc_to_uah(struct pm8226_bms *bms, s64 raw)
++{
++	s64 uv, pvh;
++
++	uv = div_s64(raw * 542535, 100000);
++	uv = div_s64(uv * bms->gain_num, bms->gain_den);
++	/* Divide before the last factor of 10 to avoid overflowing at 36 bits. */
++	pvh = div_s64(uv * 56 * 100000, 32764 * 3600) * 10;
++	return div_s64(pvh, bms->rsense_uohm);
++}
++
++static int pm8226_bms_snapshot(struct pm8226_bms *bms, u16 *ocv,
++			      s64 *cc, s16 *vsense)
++{
++	unsigned int saved;
++	u8 data[5];
++	u64 raw = 0;
++	int ret, restore, i;
++
++	ret = regmap_read(bms->regmap, bms->base + PM8226_BMS_HOLD, &saved);
++	if (ret)
++		return ret;
++	ret = regmap_update_bits(bms->regmap, bms->base + PM8226_BMS_HOLD,
++				 PM8226_BMS_HOLD_DATA, PM8226_BMS_HOLD_DATA);
++	if (ret)
++		goto restore;
++	/* BSP requires at least two sleep-clock cycles before reading. */
++	usleep_range(100, 200);
++	ret = regmap_bulk_read(bms->regmap, bms->base + PM8226_BMS_OCV, data, 2);
++	if (ret)
++		goto restore;
++	*ocv = data[0] | data[1] << 8;
++	ret = regmap_bulk_read(bms->regmap, bms->base + PM8226_BMS_CC, data, 5);
++	if (ret)
++		goto restore;
++	for (i = 0; i < 5; i++)
++		raw |= (u64)data[i] << (i * 8);
++	*cc = sign_extend64(raw, 35);
++	ret = regmap_bulk_read(bms->regmap, bms->base + PM8226_BMS_VSENSE, data, 2);
++	if (!ret)
++		*vsense = data[0] | data[1] << 8;
++restore:
++	/* Restore the prior hold state even after a failed hold or sample read. */
++	restore = regmap_update_bits(bms->regmap, bms->base + PM8226_BMS_HOLD,
++				     PM8226_BMS_HOLD_DATA, saved & PM8226_BMS_HOLD_DATA);
++	return ret ? ret : restore;
++}
++
++static int pm8226_bms_sample(struct pm8226_bms *bms,
++			    struct power_supply *psy,
++			    struct pm8226_bms_sample *sample)
++{
++	struct power_supply_battery_info *info = psy->battery_info;
++	s64 cc, total, current_ua, charge;
++	u16 ocv;
++	s16 vsense;
++	int ret, temp, capacity, ocv_uv;
++
++	mutex_lock(&bms->lock);
++	if (bms->cc_valid && time_before(jiffies, bms->sample_expires)) {
++		*sample = bms->sample;
++		ret = 0;
++		goto out;
++	}
++	ret = pm8226_bms_snapshot(bms, &ocv, &cc, &vsense);
++	if (ret)
++		goto out;
++	if (ocv <= 0x6000 || ocv == 0xffff) {
++		ret = -ENODATA;
++		goto out;
++	}
++	ret = pm8226_bms_raw_to_uv(bms, ocv, &ocv_uv);
++	if (ret)
++		goto out;
++	ret = iio_read_channel_processed(bms->temperature, &temp);
++	if (ret < 0)
++		goto out;
++	temp = DIV_ROUND_CLOSEST(temp, 1000);
++	if (!info || info->charge_full_design_uah <= 0) {
++		ret = -ENODATA;
++		goto out;
++	}
++	/* The main counter resets when hardware accepts a new OCV. */
++	if (!bms->cc_valid || bms->last_ocv_raw != ocv) {
++		total = cc;
++	} else {
++		/* Track the signed 36-bit wrap without resetting the hardware. */
++		total = bms->accumulated_cc + sign_extend64(cc - bms->last_cc_raw, 35);
++		temp = bms->last_ocv_temp;
++	}
++	capacity = power_supply_batinfo_ocv2cap(info, ocv_uv, temp);
++	if (capacity < 0) {
++		ret = capacity;
++		goto out;
++	}
++	charge = div_s64((s64)info->charge_full_design_uah * capacity, 100);
++	charge -= pm8226_bms_cc_to_uah(bms, total);
++	charge = clamp_t(s64, charge, 0, info->charge_full_design_uah);
++	current_ua = div_s64((s64)vsense * 542535, 100000);
++	current_ua = div_s64(current_ua * bms->gain_num, bms->gain_den);
++	current_ua = div_s64(current_ua * 1000000, bms->rsense_uohm);
++
++	bms->sample.ocv_uv = ocv_uv;
++	/* power_supply current is positive when charging. */
++	bms->sample.current_ua = -current_ua;
++	bms->sample.charge_uah = charge;
++	bms->sample.capacity = DIV_ROUND_CLOSEST_ULL(charge * 100,
++						 info->charge_full_design_uah);
++	bms->last_ocv_raw = ocv;
++	bms->last_ocv_temp = temp;
++	bms->last_cc_raw = cc;
++	bms->accumulated_cc = total;
++	bms->cc_valid = true;
++	bms->sample_expires = jiffies + 2 * HZ;
++	*sample = bms->sample;
++	ret = 0;
++out:
++	mutex_unlock(&bms->lock);
++	return ret;
++}
++
+ static int pm8226_bms_get_property(struct power_supply *psy,
+ 				 enum power_supply_property prop,
+ 				 union power_supply_propval *val)
+ {
+ 	struct pm8226_bms *bms = power_supply_get_drvdata(psy);
++	struct pm8226_bms_sample sample;
+ 	unsigned int present;
+-	u8 ocv[2];
+ 	int ret, raw;
+ 
+ 	switch (prop) {
+@@ -85,14 +236,21 @@
+ 			return ret;
+ 		return pm8226_bms_raw_to_uv(bms, raw, &val->intval);
+ 	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
+-		ret = regmap_bulk_read(bms->regmap, bms->base + PM8226_BMS_OCV,
+-				       ocv, sizeof(ocv));
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++	case POWER_SUPPLY_PROP_CHARGE_NOW:
++	case POWER_SUPPLY_PROP_CAPACITY:
++		ret = pm8226_bms_sample(bms, psy, &sample);
+ 		if (ret)
+ 			return ret;
+-		raw = ocv[0] | ocv[1] << 8;
+-		if (raw <= 0x6000 || raw == 0xffff)
+-			return -ENODATA;
+-		return pm8226_bms_raw_to_uv(bms, raw, &val->intval);
++		if (prop == POWER_SUPPLY_PROP_VOLTAGE_OCV)
++			val->intval = sample.ocv_uv;
++		else if (prop == POWER_SUPPLY_PROP_CURRENT_NOW)
++			val->intval = sample.current_ua;
++		else if (prop == POWER_SUPPLY_PROP_CHARGE_NOW)
++			val->intval = sample.charge_uah;
++		else
++			val->intval = sample.capacity;
++		return 0;
+ 	case POWER_SUPPLY_PROP_TEMP:
+ 		ret = iio_read_channel_processed(bms->temperature, &raw);
+ 		if (ret < 0)
+@@ -116,6 +274,9 @@
+ 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+ 	POWER_SUPPLY_PROP_VOLTAGE_OCV,
+ 	POWER_SUPPLY_PROP_TEMP,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_CHARGE_NOW,
++	POWER_SUPPLY_PROP_CAPACITY,
+ };
+ 
+ static const struct power_supply_desc pm8226_bms_desc = {
+@@ -158,6 +319,11 @@
+ 	bms->regmap = dev_get_regmap(dev->parent, NULL);
+ 	if (!bms->regmap)
+ 		return -ENODEV;
++	mutex_init(&bms->lock);
++	ret = of_property_read_u32(dev->of_node, "qcom,sense-resistor-micro-ohms",
++				   &bms->rsense_uohm);
++	if (ret || !bms->rsense_uohm)
++		return -EINVAL;
+ 	ret = of_property_read_u32_index(dev->of_node, "reg", 0, &bms->base);
+ 	if (ret)
+ 		return ret;
+@@ -187,6 +353,16 @@
+ 	if (IS_ERR(bms->temperature))
+ 		return dev_err_probe(dev, PTR_ERR(bms->temperature), "No thermistor\n");
+ 
++	bms->current_adc = devm_iio_channel_get(dev, "current");
++	if (IS_ERR(bms->current_adc))
++		return dev_err_probe(dev, PTR_ERR(bms->current_adc), "No current ADC\n");
++	ret = iio_read_channel_attribute(bms->current_adc, &bms->gain_num,
++					 &bms->gain_den, IIO_CHAN_INFO_CALIBSCALE);
++	if (ret < 0)
++		return ret;
++	if (ret != IIO_VAL_FRACTIONAL || bms->gain_num <= 0 || bms->gain_den <= 0)
++		return -ERANGE;
++
+ 	cfg.drv_data = bms;
+ 	cfg.fwnode = dev_fwnode(dev);
+ 	bms->battery = devm_power_supply_register(dev, &pm8226_bms_desc, &cfg);
+@@ -216,5 +392,5 @@
+ 	},
+ };
+ module_platform_driver(pm8226_bms_driver);
+-MODULE_DESCRIPTION("Qualcomm PM8226 battery voltage and temperature");
++MODULE_DESCRIPTION("Qualcomm PM8226 battery monitoring system");
+ MODULE_LICENSE("GPL");
+diff --git a/Documentation/devicetree/bindings/power/supply/qcom,pm8226-bms.yaml b/Documentation/devicetree/bindings/power/supply/qcom,pm8226-bms.yaml
+--- a/Documentation/devicetree/bindings/power/supply/qcom,pm8226-bms.yaml
++++ b/Documentation/devicetree/bindings/power/supply/qcom,pm8226-bms.yaml
+@@ -32,7 +32,7 @@
+       - const: bat-pres
+ 
+   io-channels:
+-    maxItems: 4
++    maxItems: 5
+ 
+   io-channel-names:
+     items:
+@@ -40,6 +40,11 @@
+       - const: ref625
+       - const: ref1250
+       - const: temperature
++      - const: current
++
++  qcom,sense-resistor-micro-ohms:
++    description: Effective external battery current sense resistance
++    minimum: 1
+ 
+   monitored-battery: true
+   power-supplies: true
+@@ -50,6 +55,7 @@
+   - reg-names
+   - io-channels
+   - io-channel-names
++  - qcom,sense-resistor-micro-ohms
+   - monitored-battery
+   - power-supplies
+ 
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -480,6 +480,18 @@
+ 	io-channels = <&pm8226_vadc VADC_VBAT_SNS>,
+ 		      <&pm8226_vadc VADC_REF_625MV>,
+ 		      <&pm8226_vadc VADC_REF_1250MV>,
+-		      <&battery_therm>;
+-	io-channel-names = "vbat", "ref625", "ref1250", "temperature";
+-};
++		      <&battery_therm>,
++		      <&pm8226_iadc 1>;
++	io-channel-names = "vbat", "ref625", "ref1250", "temperature", "current";
++	qcom,sense-resistor-micro-ohms = <12200>;
++};
++
++/* Actual device: historical /proc/cpuinfo Revision0003. BSP matisse3g
++ * uses 12200 micro-ohms above revision2; older revisions use13500.
++ */
++&pm8226_iadc {
++	#io-channel-cells = <1>;
++	qcom,external-resistor-micro-ohms = <12200>;
++};
++
++#include "qcom-msm8226-samsung-matisse-battery.dtsi"
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse-battery.dtsi b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse-battery.dtsi
+new file mode 100644
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse-battery.dtsi
+@@ -0,0 +1,173 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/* Copyright (c) 2013, Samsung Electronics Co. All rights reserved.
++ *
++ * Samsung Matisse 6800 mAh cell characterization, transcribed unchanged
++ * from arch/arm/mach-msm/bms-batterydata-samsung-6800mah.c in Samsung
++ * MSM8226 BSP 3fa1853ed5d6c3a8ef5a2fda9822705243bbc256.
++ * Profile capacity is a model, not a learned measurement of cell ageing.
++ */
++
++&battery {
++	factory-internal-resistance-micro-ohms = <123000>;
++	ocv-capacity-celsius = <(-20) 0 25 40 60>;
++	ocv-capacity-table-0 =
++		<4341000 100>,
++		<4246000 95>,
++		<4178000 90>,
++		<4115000 85>,
++		<4068000 80>,
++		<4003000 75>,
++		<3934000 70>,
++		<3894000 65>,
++		<3867000 60>,
++		<3843000 55>,
++		<3816000 50>,
++		<3792000 45>,
++		<3772000 40>,
++		<3754000 35>,
++		<3739000 30>,
++		<3724000 25>,
++		<3706000 20>,
++		<3683000 16>,
++		<3662000 13>,
++		<3641000 11>,
++		<3629000 10>,
++		<3614000 9>,
++		<3596000 8>,
++		<3575000 7>,
++		<3550000 6>,
++		<3519000 5>,
++		<3479000 4>,
++		<3429000 3>,
++		<3356000 2>,
++		<3242000 1>,
++		<3000000 0>;
++	ocv-capacity-table-1 =
++		<4339000 100>,
++		<4270000 95>,
++		<4216000 90>,
++		<4165000 85>,
++		<4113000 80>,
++		<4070000 75>,
++		<3994000 70>,
++		<3929000 65>,
++		<3903000 60>,
++		<3874000 55>,
++		<3847000 50>,
++		<3823000 45>,
++		<3803000 40>,
++		<3785000 35>,
++		<3769000 30>,
++		<3752000 25>,
++		<3727000 20>,
++		<3709000 16>,
++		<3703000 13>,
++		<3698000 11>,
++		<3695000 10>,
++		<3691000 9>,
++		<3683000 8>,
++		<3670000 7>,
++		<3650000 6>,
++		<3622000 5>,
++		<3585000 4>,
++		<3534000 3>,
++		<3455000 2>,
++		<3321000 1>,
++		<3000000 0>;
++	ocv-capacity-table-2 =
++		<4334000 100>,
++		<4272000 95>,
++		<4218000 90>,
++		<4166000 85>,
++		<4116000 80>,
++		<4071000 75>,
++		<4017000 70>,
++		<3969000 65>,
++		<3917000 60>,
++		<3880000 55>,
++		<3852000 50>,
++		<3828000 45>,
++		<3808000 40>,
++		<3791000 35>,
++		<3776000 30>,
++		<3758000 25>,
++		<3737000 20>,
++		<3708000 16>,
++		<3691000 13>,
++		<3689000 11>,
++		<3688000 10>,
++		<3687000 9>,
++		<3685000 8>,
++		<3682000 7>,
++		<3672000 6>,
++		<3646000 5>,
++		<3600000 4>,
++		<3535000 3>,
++		<3441000 2>,
++		<3284000 1>,
++		<3000000 0>;
++	ocv-capacity-table-3 =
++		<4322000 100>,
++		<4262000 95>,
++		<4209000 90>,
++		<4157000 85>,
++		<4107000 80>,
++		<4061000 75>,
++		<4011000 70>,
++		<3974000 65>,
++		<3915000 60>,
++		<3878000 55>,
++		<3850000 50>,
++		<3827000 45>,
++		<3807000 40>,
++		<3790000 35>,
++		<3769000 30>,
++		<3750000 25>,
++		<3728000 20>,
++		<3698000 16>,
++		<3682000 13>,
++		<3681000 11>,
++		<3680000 10>,
++		<3679000 9>,
++		<3677000 8>,
++		<3673000 7>,
++		<3663000 6>,
++		<3635000 5>,
++		<3587000 4>,
++		<3522000 3>,
++		<3430000 2>,
++		<3281000 1>,
++		<3000000 0>;
++	ocv-capacity-table-4 =
++		<4323000 100>,
++		<4264000 95>,
++		<4211000 90>,
++		<4159000 85>,
++		<4109000 80>,
++		<4061000 75>,
++		<4017000 70>,
++		<3976000 65>,
++		<3919000 60>,
++		<3881000 55>,
++		<3852000 50>,
++		<3828000 45>,
++		<3808000 40>,
++		<3790000 35>,
++		<3761000 30>,
++		<3738000 25>,
++		<3714000 20>,
++		<3683000 16>,
++		<3671000 13>,
++		<3669000 11>,
++		<3668000 10>,
++		<3666000 9>,
++		<3664000 8>,
++		<3659000 7>,
++		<3643000 6>,
++		<3609000 5>,
++		<3558000 4>,
++		<3489000 3>,
++		<3391000 2>,
++		<3240000 1>,
++		<3000000 0>;
++};

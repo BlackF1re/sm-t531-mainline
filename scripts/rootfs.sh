@@ -3,6 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 work=$PWD/.work
 root=$work/rootfs
+native_kms=${NATIVE_KMS:-1}
 snapshot=https://snapshot.debian.org/archive/debian/20261003T000000Z/
 mkdir -p "$work/artifacts/current"
 if [ ! -f "$root/debootstrap/debootstrap" ] && [ ! -f "$root/etc/debian_version" ]; then
@@ -31,9 +32,16 @@ case "${ROOTFS_PROFILE:-base}" in
         sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
             --no-install-recommends libgl1-mesa-dri libegl-mesa0 libgbm1 \
             mesa-utils libdrm-tests glmark2-es2-drm glmark2-es2-wayland weston
-        ./scripts/mesa-simpledrm.sh
-        sudo cp .work/artifacts/current/t531-mesa-simpledrm_0.20261012-1_armhf.deb "$root/tmp/"
-        sudo chroot "$root" dpkg -i /tmp/t531-mesa-simpledrm_0.20261012-1_armhf.deb
+        if [ "$native_kms" = 1 ]; then
+            ./scripts/build-mesa-msm-kms.sh
+            mesa_package=t531-mesa-msm-kms_0.20261014-1_armhf.deb
+        else
+            ./scripts/mesa-simpledrm.sh
+            mesa_package=t531-mesa-simpledrm_0.20261012-1_armhf.deb
+        fi
+        sudo cp ".work/artifacts/current/$mesa_package" "$root/tmp/"
+        sudo chroot "$root" dpkg -i "/tmp/$mesa_package"
+        sudo rm -f "$root/tmp/$mesa_package"
         if [ "${ROOTFS_PROFILE}" = mobile ]; then
             sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
                 plasma-mobile-full sddm xwayland
@@ -42,8 +50,13 @@ case "${ROOTFS_PROFILE:-base}" in
             sudo chroot "$root" dpkg -i /tmp/t531-powerdevil-suspend_0.20261013-1_armhf.deb
             sudo python3 -c 'import pathlib,sys; pathlib.Path(sys.argv[1]).unlink()' "$root/tmp/t531-powerdevil-suspend_0.20261013-1_armhf.deb"
             sudo install -m 755 scripts/configure-plasma.sh "$root/tmp/t531-configure-plasma.sh"
-            sudo chroot "$root" env INSTALL_ONLY=1 /tmp/t531-configure-plasma.sh
+            sudo chroot "$root" env INSTALL_ONLY=1 NATIVE_KMS="$native_kms" /tmp/t531-configure-plasma.sh
             sudo rm -f "$root/tmp/t531-configure-plasma.sh"
+            if [ "$native_kms" = 1 ]; then
+                sudo install -D -m755 scripts/start-native-graphics.sh "$root/usr/local/sbin/t531-start-native-graphics"
+                sudo install -D -m644 config/t531-native-graphics.service "$root/etc/systemd/system/t531-native-graphics.service"
+                sudo systemctl --root="$root" enable t531-native-graphics.service
+            fi
         fi
         ;;
     *) echo 'ROOTFS_PROFILE must be base, graphics or mobile'; exit 1;;

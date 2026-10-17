@@ -1,0 +1,43 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm: bridge: tc358764: initialize Matisse PPI before BTA reads
+
+The exact Samsung r01 bridge sequence begins with generic LP writes to
+configure PPI, enable lanes and start DSI, without a preceding DSI ID read.
+On the physical SM-T531, ID0x6500 is verified over its independent I2C
+interface before native takeover. The current upstream-style BTA ID read
+instead returns zero data and prevents every configuration write.
+
+Follow the verified write-first sequence for the Matisse profile only.
+All configuration writes retain transfer-length/error checks. Other boards
+keep their ID read. This is a board bring-up experiment, not proof that BTA
+is unsupported: validate configuration readback and actual LCD output.
+
+Source: LineageOS/android_kernel_samsung_msm8226 commit
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256,
+arch/arm/boot/dts/msm8226/dsi_panel_tc358764_wxga_video-r01.dtsi.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/bridge/tc358764.c b/drivers/gpu/drm/bridge/tc358764.c
+index e8163b6c2..db6ae64e2 100644
+--- a/drivers/gpu/drm/bridge/tc358764.c
++++ b/drivers/gpu/drm/bridge/tc358764.c
+@@ -218,10 +218,13 @@ static int tc358764_init(struct tc358764 *ctx)
+ {
+ 	u32 v = 0;
+ 
+-	tc358764_read(ctx, SYS_ID, &v);
+-	if (ctx->error)
+-		return tc358764_clear_error(ctx);
+-	dev_info(ctx->dev, "ID: %#x\n", v);
++	/* Samsung brings up the PPI with writes before any BTA read. */
++	if (!ctx->matisse) {
++		tc358764_read(ctx, SYS_ID, &v);
++		if (ctx->error)
++			return tc358764_clear_error(ctx);
++		dev_info(ctx->dev, "ID: %#x\n", v);
++	}
+ 
+ 	/* configure PPI counters */
+ 	tc358764_write(ctx, PPI_TX_RX_TA, ctx->matisse ? 0x50006 : TTA_GET | TTA_SURE);

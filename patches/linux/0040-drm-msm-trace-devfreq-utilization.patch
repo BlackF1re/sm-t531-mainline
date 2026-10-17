@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 14:17:00 +0000
+Subject: [PATCH] drm/msm: trace measured devfreq busy and total time
+
+Expose the existing devfreq measurements through an opt-in tracepoint.
+Frequency alone cannot distinguish rendering, memory stalls and an idle
+GPU. This also avoids relying on unsupported A3xx per-context fdinfo
+accounting or return-probe argument capture on ARM32.
+
+The existing hardware counter and devfreq conversion are unchanged.
+Disabled tracepoints incur no sampling daemon or additional MMIO reads.
+Units: frequency in Hz, busy and total time in microseconds.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/msm_gpu_devfreq.c b/drivers/gpu/drm/msm/msm_gpu_devfreq.c
+index 2e1d5c343..0ef642be5 100644
+--- a/drivers/gpu/drm/msm/msm_gpu_devfreq.c
++++ b/drivers/gpu/drm/msm/msm_gpu_devfreq.c
+@@ -93,6 +93,8 @@ static int msm_devfreq_get_dev_status(struct device *dev,
+ 	if (df->suspended) {
+ 		mutex_unlock(&df->lock);
+ 		status->busy_time = 0;
++		trace_msm_gpu_devfreq_status(status->current_frequency, 0,
++					     status->total_time);
+ 		return 0;
+ 	}
+ 
+@@ -108,6 +110,8 @@ static int msm_devfreq_get_dev_status(struct device *dev,
+ 		busy_time = ~0LU;
+ 
+ 	status->busy_time = busy_time;
++	trace_msm_gpu_devfreq_status(status->current_frequency,
++				     status->busy_time, status->total_time);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/msm/msm_gpu_trace.h b/drivers/gpu/drm/msm/msm_gpu_trace.h
+index 5417f8d38..18924fb2e 100644
+--- a/drivers/gpu/drm/msm/msm_gpu_trace.h
++++ b/drivers/gpu/drm/msm/msm_gpu_trace.h
+@@ -84,6 +84,24 @@ TRACE_EVENT(msm_gpu_submit_retired,
+ );
+ 
+ 
++TRACE_EVENT(msm_gpu_devfreq_status,
++		TP_PROTO(unsigned long frequency, unsigned long busy,
++			 unsigned long total),
++		TP_ARGS(frequency, busy, total),
++		TP_STRUCT__entry(
++			__field(unsigned long, frequency)
++			__field(unsigned long, busy)
++			__field(unsigned long, total)
++			),
++		TP_fast_assign(
++			__entry->frequency = frequency;
++			__entry->busy = busy;
++			__entry->total = total;
++			),
++		TP_printk("frequency=%lu busy=%lu total=%lu",
++			  __entry->frequency, __entry->busy, __entry->total)
++);
++
+ TRACE_EVENT(msm_gpu_freq_change,
+ 		TP_PROTO(u32 freq),
+ 		TP_ARGS(freq),
+-- 
+2.53.0

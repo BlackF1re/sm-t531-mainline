@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Phosh (SM-T531 native)
+Comment=Phosh with native MDP5 and Adreno rendering
+Exec=/usr/local/bin/t531-phosh-session
+Type=Application
+DesktopNames=Phosh;GNOME;

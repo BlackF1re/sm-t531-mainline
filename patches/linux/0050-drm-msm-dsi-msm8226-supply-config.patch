@@ -1,0 +1,99 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/msm/dsi: select MSM8226 supply configuration
+
+DSI hardware on MSM8226 reports 6G revision 1.0.2, physically read on
+SM-T531. Sharing the MSM8974 regulator list requests a nonexistent 3 V
+DSI supply. The Samsung BSP enables L4 (host vdda) and L8 (PHY vddio).
+Select a SoC-specific supply list using the controller compatible,
+leaving other hardware with the same DSI IP revision unchanged.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_cfg.c b/drivers/gpu/drm/msm/dsi/dsi_cfg.c
+index da3fe6824..828525128 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_cfg.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_cfg.c
+@@ -3,6 +3,8 @@
+  * Copyright (c) 2015, The Linux Foundation. All rights reserved.
+  */
+ 
++#include <linux/of.h>
++
+ #include "dsi_cfg.h"
+ 
+ static const char * const dsi_v2_bus_clk_names[] = {
+@@ -47,6 +49,22 @@ static const struct msm_dsi_config msm8974_apq8084_dsi_cfg = {
+ 	},
+ };
+ 
++/* MSM8226 uses L4 for the host analogue rail; L8 supplies the PHY. */
++static const struct regulator_bulk_data msm8226_dsi_regulators[] = {
++	{ .supply = "vdda", .init_load_uA = 100000 }, /* 1.2 V */
++};
++
++static const struct msm_dsi_config msm8226_dsi_cfg = {
++	.io_offset = DSI_6G_REG_SHIFT,
++	.regulator_data = msm8226_dsi_regulators,
++	.num_regulators = ARRAY_SIZE(msm8226_dsi_regulators),
++	.bus_clk_names = dsi_6g_bus_clk_names,
++	.num_bus_clks = ARRAY_SIZE(dsi_6g_bus_clk_names),
++	.io_start = {
++		{ 0xfd922800 },
++	},
++};
++
+ static const char * const dsi_v1_3_1_clk_names[] = {
+ 	"mdp_core", "iface", "bus",
+ };
+@@ -347,11 +365,22 @@ static const struct msm_dsi_cfg_handler dsi_cfg_handlers[] = {
+ 		&kaanapali_dsi_cfg, &msm_dsi_6g_v2_9_host_ops},
+ };
+ 
+-const struct msm_dsi_cfg_handler *msm_dsi_cfg_get(u32 major, u32 minor)
++static const struct msm_dsi_cfg_handler msm8226_dsi_handler = {
++	MSM_DSI_VER_MAJOR_6G, MSM_DSI_6G_VER_MINOR_V1_0_2,
++	&msm8226_dsi_cfg, &msm_dsi_6g_host_ops,
++};
++
++const struct msm_dsi_cfg_handler *msm_dsi_cfg_get(u32 major, u32 minor,
++						      struct device_node *np)
+ {
+ 	const struct msm_dsi_cfg_handler *cfg_hnd = NULL;
+ 	int i;
+ 
++	if (major == MSM_DSI_VER_MAJOR_6G &&
++	    minor == MSM_DSI_6G_VER_MINOR_V1_0_2 &&
++	    of_device_is_compatible(np, "qcom,msm8226-dsi-ctrl"))
++		return &msm8226_dsi_handler;
++
+ 	for (i = ARRAY_SIZE(dsi_cfg_handlers) - 1; i >= 0; i--) {
+ 		if ((dsi_cfg_handlers[i].major == major) &&
+ 			(dsi_cfg_handlers[i].minor == minor)) {
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_cfg.h b/drivers/gpu/drm/msm/dsi/dsi_cfg.h
+index ccf066796..c79925d16 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_cfg.h
++++ b/drivers/gpu/drm/msm/dsi/dsi_cfg.h
+@@ -69,7 +69,8 @@ struct msm_dsi_cfg_handler {
+ 	const struct msm_dsi_host_cfg_ops *ops;
+ };
+ 
+-const struct msm_dsi_cfg_handler *msm_dsi_cfg_get(u32 major, u32 minor);
++const struct msm_dsi_cfg_handler *msm_dsi_cfg_get(u32 major, u32 minor,
++						      struct device_node *np);
+ 
+ #endif /* __MSM_DSI_CFG_H__ */
+ 
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+index 89face267..9a829eb79 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -228,7 +228,7 @@ dsi_get_config(struct msm_dsi_host *msm_host)
+ 		goto disable_clks;
+ 	}
+ 
+-	cfg_hnd = msm_dsi_cfg_get(major, minor);
++	cfg_hnd = msm_dsi_cfg_get(major, minor, dev->of_node);
+ 
+ 	DBG("%s: Version %x:%x\n", __func__, major, minor);
+ 

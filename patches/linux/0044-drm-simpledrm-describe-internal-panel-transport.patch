@@ -1,0 +1,51 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/simpledrm: describe internal panel transport for backlight matching
+
+KWin/PowerDevil associates internal backlights only with internal outputs.
+The Unknown simpledrm connector on SM-T531 leaves its working LP8556 PWM
+backlight unmatched and enables software brightness, adding an expensive
+full-screen rendering pass on Adreno 305.
+
+Describe the verified LVDS transport behind the board's TC358764 bridge.
+Use a local binding extension until native DRM panel topology is complete;
+this does not claim an exact LCD module or initialize any bridge/MDP block.
+Unknown remains the default for existing firmware framebuffers.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/sysfb/simpledrm.c b/drivers/gpu/drm/sysfb/simpledrm.c
+index 41ffbb3e1..15711f903 100644
+--- a/drivers/gpu/drm/sysfb/simpledrm.c
++++ b/drivers/gpu/drm/sysfb/simpledrm.c
+@@ -725,6 +725,8 @@ static struct simpledrm_device *simpledrm_device_create(struct drm_driver *drv,
+ 	struct drm_crtc *crtc;
+ 	struct drm_encoder *encoder;
+ 	struct drm_connector *connector;
++	u32 connector_type = DRM_MODE_CONNECTOR_Unknown;
++	const char *connector_name;
+ 	unsigned long max_width, max_height;
+ 	size_t nformats;
+ 	int ret;
+@@ -935,9 +937,20 @@ static struct simpledrm_device *simpledrm_device_create(struct drm_driver *drv,
+ 
+ 	/* Connector */
+ 
++	/* Describe the panel transport without taking over firmware scanout. */
++	if (of_node && !of_property_read_string(of_node, "connector-type", &connector_name)) {
++		if (!strcmp(connector_name, "lvds"))
++			connector_type = DRM_MODE_CONNECTOR_LVDS;
++		else if (!strcmp(connector_name, "edp"))
++			connector_type = DRM_MODE_CONNECTOR_eDP;
++		else if (!strcmp(connector_name, "dsi"))
++			connector_type = DRM_MODE_CONNECTOR_DSI;
++		else if (!strcmp(connector_name, "dpi"))
++			connector_type = DRM_MODE_CONNECTOR_DPI;
++	}
+ 	connector = &sdev->connector;
+ 	ret = drm_connector_init(dev, connector, &simpledrm_connector_funcs,
+-				 DRM_MODE_CONNECTOR_Unknown);
++				 connector_type);
+ 	if (ret)
+ 		return ERR_PTR(ret);
+ 	drm_connector_helper_add(connector, &simpledrm_connector_helper_funcs);

@@ -1,0 +1,30 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] dt-bindings: sram: qcom: allow OCMEM interconnect control
+
+Allow standard ICC control of the OCMEM memory clock. Keep a minimal
+allocator-access vote and let the GPU OPP client request the factory
+bandwidth. With ICC, do not issue the independent legacy 1 kHz RPM clock
+vote, which can overwrite the aggregated vote for the same resource.
+Preserve legacy operation when no interconnect path is present.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/Documentation/devicetree/bindings/sram/qcom,ocmem.yaml b/Documentation/devicetree/bindings/sram/qcom,ocmem.yaml
+index 61c784ef7..9a808a53b 100644
+--- a/Documentation/devicetree/bindings/sram/qcom,ocmem.yaml
++++ b/Documentation/devicetree/bindings/sram/qcom,ocmem.yaml
+@@ -41,6 +41,13 @@ properties:
+       - const: core
+       - const: iface
+ 
++  interconnects:
++    maxItems: 1
++    description: OCMEM memory clock bandwidth path
++
++  interconnect-names:
++    const: memory
++
+   '#address-cells':
+     const: 1
+ 

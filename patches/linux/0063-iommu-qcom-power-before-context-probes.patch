@@ -1,0 +1,64 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: resume before probing context banks
+
+Context-bank probe reads fault registers. Runtime-enable the parent
+(and its SCM secure configuration) before populating contexts, instead
+of relying on firmware clocks to remain enabled. Balance the runtime
+reference on registration and error paths; keep optional local-register
+IRQ routing inside the powered section. This is required for MSM8226
+MDP where global registers are not accessible from the non-secure world.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 09f2ee6be..f80ff0321 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -838,18 +838,23 @@ static int qcom_iommu_device_probe(struct platform_device *pdev)
+ 
+ 	pm_runtime_enable(dev);
+ 
++	/* Context probes access registers; restore power, clocks and TZ first. */
++	ret = pm_runtime_resume_and_get(dev);
++	if (ret < 0)
++		goto err_pm_disable;
++
+ 	/* register context bank devices, which are child nodes: */
+ 	ret = devm_of_platform_populate(dev);
+ 	if (ret) {
+ 		dev_err(dev, "Failed to populate iommu contexts\n");
+-		goto err_pm_disable;
++		goto err_pm_put;
+ 	}
+ 
+ 	ret = iommu_device_sysfs_add(&qcom_iommu->iommu, dev, NULL,
+ 				     dev_name(dev));
+ 	if (ret) {
+ 		dev_err(dev, "Failed to register iommu in sysfs\n");
+-		goto err_pm_disable;
++		goto err_pm_put;
+ 	}
+ 
+ 	ret = iommu_device_register(&qcom_iommu->iommu, &qcom_iommu_ops, dev);
+@@ -858,16 +863,16 @@ static int qcom_iommu_device_probe(struct platform_device *pdev)
+ 		goto err_sysfs_remove;
+ 	}
+ 
+-	if (qcom_iommu->local_base) {
+-		pm_runtime_get_sync(dev);
++	if (qcom_iommu->local_base)
+ 		writel_relaxed(0xffffffff, qcom_iommu->local_base + SMMU_INTR_SEL_NS);
+-		pm_runtime_put_sync(dev);
+-	}
+ 
++	pm_runtime_put_sync(dev);
+ 	return 0;
+ 
+ err_sysfs_remove:
+ 	iommu_device_sysfs_remove(&qcom_iommu->iommu);
++err_pm_put:
++	pm_runtime_put_sync(dev);
+ err_pm_disable:
+ 	pm_runtime_disable(dev);
+ 	return ret;

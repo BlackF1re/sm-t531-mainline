@@ -1,0 +1,42 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] clk: qcom: prepare MSM8226 DSI parents during rate changes
+
+The first native modeset on SM-T531 times out updating pclk0 and byte0
+RCGs. Firmware leaves these roots on, but the DSI host changes rates
+before preparing the PLL. Prepare the selected parent around RCG clock
+operations using CCF's existing parent-enable flag, limited to MSM8226.
+
+This follows the mechanism used by upstream commit acf7a91d0b0e
+("clk: qcom: dispcc-sm8250: Enable parents for pixel clocks") and the
+SDM660 v2 discussion by Fabricio Akio on 2026-10-02:
+https://lkml.iu.edu/2610.0/04606.html
+The 28nm PLL and byte root must still be validated on this device; this
+patch does not establish working native display or PLL power management.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/clk/qcom/mmcc-msm8974.c b/drivers/clk/qcom/mmcc-msm8974.c
+index 07ce89502..b45b28d10 100644
+--- a/drivers/clk/qcom/mmcc-msm8974.c
++++ b/drivers/clk/qcom/mmcc-msm8974.c
+@@ -2739,10 +2739,19 @@ MODULE_DEVICE_TABLE(of, mmcc_msm8974_match_table);
+ static void msm8226_clock_override(void)
+ {
+ 	static struct clk_init_data axi_init;
++	static struct clk_init_data pixel_init;
++	static struct clk_init_data byte_init;
+ 
+ 	axi_init = *oxilicx_axi_clk.clkr.hw.init;
+ 	axi_init.flags |= CLK_SET_RATE_PARENT;
+ 	oxilicx_axi_clk.clkr.hw.init = &axi_init;
++	/* Boot firmware can leave the RCG on while the DSI PLL is stopped. */
++	pixel_init = *pclk0_clk_src.clkr.hw.init;
++	pixel_init.flags |= CLK_OPS_PARENT_ENABLE;
++	pclk0_clk_src.clkr.hw.init = &pixel_init;
++	byte_init = *byte0_clk_src.clkr.hw.init;
++	byte_init.flags |= CLK_OPS_PARENT_ENABLE;
++	byte0_clk_src.clkr.hw.init = &byte_init;
+ 	mmss_axi_clk_src.freq_tbl = ftbl_mmss_axi_clk_msm8226;
+ 	vfe0_clk_src.freq_tbl = ftbl_camss_vfe_vfe0_clk_msm8226;
+ 	mdp_clk_src.freq_tbl = ftbl_mdss_mdp_clk_msm8226;

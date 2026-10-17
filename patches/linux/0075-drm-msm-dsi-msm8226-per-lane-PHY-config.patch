@@ -1,0 +1,33 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/msm/dsi: preserve MSM8226 per-lane PHY configuration
+
+The exact MSM8226 factory DTS specifies per-data-lane CFG4 values
+00,05,0a,0f. Active hardware readback shows mainline overwrites all
+four with zero. The other eight values in each lane's profile match.
+
+Use the factory lane values under the existing MSM8226 PHY quirk;
+leave other 28nm PHY variants unchanged. This is an isolated experiment
+for the stalled data path, pending physical output acceptance.
+
+Source: LineageOS android_kernel_samsung_msm8226 at
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256,
+arch/arm/boot/dts/msm8226/dsi_panel_tc358764_wxga_video-r01.dtsi
+and drivers/video/msm/mdss/msm_mdss_io_8974.c.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
+index e7f021a98..88aece4ec 100644
+--- a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
++++ b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
+@@ -828,7 +828,8 @@ static int dsi_28nm_phy_enable(struct msm_dsi_phy *phy,
+ 		writel(0, base + REG_DSI_28nm_PHY_LN_CFG_1(i));
+ 		writel(0, base + REG_DSI_28nm_PHY_LN_CFG_2(i));
+ 		writel(0, base + REG_DSI_28nm_PHY_LN_CFG_3(i));
+-		writel(0, base + REG_DSI_28nm_PHY_LN_CFG_4(i));
++		writel((phy->cfg->quirks & DSI_PHY_28NM_QUIRK_PHY_8226) ?
++		       i * 5 : 0, base + REG_DSI_28nm_PHY_LN_CFG_4(i));
+ 		writel(0, base + REG_DSI_28nm_PHY_LN_TEST_DATAPATH(i));
+ 		writel(0, base + REG_DSI_28nm_PHY_LN_DEBUG_SEL(i));
+ 		writel(0x1, base + REG_DSI_28nm_PHY_LN_TEST_STR_0(i));

@@ -1,0 +1,158 @@
+{
+  "retrieved": "2026-10-15",
+  "source": "Official Debian snapshot binary archives; explicit dependency set for Phosh 0.58 on Debian 13",
+  "packages": [
+    {
+      "package": "gnome-settings-daemon",
+      "version": "49.1-5",
+      "architecture": "armhf",
+      "filename": "gnome-settings-daemon_49.1-5_armhf.deb",
+      "sha256": "8809e63bea5f87c7172e65bc5aedee1e89bfcb0459e34f8ad5d26bc20d0acff7",
+      "url": "https://snapshot.debian.org/file/bf776a4349de8837e68d005b643e74bff91699f5"
+    },
+    {
+      "package": "gnome-settings-daemon-common",
+      "version": "49.1-5",
+      "architecture": "all",
+      "filename": "gnome-settings-daemon-common_49.1-5_all.deb",
+      "sha256": "00e339e19d74f763eee7a35d70df7237aa7fdb9786006579bd0ec188011532a1",
+      "url": "https://snapshot.debian.org/file/f44e4d7e0bb69bfbbe05b8db76f591ff9a8f3b62"
+    },
+    {
+      "package": "gnome-shell-common",
+      "version": "49.5-1",
+      "architecture": "all",
+      "filename": "gnome-shell-common_49.5-1_all.deb",
+      "sha256": "08aa3be9d91f896db3b5690a6738c7e2d085d460b2c476808a9287f3a3c7ecae",
+      "url": "https://snapshot.debian.org/file/526c91c685e7f8a2d4d98eea4d182bfd7dc5f49b"
+    },
+    {
+      "package": "gsettings-desktop-schemas",
+      "version": "49.1-3",
+      "architecture": "all",
+      "filename": "gsettings-desktop-schemas_49.1-3_all.deb",
+      "sha256": "809c67d27c7cadd856a12acdb4b9ab1c46ecc387f8fb68c676cdcd215cc98a15",
+      "url": "https://snapshot.debian.org/file/6c4460b17d509b36140a552934e669d8584b10ec"
+    },
+    {
+      "package": "gnome-session-bin",
+      "version": "49.2-3",
+      "architecture": "armhf",
+      "filename": "gnome-session-bin_49.2-3_armhf.deb",
+      "sha256": "b281658e088690c9b7a6e523dc9919d25e0c5f9a88bf0bf8c32b7e27bebf8c58",
+      "url": "https://snapshot.debian.org/file/f29ed4f1632e41c143fc08402212e1f332d72a6a"
+    },
+    {
+      "package": "gnome-session-common",
+      "version": "49.2-3",
+      "architecture": "all",
+      "filename": "gnome-session-common_49.2-3_all.deb",
+      "sha256": "03f6334e71d59665d521950252f5450650e82625e2acab065fcfd760e59929c5",
+      "url": "https://snapshot.debian.org/file/c749ec03afc6063ac06e912a142820746632d20a"
+    },
+    {
+      "package": "libgtk-4-1",
+      "version": "4.20.3+ds-3",
+      "architecture": "armhf",
+      "filename": "libgtk-4-1_4.20.3+ds-3_armhf.deb",
+      "sha256": "feb3989de0dc4fe4592dbad8a287ef566bf77f9a424925644bb62cc800bd75ba",
+      "url": "https://snapshot.debian.org/file/0bae76b84dacd282d824bfc5d339b661a5105584"
+    },
+    {
+      "package": "libgtk-4-common",
+      "version": "4.20.3+ds-3",
+      "architecture": "all",
+      "filename": "libgtk-4-common_4.20.3+ds-3_all.deb",
+      "sha256": "d8cc700275af89d6907553d5e6a9350cef13a53ddb3f9131ccf94a466ac02123",
+      "url": "https://snapshot.debian.org/file/f00483458e3e0a5ec1b5afe6e0e7172fe93c7a8b"
+    },
+    {
+      "package": "libglib2.0-0t64",
+      "version": "2.86.3-5",
+      "architecture": "armhf",
+      "filename": "libglib2.0-0t64_2.86.3-5_armhf.deb",
+      "sha256": "8d858aea8cbb3f0c9e3604a31ba76286d1bdf02e6d6d99d0f5e994c07dda0a61",
+      "url": "https://snapshot.debian.org/file/77a19fbc4cfd37cd0e404cc8e4b02bba0074bbbf"
+    },
+    {
+      "package": "libglib2.0-bin",
+      "version": "2.86.3-5",
+      "architecture": "armhf",
+      "filename": "libglib2.0-bin_2.86.3-5_armhf.deb",
+      "sha256": "fbb5063a8749c5370fe36249f7b55fef2d91efbc352b1514f3ad0728ddadf01f",
+      "url": "https://snapshot.debian.org/file/4ef41ffcf2a0ccecf8c57aefb612a3870100713d"
+    },
+    {
+      "package": "libglib2.0-data",
+      "version": "2.86.3-5",
+      "architecture": "all",
+      "filename": "libglib2.0-data_2.86.3-5_all.deb",
+      "sha256": "79d0f8f06748915a5f4f62be256593104379cb917d7968e51d4452c1faf645ab",
+      "url": "https://snapshot.debian.org/file/f0d67de053296f9a33c307dae401960a94f396e9"
+    },
+    {
+      "package": "gir1.2-glib-2.0",
+      "version": "2.86.3-5",
+      "architecture": "armhf",
+      "filename": "gir1.2-glib-2.0_2.86.3-5_armhf.deb",
+      "sha256": "3033e64832e3851d69cee6bd41c3b9e02a6ba4e0fdb35c8eb8269ebbee55193e",
+      "url": "https://snapshot.debian.org/file/f554e0b05c2a0f3fa7da6d4b3577aa1f0d7a4571"
+    },
+    {
+      "package": "libwayland-client0",
+      "version": "1.24.0-2",
+      "architecture": "armhf",
+      "filename": "libwayland-client0_1.24.0-2_armhf.deb",
+      "sha256": "447bd1d1e0597d05fe8aff411efd7709abd00fa6348ce98db308c367bdfd650b",
+      "url": "https://snapshot.debian.org/file/5820916ead36b461eaf3edcd6768888ea3420892"
+    },
+    {
+      "package": "libwayland-cursor0",
+      "version": "1.24.0-2",
+      "architecture": "armhf",
+      "filename": "libwayland-cursor0_1.24.0-2_armhf.deb",
+      "sha256": "a08c3f610ccee745fafc1e8870c77fc4f9762491d3d522236e0397140ca5c3c2",
+      "url": "https://snapshot.debian.org/file/60006e7e45ef187ab282fde8b7b833cea43cd2a0"
+    },
+    {
+      "package": "libwayland-egl1",
+      "version": "1.24.0-2",
+      "architecture": "armhf",
+      "filename": "libwayland-egl1_1.24.0-2_armhf.deb",
+      "sha256": "2235286bd6c15092d7c0b6c60474053930eda019a3ee269d77926c61aa084aea",
+      "url": "https://snapshot.debian.org/file/5b7168b16cff234f3b20acee0dd6adb9f8ab9813"
+    },
+    {
+      "package": "libwayland-server0",
+      "version": "1.24.0-2",
+      "architecture": "armhf",
+      "filename": "libwayland-server0_1.24.0-2_armhf.deb",
+      "sha256": "ace38c474b7fd8bdac01143c52d601d3cb73f88c5c65bca70fd1bcdf943979a8",
+      "url": "https://snapshot.debian.org/file/33dfabe6068554ed320a18c085861f48bd611b23"
+    },
+    {
+      "package": "python3-gi",
+      "version": "3.50.0-6",
+      "architecture": "armhf",
+      "filename": "python3-gi_3.50.0-6_armhf.deb",
+      "sha256": "10b847b0249a8f00eabc07c998301f00080f4bc3ade45e878da7f5d7afca038e",
+      "url": "https://snapshot.debian.org/file/e16783d1539704abc8f06be4334693dc013cfd95"
+    },
+    {
+      "package": "xdg-desktop-portal-phosh",
+      "version": "0.58.0-1",
+      "architecture": "armhf",
+      "filename": "xdg-desktop-portal-phosh_0.58.0-1_armhf.deb",
+      "sha256": "8bd5112583b15da9f193e9bb8fef49a1c0402294982ba29f3411473ce315298c",
+      "url": "https://snapshot.debian.org/file/b44a2006bd17769c6165b69b1f3017d604c8d1f1"
+    },
+    {
+      "package": "pfs-common",
+      "version": "0.2.0-1",
+      "architecture": "all",
+      "filename": "pfs-common_0.2.0-1_all.deb",
+      "sha256": "1b27e46900ce38f48e9eda74143b64643b13225f3b042223a6ab9a8948b67f2a",
+      "url": "https://snapshot.debian.org/file/447be1992d54cd1866aa96465c39b64390988849"
+    }
+  ]
+}

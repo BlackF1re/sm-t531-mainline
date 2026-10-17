@@ -1,0 +1,384 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sat, 17 Oct 2026 08:30:00 +0700
+Subject: [PATCH] power: supply: expose PM8226 battery voltage and temperature
+
+SM-T531 has a PM8226 BMS1 gauge and a separate SMB358 charger. Register
+only the latter and UPower has no battery device. Export actual battery
+presence, VADC battery voltage, hardware OCV, thermistor temperature and
+supplier charge status. Calibrate voltage against both measured VADC
+reference codes, including the hardware 1:3 prescaler. Leave charger and
+BMS configuration untouched; do not invent a capacity percentage.
+
+The nominal 6800 mAh cell and battery voltage limits come from the exact
+Matisse Samsung BSP, commit 3fa1853ed5d6c3a8ef5a2fda9822705243bbc256:
+arch/arm/mach-msm/bms-batterydata-samsung-6800mah.c and the board DTS.
+Register meanings are documented in its drivers/power/qpnp-bms.c.
+
+This is a temporary bring-up driver. Current and capacity require the
+board's sense resistance, ADC gain calibration and a validated model.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/power/supply/qcom_pm8226_bms.c b/drivers/power/supply/qcom_pm8226_bms.c
+new file mode 100644
+--- /dev/null
++++ b/drivers/power/supply/qcom_pm8226_bms.c
+@@ -0,0 +1,220 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Qualcomm PM8226 BMS battery measurements.
++ * Register documentation: Samsung MSM8226 BSP, commit
++ * 3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, drivers/power/qpnp-bms.c.
++ * This first stage leaves the firmware's BMS/charger configuration intact.
++ */
++#include <linux/iio/consumer.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/regmap.h>
++#include <linux/workqueue.h>
++
++#define PM8226_BMS_TYPE		0x04
++#define PM8226_BMS_SUBTYPE	0x05
++#define PM8226_BMS_OCV		0x90
++#define PM8226_BAT_PRESENT	BIT(7)
++#define PM8226_BMS_POLL_INTERVAL	(30 * HZ)
++
++struct pm8226_bms {
++	struct regmap *regmap;
++	struct power_supply *battery;
++	struct iio_channel *vbat;
++	struct iio_channel *ref625;
++	struct iio_channel *ref1250;
++	struct iio_channel *temperature;
++	struct delayed_work work;
++	u32 base;
++	u32 present_reg;
++};
++
++/* Both reference codes include the ADC offset; subtraction removes it. */
++static int pm8226_bms_raw_to_uv(struct pm8226_bms *bms, int raw, int *uv)
++{
++	int ref625, ref1250, ret;
++	s64 voltage;
++
++	ret = iio_read_channel_raw(bms->ref625, &ref625);
++	if (ret < 0)
++		return ret;
++	ret = iio_read_channel_raw(bms->ref1250, &ref1250);
++	if (ret < 0)
++		return ret;
++	if (ref1250 <= ref625)
++		return -ERANGE;
++
++	voltage = 625000 + div_s64((s64)(raw - ref625) * 625000,
++				  ref1250 - ref625);
++	/* VBAT_SNS and BMS voltage results use the same 1:3 prescaler. */
++	*uv = voltage * 3;
++	return 0;
++}
++
++static int pm8226_bms_get_property(struct power_supply *psy,
++				 enum power_supply_property prop,
++				 union power_supply_propval *val)
++{
++	struct pm8226_bms *bms = power_supply_get_drvdata(psy);
++	unsigned int present;
++	u8 ocv[2];
++	int ret, raw;
++
++	switch (prop) {
++	case POWER_SUPPLY_PROP_PRESENT:
++		ret = regmap_read(bms->regmap, bms->present_reg, &present);
++		if (ret)
++			return ret;
++		val->intval = !!(present & PM8226_BAT_PRESENT);
++		return 0;
++	case POWER_SUPPLY_PROP_STATUS:
++		ret = power_supply_get_property_from_supplier(psy,
++						POWER_SUPPLY_PROP_ONLINE, val);
++		if (ret)
++			return ret;
++		if (!val->intval) {
++			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
++			return 0;
++		}
++		return power_supply_get_property_from_supplier(psy, prop, val);
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		ret = iio_read_channel_raw(bms->vbat, &raw);
++		if (ret < 0)
++			return ret;
++		return pm8226_bms_raw_to_uv(bms, raw, &val->intval);
++	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
++		ret = regmap_bulk_read(bms->regmap, bms->base + PM8226_BMS_OCV,
++				       ocv, sizeof(ocv));
++		if (ret)
++			return ret;
++		raw = ocv[0] | ocv[1] << 8;
++		if (raw <= 0x6000 || raw == 0xffff)
++			return -ENODATA;
++		return pm8226_bms_raw_to_uv(bms, raw, &val->intval);
++	case POWER_SUPPLY_PROP_TEMP:
++		ret = iio_read_channel_processed(bms->temperature, &raw);
++		if (ret < 0)
++			return ret;
++		/* IIO temperature is millidegrees; power_supply is deci-degrees. */
++		val->intval = DIV_ROUND_CLOSEST(raw, 100);
++		return 0;
++	default:
++		return -EINVAL;
++	}
++}
++
++static void pm8226_bms_external_power_changed(struct power_supply *psy)
++{
++	power_supply_changed(psy);
++}
++
++static enum power_supply_property pm8226_bms_properties[] = {
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_VOLTAGE_OCV,
++	POWER_SUPPLY_PROP_TEMP,
++};
++
++static const struct power_supply_desc pm8226_bms_desc = {
++	.name = "pm8226-bms",
++	.type = POWER_SUPPLY_TYPE_BATTERY,
++	.properties = pm8226_bms_properties,
++	.num_properties = ARRAY_SIZE(pm8226_bms_properties),
++	.get_property = pm8226_bms_get_property,
++	.external_power_changed = pm8226_bms_external_power_changed,
++};
++
++static void pm8226_bms_poll(struct work_struct *work)
++{
++	struct pm8226_bms *bms = container_of(to_delayed_work(work),
++					    struct pm8226_bms, work);
++
++	power_supply_changed(bms->battery);
++	queue_delayed_work(system_freezable_wq, &bms->work,
++			   PM8226_BMS_POLL_INTERVAL);
++}
++
++static void pm8226_bms_cancel_work(void *data)
++{
++	struct pm8226_bms *bms = data;
++
++	cancel_delayed_work_sync(&bms->work);
++}
++
++static int pm8226_bms_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct power_supply_config cfg = {};
++	struct pm8226_bms *bms;
++	unsigned int type, subtype;
++	int ret;
++
++	bms = devm_kzalloc(dev, sizeof(*bms), GFP_KERNEL);
++	if (!bms)
++		return -ENOMEM;
++	bms->regmap = dev_get_regmap(dev->parent, NULL);
++	if (!bms->regmap)
++		return -ENODEV;
++	ret = of_property_read_u32_index(dev->of_node, "reg", 0, &bms->base);
++	if (ret)
++		return ret;
++	ret = of_property_read_u32_index(dev->of_node, "reg", 1, &bms->present_reg);
++	if (ret)
++		return ret;
++	ret = regmap_read(bms->regmap, bms->base + PM8226_BMS_TYPE, &type);
++	if (ret)
++		return ret;
++	ret = regmap_read(bms->regmap, bms->base + PM8226_BMS_SUBTYPE, &subtype);
++	if (ret)
++		return ret;
++	if (type != 0x0d || subtype != 1)
++		return dev_err_probe(dev, -ENODEV, "Unsupported BMS type %02x:%02x\n",
++				     type, subtype);
++
++	bms->vbat = devm_iio_channel_get(dev, "vbat");
++	if (IS_ERR(bms->vbat))
++		return dev_err_probe(dev, PTR_ERR(bms->vbat), "No VBAT channel\n");
++	bms->ref625 = devm_iio_channel_get(dev, "ref625");
++	if (IS_ERR(bms->ref625))
++		return dev_err_probe(dev, PTR_ERR(bms->ref625), "No 625 mV reference\n");
++	bms->ref1250 = devm_iio_channel_get(dev, "ref1250");
++	if (IS_ERR(bms->ref1250))
++		return dev_err_probe(dev, PTR_ERR(bms->ref1250), "No 1250 mV reference\n");
++	bms->temperature = devm_iio_channel_get(dev, "temperature");
++	if (IS_ERR(bms->temperature))
++		return dev_err_probe(dev, PTR_ERR(bms->temperature), "No thermistor\n");
++
++	cfg.drv_data = bms;
++	cfg.fwnode = dev_fwnode(dev);
++	bms->battery = devm_power_supply_register(dev, &pm8226_bms_desc, &cfg);
++	if (IS_ERR(bms->battery))
++		return dev_err_probe(dev, PTR_ERR(bms->battery), "Cannot register battery\n");
++
++	INIT_DELAYED_WORK(&bms->work, pm8226_bms_poll);
++	ret = devm_add_action_or_reset(dev, pm8226_bms_cancel_work, bms);
++	if (ret)
++		return ret;
++	queue_delayed_work(system_freezable_wq, &bms->work,
++			   PM8226_BMS_POLL_INTERVAL);
++	return 0;
++}
++
++static const struct of_device_id pm8226_bms_match[] = {
++	{ .compatible = "qcom,pm8226-bms" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, pm8226_bms_match);
++
++static struct platform_driver pm8226_bms_driver = {
++	.probe = pm8226_bms_probe,
++	.driver = {
++		.name = "qcom-pm8226-bms",
++		.of_match_table = pm8226_bms_match,
++	},
++};
++module_platform_driver(pm8226_bms_driver);
++MODULE_DESCRIPTION("Qualcomm PM8226 battery voltage and temperature");
++MODULE_LICENSE("GPL");
+diff --git a/Documentation/devicetree/bindings/power/supply/qcom,pm8226-bms.yaml b/Documentation/devicetree/bindings/power/supply/qcom,pm8226-bms.yaml
+new file mode 100644
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power/supply/qcom,pm8226-bms.yaml
+@@ -0,0 +1,56 @@
++# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/power/supply/qcom,pm8226-bms.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: Qualcomm PM8226 Coulomb Counter Battery Monitoring System
++
++maintainers:
++  - BlackF1re <55582873+BlackF1re@users.noreply.github.com>
++
++description: |
++  PM8226 contains a coulomb-counting BMS. Its voltage ADC uses the same
++  reference calibration as the PMIC VADC. The separate battery-interface
++  peripheral provides battery presence. Charging is controlled separately.
++
++allOf:
++  - $ref: power-supply.yaml#
++
++properties:
++  compatible:
++    const: qcom,pm8226-bms
++
++  reg:
++    items:
++      - description: BMS peripheral base
++      - description: Battery-interface presence status register
++
++  reg-names:
++    items:
++      - const: bms
++      - const: bat-pres
++
++  io-channels:
++    maxItems: 4
++
++  io-channel-names:
++    items:
++      - const: vbat
++      - const: ref625
++      - const: ref1250
++      - const: temperature
++
++  monitored-battery: true
++  power-supplies: true
++
++required:
++  - compatible
++  - reg
++  - reg-names
++  - io-channels
++  - io-channel-names
++  - monitored-battery
++  - power-supplies
++
++additionalProperties: false
+diff --git a/drivers/power/supply/Kconfig b/drivers/power/supply/Kconfig
+--- a/drivers/power/supply/Kconfig
++++ b/drivers/power/supply/Kconfig
+@@ -744,6 +744,16 @@
+ 	  configuration is required for loading, see the devicetree
+ 	  documentation for more detail.  The base name for this driver is
+ 	  'pm8941_charger'.
++
++config BATTERY_QCOM_PM8226_BMS
++	tristate "Qualcomm PM8226 battery measurements"
++	depends on MFD_SPMI_PMIC || COMPILE_TEST
++	depends on OF && IIO
++	help
++	  Expose battery voltage, temperature and charger status through
++	  the standard power supply class, without changing charging policy.
++	  The module will be called qcom_pm8226_bms. This does not calculate
++	  state of charge or change the battery management configuration.
+ 
+ config BATTERY_PM8916_BMS_VM
+ 	tristate "Qualcomm PM8916 BMS-VM support"
+diff --git a/drivers/power/supply/Makefile b/drivers/power/supply/Makefile
+--- a/drivers/power/supply/Makefile
++++ b/drivers/power/supply/Makefile
+@@ -133,3 +133,5 @@
+ obj-$(CONFIG_FUEL_GAUGE_MM8013)	+= mm8013.o
+ obj-$(CONFIG_MACSMC_POWER)	+= macsmc-power.o
+ obj-$(CONFIG_CHARGER_MAX77759)	+= max77759_charger.o
++
++obj-$(CONFIG_BATTERY_QCOM_PM8226_BMS) += qcom_pm8226_bms.o
+diff --git a/arch/arm/boot/dts/qcom/pm8226.dtsi b/arch/arm/boot/dts/qcom/pm8226.dtsi
+--- a/arch/arm/boot/dts/qcom/pm8226.dtsi
++++ b/arch/arm/boot/dts/qcom/pm8226.dtsi
+@@ -135,6 +135,13 @@
+ 			interrupts = <0x0 0x36 0x0 IRQ_TYPE_EDGE_RISING>;
+ 		};
+ 
++		pm8226_bms: battery@4000 {
++			compatible = "qcom,pm8226-bms";
++			reg = <0x4000>, <0x1208>;
++			reg-names = "bms", "bat-pres";
++			status = "disabled";
++		};
++
+ 		rtc@6000 {
+ 			compatible = "qcom,pm8941-rtc";
+ 			reg = <0x6000>, <0x6100>;
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -275,6 +275,10 @@
+ / {
+ 	battery: battery-cell {
+ 		compatible = "simple-battery";
++		device-chemistry = "lithium-ion";
++		charge-full-design-microamp-hours = <6800000>;
++		voltage-min-design-microvolt = <3400000>;
++		voltage-max-design-microvolt = <4340000>;
+ 		constant-charge-voltage-max-microvolt = <4340000>;
+ 		constant-charge-current-max-microamp = <1800000>;
+ 		operating-range-celsius = <(-5) 60>;
+@@ -467,3 +471,15 @@
+ &backlight_pwm {
+ 	status = "disabled";
+ };
++
++/* PM8226 BMS1 is separate from the external SMB358 charge controller. */
++&pm8226_bms {
++	status = "okay";
++	monitored-battery = <&battery>;
++	power-supplies = <&charger>;
++	io-channels = <&pm8226_vadc VADC_VBAT_SNS>,
++		      <&pm8226_vadc VADC_REF_625MV>,
++		      <&pm8226_vadc VADC_REF_1250MV>,
++		      <&battery_therm>;
++	io-channel-names = "vbat", "ref625", "ref1250", "temperature";
++};

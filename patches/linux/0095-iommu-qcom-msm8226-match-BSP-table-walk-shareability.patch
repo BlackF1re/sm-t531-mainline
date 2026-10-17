@@ -1,0 +1,37 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: match MSM8226 BSP table-walk shareability
+
+The exact Samsung MSM8226 BSP leaves the short-descriptor TTBR0
+attribute bits clear when pt.redirect is false. Its shipped matisse3g
+configuration disables CONFIG_IOMMU_PGTABLES_L2. In contrast, ARM_V7S
+always sets TTBR0.S even for noncoherent walks.
+
+Match the non-shareable, noncacheable BSP table-walk attributes for the
+MSM8226 display context without changing the common page-table backend
+or its DMA cache maintenance. The backend already supplies uncached
+inner/outer attributes; only the extra S bit is cleared here.
+
+This isolates a remaining BSP mismatch after hardware ATOS repeatedly
+reported level2 operation timeouts. It is not yet a verified display fix.
+Other Qualcomm contexts and the independently working GPU are unchanged.
+
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu-v1.c
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/configs/lineage_matisse3g_defconfig
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 0c3a0c236..b0feed7f0 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -404,7 +404,8 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 		}
+ 
+ 		if (qcom_iommu->short_desc) {
+-			ctx->ttbr0 = pgtbl_cfg.arm_v7s_cfg.ttbr;
++			/* The MSM8226 BSP uses non-shareable, uncached table walks. */
++			ctx->ttbr0 = pgtbl_cfg.arm_v7s_cfg.ttbr & ~BIT_ULL(1);
+ 			ctx->tcr[0] = pgtbl_cfg.arm_v7s_cfg.tcr;
+ 			ctx->tcr[1] = 0;
+ 			ctx->mair[0] = pgtbl_cfg.arm_v7s_cfg.prrr;

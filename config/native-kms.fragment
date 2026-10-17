@@ -1,0 +1,12 @@
+# The firmware framebuffer provides the boot console only. MSM KMS removes
+# it through the aperture framework before taking ownership of the display.
+# Plasma is restricted to native MDP5/DSI and the Adreno render node.
+# CONFIG_DRM_SIMPLEDRM is not set
+CONFIG_FB_SIMPLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_PSTORE=y
+CONFIG_PSTORE_RAM=y
+CONFIG_PSTORE_CONSOLE=y
+CONFIG_DRM_MSM=m
+CONFIG_DRM_TOSHIBA_TC358764=m
+CONFIG_ARM_SMMU=m

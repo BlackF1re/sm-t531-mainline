@@ -1,0 +1,60 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sat, 17 Oct 2026 01:20:00 +0700
+Subject: [PATCH] drm/msm/dsi: mask MSM8226 video blanking FIFO interrupts
+
+SM-T531 incurs hundreds of DSI error IRQs per second with all four HS
+lane FIFO-underflow flags. A read-only 20,000-sample, five-second trace
+against the MDP5 line counter observes 300 new flag transitions, all in
+vertical blanking; none of 17,816 active-line samples has these flags.
+The working firmware-owned display masks these four sources.
+
+Qualcomm's DSI controller implementation documents the corresponding
+ERR_INT_MASK0 bits as 26, 27, 29 and 30. Add an SoC video-mode mask and
+apply it for MSM8226, leaving other controllers and command mode alone.
+ACK, PHY, PLL, timeout, command and video MDP FIFO masks are unchanged.
+This prevents normal blanking from continually scheduling error work;
+it does not change link timings, FIFO status or frame transfer.
+
+Link: https://android.googlesource.com/kernel/msm/+/1e5081e1b29bfbd508533677454a3c2f7cc63702
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_cfg.h b/drivers/gpu/drm/msm/dsi/dsi_cfg.h
+--- a/drivers/gpu/drm/msm/dsi/dsi_cfg.h
++++ b/drivers/gpu/drm/msm/dsi/dsi_cfg.h
+@@ -44,6 +44,8 @@
+ struct msm_dsi_config {
+ 	u32 io_offset;
+ 	bool force_ahbm_clk;
++	/* Additional error sources to mask in video mode. */
++	u32 video_mode_err_mask;
+ 	const struct regulator_bulk_data *regulator_data;
+ 	int num_regulators;
+ 	const char * const *bus_clk_names;
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_cfg.c b/drivers/gpu/drm/msm/dsi/dsi_cfg.c
+--- a/drivers/gpu/drm/msm/dsi/dsi_cfg.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_cfg.c
+@@ -57,6 +57,8 @@
+ static const struct msm_dsi_config msm8226_dsi_cfg = {
+ 	.io_offset = DSI_6G_REG_SHIFT,
+ 	.force_ahbm_clk = true,
++	/* MSM8226 signals HS FIFO underflow at each video blanking interval. */
++	.video_mode_err_mask = BIT(26) | BIT(27) | BIT(29) | BIT(30),
+ 	.regulator_data = msm8226_dsi_regulators,
+ 	.num_regulators = ARRAY_SIZE(msm8226_dsi_regulators),
+ 	.bus_clk_names = dsi_6g_bus_clk_names,
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -932,7 +932,10 @@
+ 	dsi_write(msm_host, REG_DSI_EOT_PACKET_CTRL, data);
+ 
+ 	/* allow only ack-err-status to generate interrupt */
+-	dsi_write(msm_host, REG_DSI_ERR_INT_MASK0, 0x13ff3fe0);
++	data = 0x13ff3fe0;
++	if (flags & MIPI_DSI_MODE_VIDEO)
++		data |= cfg_hnd->cfg->video_mode_err_mask;
++	dsi_write(msm_host, REG_DSI_ERR_INT_MASK0, data);
+ 
+ 	dsi_intr_ctrl(msm_host, DSI_IRQ_MASK_ERROR, 1);
+ 

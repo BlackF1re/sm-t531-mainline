@@ -1,0 +1,22 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] ARM: dts: qcom: match MSM8226 IOMMU unit address
+
+Match the unit address to the implementation register window now exposed
+as the first resource. Context ranges and hardware addresses are unchanged.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi b/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
+index f8a456660..d0f93ad73 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
+@@ -1150,7 +1150,7 @@ mmcc: clock-controller@fd8c0000 {
+ 				      "dsi0pllbyte";
+ 		};
+ 
+-		mdp_smmu: iommu@fd928000 {
++		mdp_smmu: iommu@fd92a000 {
+ 			compatible = "qcom,msm8226-iommu", "qcom,msm-iommu-v1";
+ 			/* Only HLOS implementation registers and non-secure CB0. */
+ 			reg = <0xfd92a000 0x1000>;

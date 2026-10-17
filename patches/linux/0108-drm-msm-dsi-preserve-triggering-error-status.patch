@@ -1,0 +1,99 @@
+Subject: [PATCH] drm/msm/dsi: retain error status before acknowledging interrupts
+
+The diagnostic worker currently rereads W1C error registers after the IRQ
+handler has cleared them. This loses the timeout/ACK syndrome and reports
+live FIFO empty bits instead of the triggering status. Capture the values
+already read by the error handlers and the original interrupt status; use
+those in the rate-limited worker message. No extra IRQ MMIO reads, reset,
+mask policy or error recovery change is introduced.
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -165,6 +165,8 @@
+ 	spinlock_t intr_lock; /* Protect interrupt ctrl register */
+ 
+ 	u32 err_work_state;
++	/* Captured before W1C acknowledgment, while error IRQ is masked. */
++	u32 err_fifo, err_ack, err_timeout, err_phy, err_clk, err_irq;
+ 	bool link_diagnostic;
+ 	struct work_struct err_work;
+ 	struct workqueue_struct *workqueue;
+@@ -1626,12 +1628,9 @@
+ 
+ 	pr_err_ratelimited("%s: status=%x fifo=%08x ack=%08x timeout=%08x phy=%08x clk=%08x irq=%08x\n",
+ 			  __func__, status,
+-			  dsi_read(msm_host, REG_DSI_FIFO_STATUS),
+-			  dsi_read(msm_host, REG_DSI_ACK_ERR_STATUS),
+-			  dsi_read(msm_host, REG_DSI_TIMEOUT_STATUS),
+-			  dsi_read(msm_host, REG_DSI_DLN0_PHY_ERR),
+-			  dsi_read(msm_host, REG_DSI_CLK_STATUS),
+-			  dsi_read(msm_host, REG_DSI_INTR_CTRL));
++			  msm_host->err_fifo, msm_host->err_ack,
++			  msm_host->err_timeout, msm_host->err_phy,
++			  msm_host->err_clk, msm_host->err_irq);
+ 	if (status & DSI_ERR_STATE_MDP_FIFO_UNDERFLOW)
+ 		dsi_sw_reset(msm_host);
+ 
+@@ -1647,6 +1646,7 @@
+ 	u32 status;
+ 
+ 	status = dsi_read(msm_host, REG_DSI_ACK_ERR_STATUS);
++	msm_host->err_ack = status;
+ 
+ 	if (status) {
+ 		dsi_write(msm_host, REG_DSI_ACK_ERR_STATUS, status);
+@@ -1661,6 +1661,7 @@
+ 	u32 status;
+ 
+ 	status = dsi_read(msm_host, REG_DSI_TIMEOUT_STATUS);
++	msm_host->err_timeout = status;
+ 
+ 	if (status) {
+ 		dsi_write(msm_host, REG_DSI_TIMEOUT_STATUS, status);
+@@ -1673,6 +1674,7 @@
+ 	u32 status;
+ 
+ 	status = dsi_read(msm_host, REG_DSI_DLN0_PHY_ERR);
++	msm_host->err_phy = status;
+ 
+ 	if (status & (DSI_DLN0_PHY_ERR_DLN0_ERR_ESC |
+ 			DSI_DLN0_PHY_ERR_DLN0_ERR_SYNC_ESC |
+@@ -1689,6 +1691,7 @@
+ 	u32 status;
+ 
+ 	status = dsi_read(msm_host, REG_DSI_FIFO_STATUS);
++	msm_host->err_fifo = status;
+ 
+ 	/* fifo underflow, overflow */
+ 	if (status) {
+@@ -1718,6 +1721,7 @@
+ 	u32 status;
+ 
+ 	status = dsi_read(msm_host, REG_DSI_CLK_STATUS);
++	msm_host->err_clk = status;
+ 
+ 	if (status & DSI_CLK_STATUS_PLL_UNLOCKED) {
+ 		dsi_write(msm_host, REG_DSI_CLK_STATUS, status);
+@@ -1725,10 +1729,11 @@
+ 	}
+ }
+ 
+-static void dsi_error(struct msm_dsi_host *msm_host)
++static void dsi_error(struct msm_dsi_host *msm_host, u32 isr)
+ {
+ 	/* disable dsi error interrupt */
+ 	dsi_intr_ctrl(msm_host, DSI_IRQ_MASK_ERROR, 0);
++	msm_host->err_irq = isr;
+ 
+ 	dsi_clk_status(msm_host);
+ 	dsi_fifo_status(msm_host);
+@@ -1757,7 +1762,7 @@
+ 	DBG("isr=0x%x, id=%d", isr, msm_host->id);
+ 
+ 	if (isr & DSI_IRQ_ERROR)
+-		dsi_error(msm_host);
++		dsi_error(msm_host, isr);
+ 
+ 	if (isr & DSI_IRQ_VIDEO_DONE)
+ 		complete(&msm_host->video_comp);

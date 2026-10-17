@@ -1,0 +1,119 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/msm/dsi: restore MSM8226 byte mux parent on prepare
+
+On MSM8226 the powered byte mux register reads direct VCO (VREG_CFG=0)
+while CCF retains indirect VCO/2 as its selected parent. With DIV1=1
+and the fixed /4 divider, this makes the hardware byte clock twice the
+rate reported to the DSI host. Native scanout shows black/partial stripes
+and recurring HS FIFO errors despite verified MDP IOMMU translations.
+
+A board-restricted diagnostic selected direct then the cached indirect
+parent through clk_set_parent(), restoring VREG_CFG=2 without changing
+the final requested clocks. The owner physically confirmed the native
+modetest colour pattern immediately afterwards. This identifies mux
+state loss as a real output blocker; desktop FPS remains unmeasured.
+
+The Android BSP explicitly restores cached mux selections in prepare
+because display power collapse wipes these registers:
+https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/mach-msm/clock-mdss-8974.c
+
+Use the same lifetime rule in CCF: after the VCO parent has prepared,
+replay the current cached parent index through the ordinary mux ops.
+Do not force an indirect parent or touch rates, voltage or DDR controls.
+Keep the new prepare callback limited to the MSM8226 PHY quirk; other
+28nm PHY registrations retain their existing generic mux implementation.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
+index 626bf962f..3520712d5 100644
+--- a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
++++ b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
+@@ -637,6 +637,71 @@ static int dsi_28nm_pll_restore_state(struct msm_dsi_phy *phy)
+ 	return 0;
+ }
+ 
++static int dsi_28nm_byte_mux_prepare(struct clk_hw *hw)
++{
++	int index = clk_hw_get_parent_index(hw);
++
++	if (index < 0)
++		return index;
++
++	/* Power collapse/reset loses the selector, while CCF retains its parent. */
++	return clk_mux_ops.set_parent(hw, index);
++}
++
++static u8 dsi_28nm_byte_mux_get_parent(struct clk_hw *hw)
++{
++	return clk_mux_ops.get_parent(hw);
++}
++
++static int dsi_28nm_byte_mux_set_parent(struct clk_hw *hw, u8 index)
++{
++	return clk_mux_ops.set_parent(hw, index);
++}
++
++static int dsi_28nm_byte_mux_determine_rate(struct clk_hw *hw,
++					 struct clk_rate_request *req)
++{
++	return clk_mux_ops.determine_rate(hw, req);
++}
++
++static const struct clk_ops dsi_28nm_byte_mux_ops = {
++	.prepare = dsi_28nm_byte_mux_prepare,
++	.get_parent = dsi_28nm_byte_mux_get_parent,
++	.set_parent = dsi_28nm_byte_mux_set_parent,
++	.determine_rate = dsi_28nm_byte_mux_determine_rate,
++};
++
++static struct clk_hw *dsi_28nm_register_byte_mux(struct dsi_pll_28nm *pll,
++					      const char *name,
++					      const struct clk_hw **parents)
++{
++	struct device *dev = &pll->phy->pdev->dev;
++	void __iomem *reg = pll->phy->pll_base + REG_DSI_28nm_PHY_PLL_VREG_CFG;
++	struct clk_init_data init = {
++		.name = name,
++		.ops = &dsi_28nm_byte_mux_ops,
++		.parent_hws = parents,
++		.num_parents = 2,
++		.flags = CLK_SET_RATE_PARENT,
++	};
++	struct clk_mux *mux;
++	int ret;
++
++	if (!(pll->phy->cfg->quirks & DSI_PHY_28NM_QUIRK_PHY_8226))
++		return devm_clk_hw_register_mux_parent_hws(dev, name, parents, 2,
++				CLK_SET_RATE_PARENT, reg, 1, 1, 0, NULL);
++
++	mux = devm_kzalloc(dev, sizeof(*mux), GFP_KERNEL);
++	if (!mux)
++		return ERR_PTR(-ENOMEM);
++	mux->reg = reg;
++	mux->shift = 1;
++	mux->mask = 1;
++	mux->hw.init = &init;
++	ret = devm_clk_hw_register(dev, &mux->hw);
++	return ret ? ERR_PTR(ret) : &mux->hw;
++}
++
+ static int pll_28nm_register(struct dsi_pll_28nm *pll_28nm, struct clk_hw **provided_clocks)
+ {
+ 	char clk_name[32];
+@@ -692,12 +757,11 @@ static int pll_28nm_register(struct dsi_pll_28nm *pll_28nm, struct clk_hw **prov
+ 	provided_clocks[DSI_PIXEL_PLL_CLK] = hw;
+ 
+ 	snprintf(clk_name, sizeof(clk_name), "dsi%dbyte_mux", pll_28nm->phy->id);
+-	byte_mux = devm_clk_hw_register_mux_parent_hws(dev, clk_name,
++	byte_mux = dsi_28nm_register_byte_mux(pll_28nm, clk_name,
+ 			((const struct clk_hw *[]){
+ 				&pll_28nm->clk_hw,
+ 				indirect_path_div2,
+-			}), 2, CLK_SET_RATE_PARENT, pll_28nm->phy->pll_base +
+-				REG_DSI_28nm_PHY_PLL_VREG_CFG, 1, 1, 0, NULL);
++			}));
+ 	if (IS_ERR(byte_mux))
+ 		return PTR_ERR(byte_mux);
+ 

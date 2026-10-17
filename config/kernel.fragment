@@ -38,6 +38,8 @@ CONFIG_DRM_MSM_DSI_28NM_PHY=y
 CONFIG_DRM_TOSHIBA_TC358764=y
 CONFIG_DRM_PANEL_LVDS=y
 CONFIG_CHARGER_SMB347=y
+CONFIG_BATTERY_QCOM_PM8226_BMS=y
+CONFIG_QCOM_SPMI_IADC=y
 CONFIG_PSTORE=y
 CONFIG_PSTORE_CONSOLE=y
 CONFIG_PSTORE_RAM=y
@@ -69,3 +71,14 @@ CONFIG_USER_NS=y
 
 # No wired UART console is available; keep serial BREAK from invoking SysRq.
 # CONFIG_MAGIC_SYSRQ_SERIAL is not set
+
+# SM-T531 uses MSM8226 MDP5/DSI. Keep unrelated built-ins out of its fixed
+# decompressor/appended-DTB workspace below firmware scanout at 0x03200000.
+# CONFIG_ARCH_EXYNOS is not set
+# CONFIG_ARCH_TEGRA is not set
+# CONFIG_DRM_MSM_MDP4 is not set
+# CONFIG_DRM_MSM_DPU is not set
+# CONFIG_DRM_MSM_DP is not set
+# CONFIG_DRM_MSM_HDMI is not set
+CONFIG_NEON=y
+CONFIG_KERNEL_MODE_NEON=y

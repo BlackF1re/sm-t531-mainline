@@ -1,0 +1,45 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sat, 17 Oct 2026 00:00:00 +0700
+Subject: [PATCH] iommu: qcom: handle context faults without an attached domain
+
+SM-T531 ramoops records a boot-time NULL dereference in
+report_iommu_fault+0xc, called from qcom_iommu_fault with r0=0.
+Context IRQs may arrive before ctx->domain is assigned, including while
+firmware scanout is being replaced. report_iommu_fault requires a domain.
+
+Read the domain once and invoke the client callback only when one exists.
+Continue logging, acknowledging FSR and terminating the faulting
+transaction for unattached contexts, instead of panicking in interrupt
+context. This neither bypasses translation nor suppresses the fault.
+It does not by itself fix the firmware framebuffer handoff or all
+domain-lifetime races.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -223,6 +223,7 @@
+ static irqreturn_t qcom_iommu_fault(int irq, void *dev)
+ {
+ 	struct qcom_iommu_ctx *ctx = dev;
++	struct iommu_domain *domain;
+ 	u32 fsr, fsynr;
+ 	u64 iova;
+ 
+@@ -234,10 +235,13 @@
+ 	fsynr = iommu_readl(ctx, ARM_SMMU_CB_FSYNR0);
+ 	iova = iommu_readq(ctx, ARM_SMMU_CB_FAR);
+ 
+-	if (report_iommu_fault(ctx->domain, ctx->dev, iova, 0)) {
++	/* Firmware can leave a pending fault before the first domain attach. */
++	domain = READ_ONCE(ctx->domain);
++	if (!domain || report_iommu_fault(domain, ctx->dev, iova, 0)) {
+ 		dev_err_ratelimited(ctx->dev,
+-				    "Unhandled context fault: fsr=0x%x, "
++				    "%s context fault: fsr=0x%x, "
+ 				    "iova=0x%016llx, fsynr=0x%x, cb=%d\n",
++				    domain ? "Unhandled" : "Unattached",
+ 				    fsr, iova, fsynr, ctx->asid);
+ 	}
+ 

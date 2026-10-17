@@ -1,0 +1,49 @@
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Date: Sat, 03 Oct 2026 03:30:19 +0300
+Subject: [PATCH v4 04/10] drm/msm/mdp5: flush the interface before starting the timing engine
+Message-Id: <20261003-fd-kms-fix-smmu-v4-4-2a44d4d8ac77@oss.qualcomm.com>
+
+Disabling a CRTC and then enabling it again can produce an SMMU fault on
+MSM8996 as soon as the timing engine restarts, e.g. when fbcon takes over
+after kms_atomic:
+
+  arm-smmu d00000.iommu: Unhandled context fault: fsr=0x402, iova=0x01fa6e00
+
+The faulting address is inside the framebuffer that was scanned out
+before the disable, which has been released since. The pipes keep that
+address latched (CURRENT_SRC0_ADDR still points to the released buffer)
+because the plane removal flushed after the timing engine stopped never
+takes effect. On the next enable the pipes are programmed and flushed
+before the encoder is enabled, but that flush doesn't include the
+interface: the encoder enables the timing engine first and only then
+flushes the INTF. The first frame is fetched with the latched pipe
+configuration, from the released buffer.
+
+Flush the interface before enabling the timing engine, the order used by
+both the DPU driver and the downstream mdss driver. With the INTF flush
+pending, the whole pending flush takes effect when the timing engine
+starts and the first frame is fetched with the new configuration.
+
+Fixes: 06c0dd96bfbb ("drm/msm: add mdp5/apq8x74")
+Assisted-by: LLM
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Link: https://lore.kernel.org/r/20261003-fd-kms-fix-smmu-v4-4-2a44d4d8ac77@oss.qualcomm.com
+[BlackF1re: standalone v4 04/10 backport; code unchanged.]
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/disp/mdp5/mdp5_encoder.c b/drivers/gpu/drm/msm/disp/mdp5/mdp5_encoder.c
+--- a/drivers/gpu/drm/msm/disp/mdp5/mdp5_encoder.c
++++ b/drivers/gpu/drm/msm/disp/mdp5/mdp5_encoder.c
+@@ -164,10 +164,11 @@
+ 	if (WARN_ON(mdp5_encoder->enabled))
+ 		return;
+ 
++	/* the pipes fetch the first frame with stale addresses otherwise */
++	mdp5_ctl_commit(ctl, pipeline, mdp_ctl_flush_mask_encoder(intf), true);
+ 	spin_lock_irqsave(&mdp5_encoder->intf_lock, flags);
+ 	mdp5_write(mdp5_kms, REG_MDP5_INTF_TIMING_ENGINE_EN(intfn), 1);
+ 	spin_unlock_irqrestore(&mdp5_encoder->intf_lock, flags);
+-	mdp5_ctl_commit(ctl, pipeline, mdp_ctl_flush_mask_encoder(intf), true);
+ 
+ 	mdp5_ctl_set_encoder_state(ctl, pipeline, true);
+ 

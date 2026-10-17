@@ -1,0 +1,171 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/bridge: tc358764: add verified Matisse bring-up profile
+
+Add the Samsung Matisse r01 bridge configuration. Counter values, video
+control, LVDS polarity and mux were verified by read-only I2C register
+readback on SM-T531; they match Samsung downstream revision 3fa1853e.
+Keep other boards on their existing initialization and burst mode.
+
+TEMPORARY DIAGNOSTIC: firmware_power=1 is explicitly opt-in and restricted
+to this board. It preserves bootloader-powered bridge rails while their
+board net mapping is being established. It is not production power or
+suspend support and must be replaced by verified regulator wiring.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/bridge/tc358764.c b/drivers/gpu/drm/bridge/tc358764.c
+index 248b3ab36..e8163b6c2 100644
+--- a/drivers/gpu/drm/bridge/tc358764.c
++++ b/drivers/gpu/drm/bridge/tc358764.c
+@@ -145,6 +145,11 @@ static const char * const tc358764_supplies[] = {
+ 	"vddc", "vddio", "vddlvds"
+ };
+ 
++/* Temporary bring-up escape hatch: never guess unverified power wiring. */
++static bool firmware_power;
++module_param(firmware_power, bool, 0400);
++MODULE_PARM_DESC(firmware_power, "Preserve firmware bridge supplies on Matisse during bring-up");
++
+ struct tc358764 {
+ 	struct device *dev;
+ 	struct drm_bridge bridge;
+@@ -152,6 +157,8 @@ struct tc358764 {
+ 	struct regulator_bulk_data supplies[ARRAY_SIZE(tc358764_supplies)];
+ 	struct gpio_desc *gpio_reset;
+ 	int error;
++	bool matisse;
++	bool unmanaged_power;
+ };
+ 
+ static int tc358764_clear_error(struct tc358764 *ctx)
+@@ -217,12 +224,12 @@ static int tc358764_init(struct tc358764 *ctx)
+ 	dev_info(ctx->dev, "ID: %#x\n", v);
+ 
+ 	/* configure PPI counters */
+-	tc358764_write(ctx, PPI_TX_RX_TA, TTA_GET | TTA_SURE);
+-	tc358764_write(ctx, PPI_LPTXTIMECNT, LPX_PERIOD);
+-	tc358764_write(ctx, PPI_D0S_CLRSIPOCOUNT, 5);
+-	tc358764_write(ctx, PPI_D1S_CLRSIPOCOUNT, 5);
+-	tc358764_write(ctx, PPI_D2S_CLRSIPOCOUNT, 5);
+-	tc358764_write(ctx, PPI_D3S_CLRSIPOCOUNT, 5);
++	tc358764_write(ctx, PPI_TX_RX_TA, ctx->matisse ? 0x50006 : TTA_GET | TTA_SURE);
++	tc358764_write(ctx, PPI_LPTXTIMECNT, ctx->matisse ? 4 : LPX_PERIOD);
++	tc358764_write(ctx, PPI_D0S_CLRSIPOCOUNT, ctx->matisse ? 4 : 5);
++	tc358764_write(ctx, PPI_D1S_CLRSIPOCOUNT, ctx->matisse ? 4 : 5);
++	tc358764_write(ctx, PPI_D2S_CLRSIPOCOUNT, ctx->matisse ? 4 : 5);
++	tc358764_write(ctx, PPI_D3S_CLRSIPOCOUNT, ctx->matisse ? 4 : 5);
+ 
+ 	/* enable four data lanes and clock lane */
+ 	tc358764_write(ctx, PPI_LANEENABLE, LANEENABLE_L3EN | LANEENABLE_L2EN |
+@@ -235,18 +242,37 @@ static int tc358764_init(struct tc358764 *ctx)
+ 	tc358764_write(ctx, DSI_STARTDSI, DSI_RX_START);
+ 
+ 	/* configure video path */
+-	tc358764_write(ctx, VP_CTRL, VP_CTRL_VSDELAY(15) | VP_CTRL_RGB888 |
+-		       VP_CTRL_EVTMODE | VP_CTRL_HSPOL | VP_CTRL_VSPOL);
++	if (ctx->matisse) {
++		/* Verified Samsung r01 DSI sequence and running bridge readback. */
++		tc358764_write(ctx, VP_CTRL, VP_CTRL_VSDELAY(63) |
++			       VP_CTRL_RGB888 | VP_CTRL_EVTMODE);
++		tc358764_write(ctx, VP_HTIM1, 0x00300002);
++		tc358764_write(ctx, VP_HTIM2, 0x00300320);
++		tc358764_write(ctx, VP_VTIM1, 0x00400002);
++		tc358764_write(ctx, VP_VTIM2, 0x00200500);
++		tc358764_write(ctx, VP_VFUEN, 1);
++	} else {
++		tc358764_write(ctx, VP_CTRL, VP_CTRL_VSDELAY(15) | VP_CTRL_RGB888 |
++			       VP_CTRL_EVTMODE | VP_CTRL_HSPOL | VP_CTRL_VSPOL);
++	}
+ 
+ 	/* reset PHY */
+ 	tc358764_write(ctx, LV_PHY0, LV_PHY0_RST(1) |
+ 		       LV_PHY0_PRBS_ON(4) | LV_PHY0_IS(2) | LV_PHY0_ND(6));
++	if (ctx->matisse)
++		usleep_range(2000, 3000);
+ 	tc358764_write(ctx, LV_PHY0, LV_PHY0_PRBS_ON(4) | LV_PHY0_IS(2) |
+ 		       LV_PHY0_ND(6));
+ 
++	if (ctx->matisse)
++		usleep_range(2000, 3000);
++
+ 	/* reset bridge */
+ 	tc358764_write(ctx, SYS_RST, SYS_RST_LCD);
+ 
++	if (ctx->matisse)
++		usleep_range(2000, 3000);
++
+ 	/* set bit order */
+ 	tc358764_write(ctx, LV_MX0003, LV_MX(LVI_R0, LVI_R1, LVI_R2, LVI_R3));
+ 	tc358764_write(ctx, LV_MX0407, LV_MX(LVI_R4, LVI_R7, LVI_R5, LVI_G0));
+@@ -255,8 +281,8 @@ static int tc358764_init(struct tc358764 *ctx)
+ 	tc358764_write(ctx, LV_MX1619, LV_MX(LVI_B6, LVI_B7, LVI_B1, LVI_B2));
+ 	tc358764_write(ctx, LV_MX2023, LV_MX(LVI_B3, LVI_B4, LVI_B5, LVI_L0));
+ 	tc358764_write(ctx, LV_MX2427, LV_MX(LVI_HS, LVI_VS, LVI_DE, LVI_R6));
+-	tc358764_write(ctx, LV_CFG, LV_CFG_CLKPOL2 | LV_CFG_CLKPOL1 |
+-		       LV_CFG_LVEN);
++	tc358764_write(ctx, LV_CFG, ctx->matisse ? LV_CFG_LVEN :
++		       LV_CFG_CLKPOL2 | LV_CFG_CLKPOL1 | LV_CFG_LVEN);
+ 
+ 	return tc358764_clear_error(ctx);
+ }
+@@ -276,6 +302,8 @@ static void tc358764_post_disable(struct drm_bridge *bridge)
+ 
+ 	tc358764_reset(ctx);
+ 	usleep_range(10000, 15000);
++	if (ctx->unmanaged_power)
++		return;
+ 	ret = regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
+ 	if (ret < 0)
+ 		dev_err(ctx->dev, "error disabling regulators (%d)\n", ret);
+@@ -286,7 +314,8 @@ static void tc358764_pre_enable(struct drm_bridge *bridge)
+ 	struct tc358764 *ctx = bridge_to_tc358764(bridge);
+ 	int ret;
+ 
+-	ret = regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
++	ret = ctx->unmanaged_power ? 0 :
++		regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
+ 	if (ret < 0) {
+ 		dev_err(ctx->dev, "error enabling regulators (%d)\n", ret);
+ 		return;
+@@ -359,19 +388,29 @@ static int tc358764_probe(struct mipi_dsi_device *dsi)
+ 	mipi_dsi_set_drvdata(dsi, ctx);
+ 
+ 	ctx->dev = dev;
++	ctx->matisse = of_device_is_compatible(dev->of_node,
++					     "samsung,matisse-tc358764");
++	ctx->unmanaged_power = ctx->matisse && firmware_power;
+ 
+ 	dsi->lanes = 4;
+ 	dsi->format = MIPI_DSI_FMT_RGB888;
+ 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST
+ 		| MIPI_DSI_MODE_VIDEO_AUTO_VERT | MIPI_DSI_MODE_LPM;
+ 
++	if (ctx->matisse)
++		dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_LPM;
++
+ 	ret = tc358764_parse_dt(ctx);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = tc358764_configure_regulators(ctx);
+-	if (ret < 0)
+-		return ret;
++	if (ctx->unmanaged_power) {
++		dev_warn(dev, "DIAGNOSTIC: preserving firmware bridge power; suspend unsupported\n");
++	} else {
++		ret = tc358764_configure_regulators(ctx);
++		if (ret < 0)
++			return ret;
++	}
+ 
+ 	ctx->bridge.of_node = dev->of_node;
+ 	ctx->bridge.pre_enable_prev_first = true;
+@@ -397,6 +436,7 @@ static void tc358764_remove(struct mipi_dsi_device *dsi)
+ 
+ static const struct of_device_id tc358764_of_match[] = {
+ 	{ .compatible = "toshiba,tc358764" },
++	{ .compatible = "samsung,matisse-tc358764" },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, tc358764_of_match);

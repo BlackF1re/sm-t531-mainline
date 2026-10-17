@@ -1,0 +1,61 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu/qcom: synchronize invalidations after releasing context halt
+
+The context-init ASID invalidation backport waits for TLBSYNC with the
+micro-MMU still halted. A fresh device boot after patch0100 times out
+on both the ARM32 automatic DMA-domain attach and the later MDP domain
+attach; display probing safely fails with ETIMEDOUT. This blocks testing
+the physically demonstrated DSI mux fix.
+
+The pinned MSM8226 BSP resets/invalidate/programs the bank under halt,
+then resumes; its separate TLB synchronization paths run unhalted:
+https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu-v1.c
+
+Keep the invalidation inside the halt-protected programming sequence,
+but wait for completion after enabling the programmed context and
+releasing halt. Do not bypass the completion check or shorten its bound.
+If completion fails, disable the context before its new page tables can
+be released. Instances without the halt quirk retain the existing order.
+
+This is a measured-failure-driven candidate; fresh boot and hardware
+translation acceptance must be repeated before claiming a fix.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 25e5f299d..0e64f87ec 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -316,10 +316,10 @@ static int qcom_iommu_program_ctx(struct qcom_iommu_dev *qcom_iommu,
+ 
+ 	/* Drop old entries for the incoming namespace before enabling it. */
+ 	iommu_writel(ctx, ARM_SMMU_CB_S1_TLBIASID, ctx->pt_asid);
+-	ret = qcom_iommu_ctx_tlb_sync(ctx);
+-	if (ret) {
+-		qcom_iommu_unhalt(qcom_iommu);
+-		return ret;
++	if (!qcom_iommu->cfg || !qcom_iommu->cfg->halt) {
++		ret = qcom_iommu_ctx_tlb_sync(ctx);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	/* Clear context bank fault address fault status registers */
+@@ -347,6 +347,16 @@ static int qcom_iommu_program_ctx(struct qcom_iommu_dev *qcom_iommu,
+ 	/* SCTLR */
+ 	iommu_writel(ctx, ARM_SMMU_CB_SCTLR, ctx->sctlr);
+ 	qcom_iommu_unhalt(qcom_iommu);
++	/* The halted front-end must run before an invalidation can complete. */
++	if (qcom_iommu->cfg && qcom_iommu->cfg->halt) {
++		ret = qcom_iommu_ctx_tlb_sync(ctx);
++		if (ret) {
++			/* Do not leave a walker referencing a failed domain's tables. */
++			iommu_writel(ctx, ARM_SMMU_CB_SCTLR, 0);
++			wmb(); /* Disable the walker before its tables are released. */
++			return ret;
++		}
++	}
+ 	return 0;
+ }
+ 

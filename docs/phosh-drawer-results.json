@@ -1,0 +1,101 @@
+{
+  "device": "Samsung Galaxy Tab 4 SM-T531",
+  "date": "2026-10-15",
+  "evidence_state": "VERIFIED_DEVICE",
+  "workload": "15 seconds of requested manual drawer opening/closing; DRM presentation burst analysis",
+  "shell": "Phosh 0.58.0-1~t5312",
+  "compositor": "Phoc 0.46.0-1",
+  "background_gui_cleanup": [
+    "kclockd",
+    "kdeconnectd",
+    "calindac",
+    "xwaylandvideobridge",
+    "Xwayland"
+  ],
+  "other_graphics_benchmarks_running": false,
+  "recording_device_path": "/var/lib/t531/phosh058-clean-manual15",
+  "comparison_limitation": "Not a controlled identical-workload speedup comparison with Plasma; whole-recording CPU/GPU includes idle pauses.",
+  "summary": {
+    "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+    "idle_gap_threshold_ms": 100,
+    "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+    "active_fps": 30.835232604906576,
+    "frame_interval": {
+      "samples": 184,
+      "p50_ms": 33.336000000019794,
+      "p95_ms": 33.34599999999455,
+      "p99_ms": 33.36300000000847,
+      "over_25ms_percent": 94.02173913043478
+    },
+    "bursts": [
+      {
+        "start": 362.747375,
+        "seconds": 4.967104000000006,
+        "frames": 155,
+        "fps": 31.003981394389932
+      },
+      {
+        "start": 368.414543,
+        "seconds": 1.0000960000000418,
+        "frames": 31,
+        "fps": 29.997120276452204
+      }
+    ],
+    "gpu_busy_percent_recording": 74.75205566159671,
+    "cpu_busy_percent_recording_all_cores": 9.426229508196721,
+    "cpu_khz_median": 1190400,
+    "gpu_hz_median": 450000000,
+    "axi_hz_median": 266666666
+  },
+  "gpu_queue": {
+    "kind": "Submit-to-retire latency includes queueing; it is not GPU execution time.",
+    "unretired_at_record_end": 0,
+    "threads": [
+      {
+        "submitter_tid": 494,
+        "jobs": 192,
+        "mean_ms": 24.53452083333237,
+        "p50_ms": 25.850499999990006,
+        "p95_ms": 28.298000000006596,
+        "p99_ms": 30.473999999969692
+      }
+    ]
+  },
+  "graphics_path": {
+    "presentation_path": "native-kms",
+    "compositor_pid": 494,
+    "compositor_name": "phoc",
+    "kms_device": "/dev/dri/card1",
+    "kms_driver": "msm-kms dev=fd900100.display-controller unique=fd900100.display-controller",
+    "render_devices": [
+      "/dev/dri/renderD128"
+    ],
+    "session_id": "c2",
+    "session_locked": false
+  },
+  "graphics_path_after": {
+    "presentation_path": "native-kms",
+    "compositor_pid": 494,
+    "compositor_name": "phoc",
+    "kms_device": "/dev/dri/card1",
+    "kms_driver": "msm-kms dev=fd900100.display-controller unique=fd900100.display-controller",
+    "render_devices": [
+      "/dev/dri/renderD128"
+    ],
+    "session_id": "c2",
+    "session_locked": false
+  },
+  "pipeline": {
+    "max_simultaneously_pending_traced_gpu_jobs": 2,
+    "submitter_jobs": {
+      "494": 192
+    },
+    "vblank_sequence_deltas": {
+      "2": 172,
+      "3": 1,
+      "1": 11,
+      "42": 1
+    },
+    "limitation": "Counts only jobs submitted during the recording; submit-to-retire is not a GPU execution timestamp."
+  }
+}

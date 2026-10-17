@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sat, 17 Oct 2026 09:00:00 +0700
+Subject: [PATCH] iio: adc: qcom-spmi-iadc: preserve signed battery current
+
+Subtracting a calibration offset into u16 wraps negative current samples
+into large positive readings. Keep the difference signed. The resistor
+is specified in micro-ohms, so converting microvolts to microamps also
+requires multiplying by one million before division. Retain the existing
+IIO scale of 0.001 to convert microamps into the class ABI's milliamps.
+
+Expose the read-only ADC gain correction as calibscale so a sibling BMS
+can correct its integrated sense-voltage using the same measured gain
+and offset. The ideal gain code 3291 and the use of this ratio for BMS
+samples are documented by the Qualcomm/Samsung qpnp-bms.c driver.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iio/adc/qcom-spmi-iadc.c b/drivers/iio/adc/qcom-spmi-iadc.c
+--- a/drivers/iio/adc/qcom-spmi-iadc.c
++++ b/drivers/iio/adc/qcom-spmi-iadc.c
+@@ -10,6 +10,7 @@
+ #include <linux/iio/iio.h>
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
++#include <linux/math64.h>
+ #include <linux/mutex.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+@@ -67,6 +68,7 @@
+ #define IADC_NOMINAL_RSENSE_SIGN_MASK		BIT(7)
+ 
+ #define IADC_REF_GAIN_MICRO_VOLTS		17857
++#define IADC_IDEAL_RAW_GAIN			3291
+ 
+ #define IADC_INT_RSENSE_DEVIATION		15625	/* nano Ohms per bit */
+ 
+@@ -312,7 +314,8 @@
+ {
+ 	struct iadc_chip *iadc = iio_priv(indio_dev);
+ 	s32 isense_ua, vsense_uv;
+-	u16 adc_raw, vsense_raw;
++	u16 adc_raw;
++	s32 vsense_raw;
+ 	int ret;
+ 
+ 	switch (mask) {
+@@ -328,7 +331,8 @@
+ 		vsense_uv = vsense_raw * IADC_REF_GAIN_MICRO_VOLTS;
+ 		vsense_uv /= (s32)iadc->gain - iadc->offset[chan->channel];
+ 
+-		isense_ua = vsense_uv / iadc->rsense[chan->channel];
++		isense_ua = div_s64((s64)vsense_uv * 1000000,
++				    iadc->rsense[chan->channel]);
+ 
+ 		dev_dbg(iadc->dev, "off %d gain %d adc %d %duV I %duA\n",
+ 			iadc->offset[chan->channel], iadc->gain,
+@@ -336,6 +340,10 @@
+ 
+ 		*val = isense_ua;
+ 		return IIO_VAL_INT;
++	case IIO_CHAN_INFO_CALIBSCALE:
++		*val = IADC_IDEAL_RAW_GAIN;
++		*val2 = (s32)iadc->gain - iadc->offset[chan->channel];
++		return IIO_VAL_FRACTIONAL;
+ 	case IIO_CHAN_INFO_SCALE:
+ 		*val = 0;
+ 		*val2 = 1000;
+@@ -468,7 +476,8 @@
+ 		.datasheet_name	= "INTERNAL_RSENSE",
+ 		.channel = 0,
+ 		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+-				      BIT(IIO_CHAN_INFO_SCALE),
++				      BIT(IIO_CHAN_INFO_SCALE) |
++				      BIT(IIO_CHAN_INFO_CALIBSCALE),
+ 		.indexed = 1,
+ 	},
+ 	{
+@@ -476,7 +485,8 @@
+ 		.datasheet_name	= "EXTERNAL_RSENSE",
+ 		.channel = 1,
+ 		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+-				      BIT(IIO_CHAN_INFO_SCALE),
++				      BIT(IIO_CHAN_INFO_SCALE) |
++				      BIT(IIO_CHAN_INFO_CALIBSCALE),
+ 		.indexed = 1,
+ 	},
+ };

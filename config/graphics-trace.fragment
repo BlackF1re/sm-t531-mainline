@@ -1,0 +1,7 @@
+# Optional measurement kernel: GRAPHICS_TRACE=1 make build.
+# Tracers remain disabled until explicitly enabled through tracefs.
+CONFIG_KPROBES=y
+CONFIG_KPROBE_EVENTS=y
+CONFIG_FUNCTION_TRACER=y
+CONFIG_FUNCTION_GRAPH_TRACER=y
+CONFIG_FTRACE_SYSCALLS=y

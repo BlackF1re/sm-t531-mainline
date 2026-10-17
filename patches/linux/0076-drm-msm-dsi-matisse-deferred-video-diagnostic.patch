@@ -1,0 +1,96 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/msm/dsi: isolate Matisse video startup order
+
+Native Matisse initialization stalls command DMA, and active video shows
+four HS FIFO underflows. The host currently starts its video engine in
+pre_enable, before the downstream bridge has configured its PPI/LVDS.
+
+Add an opt-in, board-restricted diagnostic that retains host power/clock
+and command access in pre_enable, but starts video in bridge enable,
+after downstream pre_enable. The default and other panels are unchanged.
+This separates missing video blanking from a broken LP command path;
+it is not a demonstrated output fix.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi.h b/drivers/gpu/drm/msm/dsi/dsi.h
+index 93c028a12..00c4600f1 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi.h
++++ b/drivers/gpu/drm/msm/dsi/dsi.h
+@@ -121,6 +121,7 @@ int dsi_calc_clk_rate_v2(struct msm_dsi_host *msm_host, bool is_bonded_dsi);
+ int dsi_calc_clk_rate_6g(struct msm_dsi_host *msm_host, bool is_bonded_dsi);
+ void msm_dsi_host_snapshot(struct msm_disp_state *disp_state, struct mipi_dsi_host *host);
+ void msm_dsi_host_test_pattern_en(struct mipi_dsi_host *host);
++void msm_dsi_host_start_deferred_video(struct mipi_dsi_host *host);
+ struct drm_dsc_config *msm_dsi_host_get_dsc_config(struct mipi_dsi_host *host);
+ bool msm_dsi_host_is_wide_bus_enabled(struct mipi_dsi_host *host);
+ 
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+index 0451c3cf2..936ce9abb 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -42,6 +42,11 @@ module_param(matisse_lp11_reset, bool, 0400);
+ MODULE_PARM_DESC(matisse_lp11_reset,
+ 		"Hold Matisse DSI lanes in LP11 until the first bridge command");
+ 
++static bool matisse_defer_video;
++module_param(matisse_defer_video, bool, 0400);
++MODULE_PARM_DESC(matisse_defer_video,
++		"Start Matisse video after downstream bridge pre_enable");
++
+ static int dsi_get_version(const void __iomem *base, u32 *major, u32 *minor)
+ {
+ 	u32 ver;
+@@ -2486,8 +2491,9 @@ int msm_dsi_host_enable(struct mipi_dsi_host *host)
+ {
+ 	struct msm_dsi_host *msm_host = to_msm_dsi_host(host);
+ 
+-	dsi_op_mode_config(msm_host,
+-		!!(msm_host->mode_flags & MIPI_DSI_MODE_VIDEO), true);
++	if (!(matisse_defer_video && msm_host->matisse))
++		dsi_op_mode_config(msm_host,
++			!!(msm_host->mode_flags & MIPI_DSI_MODE_VIDEO), true);
+ 
+ 	/* TODO: clock should be turned off for command mode,
+ 	 * and only turned on before MDP START.
+@@ -2502,6 +2508,15 @@ int msm_dsi_host_enable(struct mipi_dsi_host *host)
+ 	return 0;
+ }
+ 
++void msm_dsi_host_start_deferred_video(struct mipi_dsi_host *host)
++{
++	struct msm_dsi_host *msm_host = to_msm_dsi_host(host);
++
++	if (matisse_defer_video && msm_host->matisse && msm_host->enabled)
++		dsi_op_mode_config(msm_host,
++			!!(msm_host->mode_flags & MIPI_DSI_MODE_VIDEO), true);
++}
++
+ int msm_dsi_host_disable(struct mipi_dsi_host *host)
+ {
+ 	struct msm_dsi_host *msm_host = to_msm_dsi_host(host);
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_manager.c b/drivers/gpu/drm/msm/dsi/dsi_manager.c
+index 46faeaae9..b7ec5e640 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_manager.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_manager.c
+@@ -444,9 +444,19 @@ static int dsi_mgr_bridge_attach(struct drm_bridge *bridge,
+ 				 bridge, flags);
+ }
+ 
++static void dsi_mgr_bridge_enable(struct drm_bridge *bridge)
++{
++	int id = dsi_mgr_bridge_get_id(bridge);
++	struct msm_dsi *msm_dsi = dsi_mgr_get_dsi(id);
++
++	/* This opt-in diagnostic is restricted to the single-link Matisse. */
++	msm_dsi_host_start_deferred_video(msm_dsi->host);
++}
++
+ static const struct drm_bridge_funcs dsi_mgr_bridge_funcs = {
+ 	.attach = dsi_mgr_bridge_attach,
+ 	.pre_enable = dsi_mgr_bridge_pre_enable,
++	.enable = dsi_mgr_bridge_enable,
+ 	.post_disable = dsi_mgr_bridge_post_disable,
+ 	.mode_set = dsi_mgr_bridge_mode_set,
+ 	.mode_valid = dsi_mgr_bridge_mode_valid,

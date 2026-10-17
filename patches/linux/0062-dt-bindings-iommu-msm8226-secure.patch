@@ -1,0 +1,24 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] dt-bindings: iommu: qcom: add TrustZone-managed MSM8226
+
+MSM8226 MDP SMMU is TrustZone-managed with secure ID1 in the vendor
+BSP. Physical device probing confirmed that reading global IDR0 through
+arm-smmu triggers an external abort at fd928020 despite enabled clocks
+and power. Describe it using the qcom_iommu framework for global-register
+inaccessible implementations. Non-secure context bank0 is at fd930000.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/Documentation/devicetree/bindings/iommu/qcom,iommu.yaml b/Documentation/devicetree/bindings/iommu/qcom,iommu.yaml
+index 93a489025..3582def5e 100644
+--- a/Documentation/devicetree/bindings/iommu/qcom,iommu.yaml
++++ b/Documentation/devicetree/bindings/iommu/qcom,iommu.yaml
+@@ -20,6 +20,7 @@ properties:
+     oneOf:
+       - items:
+           - enum:
++              - qcom,msm8226-iommu
+               - qcom,msm8916-iommu
+               - qcom,msm8917-iommu
+               - qcom,msm8937-iommu

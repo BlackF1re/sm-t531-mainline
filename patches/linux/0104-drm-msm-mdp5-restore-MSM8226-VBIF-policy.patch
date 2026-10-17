@@ -1,0 +1,118 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Thu, 15 Oct 2026 17:00:00 +0700
+Subject: [PATCH] drm/msm/mdp5: restore MSM8226 VBIF clock and burst policy
+
+SM-T531 native scanout reports INTF1 underruns under GPU composition.
+Readback shows VBIF CLKON=0 and DDR_OUT_MAX_BURST=0x808, whereas the
+Samsung MSM8226 BSP programs 1 and 0x707. A reversible live comparison
+records four logged underruns in 15 seconds with the firmware settings,
+none in 15 seconds with the factory policy, and none during a subsequent
+60-second / 40-transition factory-policy recording. FPS remains about
+33; this is a display-integrity fix, not a 60 FPS claim.
+
+Map the existing MDSS vbif_phys resource for the MSM8x26 hardware config
+and replay the two settings after clock enable, including runtime resume.
+No clock rates, voltage, panel timings, or other SoC configurations change.
+Physical acceptance and cold-boot validation of this kernel patch remain
+required; live register experiments alone do not validate the whole port.
+
+Source: Samsung/Lineage MSM8226 BSP commit
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256,
+arch/arm/boot/dts/msm8226/msm8226-mdss.dtsi.
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c b/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
+--- a/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
++++ b/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
+@@ -19,6 +19,22 @@
+ #include "msm_mmu.h"
+ #include "mdp5_kms.h"
+ 
++/* MSM8x26 VBIF offsets, relative to the MDSS parent's vbif_phys window. */
++#define MDP5_VBIF_CLKON			0x004
++#define MDP5_VBIF_DDR_OUT_MAX_BURST	0x0d8
++
++static void mdp5_vbif_hw_init(struct mdp5_kms *mdp5_kms)
++{
++	if (!mdp5_kms->vbif)
++		return;
++
++	/* Factory MSM8226 policy: keep VBIF clocked and bound DDR bursts. */
++	writel_relaxed(1, mdp5_kms->vbif + MDP5_VBIF_CLKON);
++	writel_relaxed(mdp5_cfg->vbif_ddr_max_burst,
++		       mdp5_kms->vbif + MDP5_VBIF_DDR_OUT_MAX_BURST);
++	readl(mdp5_kms->vbif + MDP5_VBIF_DDR_OUT_MAX_BURST);
++}
++
+ static int mdp5_hw_init(struct msm_kms *kms)
+ {
+ 	struct mdp5_kms *mdp5_kms = to_mdp5_kms(to_mdp_kms(kms));
+@@ -26,6 +42,7 @@
+ 	unsigned long flags;
+ 
+ 	pm_runtime_get_sync(dev);
++	mdp5_vbif_hw_init(mdp5_kms);
+ 
+ 	/* Magic unknown register writes:
+ 	 *
+@@ -262,6 +279,7 @@
+ 	clk_prepare_enable(mdp5_kms->lut_clk);
+ 	clk_prepare_enable(mdp5_kms->tbu_clk);
+ 	clk_prepare_enable(mdp5_kms->tbu_rt_clk);
++	mdp5_vbif_hw_init(mdp5_kms);
+ 
+ 	return 0;
+ }
+@@ -734,6 +752,18 @@
+ 
+ 	config = mdp5_cfg_get_config(mdp5_kms->cfg);
+ 	mdp5_kms->caps = config->hw->mdp.caps;
++	if (config->hw->vbif_ddr_max_burst) {
++		struct platform_device *mdss = to_platform_device(pdev->dev.parent);
++		struct resource *res;
++
++		res = platform_get_resource_byname(mdss, IORESOURCE_MEM, "vbif_phys");
++		mdp5_kms->vbif = devm_ioremap_resource(&pdev->dev, res);
++		if (IS_ERR(mdp5_kms->vbif)) {
++			ret = PTR_ERR(mdp5_kms->vbif);
++			mdp5_kms->vbif = NULL;
++			goto fail;
++		}
++	}
+ 
+ 	/* TODO: compute core clock rate at runtime */
+ 	clk_set_rate(mdp5_kms->core_clk, config->hw->max_clk);
+diff --git a/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.h b/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.h
+--- a/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.h
++++ b/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.h
+@@ -47,6 +47,7 @@
+ 
+ 	/* io/register spaces: */
+ 	void __iomem *mmio;
++	void __iomem *vbif;
+ 
+ 	struct clk *axi_clk;
+ 	struct clk *ahb_clk;
+diff --git a/drivers/gpu/drm/msm/disp/mdp5/mdp5_cfg.c b/drivers/gpu/drm/msm/disp/mdp5/mdp5_cfg.c
+--- a/drivers/gpu/drm/msm/disp/mdp5/mdp5_cfg.c
++++ b/drivers/gpu/drm/msm/disp/mdp5/mdp5_cfg.c
+@@ -16,6 +16,7 @@
+ 
+ static const struct mdp5_cfg_hw msm8x26_config = {
+ 	.name = "msm8x26",
++	.vbif_ddr_max_burst = 0x00000707,
+ 	.mdp = {
+ 		.count = 1,
+ 		.caps = MDP_CAP_SMP |
+diff --git a/drivers/gpu/drm/msm/disp/mdp5/mdp5_cfg.h b/drivers/gpu/drm/msm/disp/mdp5/mdp5_cfg.h
+--- a/drivers/gpu/drm/msm/disp/mdp5/mdp5_cfg.h
++++ b/drivers/gpu/drm/msm/disp/mdp5/mdp5_cfg.h
+@@ -113,6 +113,8 @@
+ 	struct mdp5_perf_block perf;
+ 
+ 	uint32_t max_clk;
++	/* Legacy VBIF setup; zero means leave the firmware policy unchanged. */
++	uint32_t vbif_ddr_max_burst;
+ };
+ 
+ struct mdp5_cfg {

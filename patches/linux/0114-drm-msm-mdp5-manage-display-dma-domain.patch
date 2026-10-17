@@ -1,0 +1,27 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sat, 17 Oct 2026 01:00:00 +0700
+Subject: [PATCH] drm/msm/mdp5: manage the display DMA domain explicitly
+
+MDP5 stops firmware timing engines before msm_kms_init_vm() installs
+its private display domain. Mark that platform driver as managing DMA so
+ARM32 platform configuration does not attach an empty legacy DMA domain
+before probe. Requires the OF/platform managed-DMA setup fix.
+
+On SM-T531 the premature attach faults on the firmware framebuffer at
+0x03200000-0x039fffff. Keep translation for native scanout; do not add
+permanent framebuffer identity mappings to the private display domain.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c b/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
+--- a/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
++++ b/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
+@@ -944,6 +944,8 @@
+ MODULE_DEVICE_TABLE(of, mdp5_dt_match);
+ 
+ static struct platform_driver mdp5_driver = {
++	/* Stop firmware scanout before msm_kms_init_vm() attaches our domain. */
++	.driver_managed_dma = true,
+ 	.probe = mdp5_dev_probe,
+ 	.remove = mdp5_dev_remove,
+ 	.shutdown = msm_kms_shutdown,

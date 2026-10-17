@@ -1,0 +1,35 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] dt-bindings: display: simplefb: describe internal panel transport
+
+KWin/PowerDevil associates internal backlights only with internal outputs.
+The Unknown simpledrm connector on SM-T531 leaves its working LP8556 PWM
+backlight unmatched and enables software brightness, adding an expensive
+full-screen rendering pass on Adreno 305.
+
+Describe the verified LVDS transport behind the board's TC358764 bridge.
+Use a local binding extension until native DRM panel topology is complete;
+this does not claim an exact LCD module or initialize any bridge/MDP block.
+Unknown remains the default for existing firmware framebuffers.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/Documentation/devicetree/bindings/display/simple-framebuffer.yaml b/Documentation/devicetree/bindings/display/simple-framebuffer.yaml
+index 0086cfffd..ad2df13b8 100644
+--- a/Documentation/devicetree/bindings/display/simple-framebuffer.yaml
++++ b/Documentation/devicetree/bindings/display/simple-framebuffer.yaml
+@@ -122,6 +122,14 @@ properties:
+     $ref: /schemas/types.yaml#/definitions/phandle
+     description: Backlight associated with the firmware framebuffer
+ 
++  connector-type:
++    description: |
++      Transport to the internal panel driven by firmware. This allows
++      userspace to associate an internal backlight with the output while
++      native modesetting is unavailable. It does not enable display hardware
++      or change the firmware mode. Omit when the transport is unknown.
++    enum: [lvds, edp, dsi, dpi]
++
+   display:
+     $ref: /schemas/types.yaml#/definitions/phandle
+     description: Primary display hardware node

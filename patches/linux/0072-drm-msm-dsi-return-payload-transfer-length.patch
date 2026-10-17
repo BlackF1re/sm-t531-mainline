@@ -1,0 +1,32 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm: msm: dsi: return payload length after command DMA
+
+After a successful DSI command DMA transfer, dsi_cmds2buf_tx() returns
+the aligned controller packet size including its header. A six-byte
+TC358764 generic write therefore returns twelve bytes. Clients checking
+that the payload was completely transferred reject this as an invalid
+length; the SM-T531 bridge stopped after its first configuration write.
+
+Keep the existing DMA completion and short-transfer checks against the
+controller packet length, but report msg->tx_len through the DSI host API.
+Internal maximum-return-packet and read-command calls already check
+payload lengths, and the bonded non-trigger host already returns tx_len.
+No packet bytes, trigger, clocks or timeout behavior changes.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+index a9df0e255..15d28347c 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -1584,7 +1584,8 @@ static int dsi_cmds2buf_tx(struct msm_dsi_host *msm_host,
+ 		return -EIO;
+ 	}
+ 
+-	return len;
++	/* The host API reports payload bytes, not the padded DMA packet. */
++	return msg->tx_len;
+ }
+ 
+ static void dsi_err_worker(struct work_struct *work)

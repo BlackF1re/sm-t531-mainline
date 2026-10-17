@@ -1,0 +1,117 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] ARM: dts: qcom: add isolated Matisse ICC diagnostic
+
+Add a separately selected ICC diagnostic so native scanout and memory
+control can be tested independently. Restore factory GPU DDR/OCMEM OPP
+bandwidth and CPU DDR frequency requirements, and connect MDP to memory.
+Only the ICC profile opts out of the temporary direct GPU AXI callback.
+OCMEM allocator uses the same ICC-owned memory clock rather than a
+competing direct RPM vote. No DDR overclocking is requested.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/Makefile b/arch/arm/boot/dts/qcom/Makefile
+index afbe59c9d..67f81adb4 100644
+--- a/arch/arm/boot/dts/qcom/Makefile
++++ b/arch/arm/boot/dts/qcom/Makefile
+@@ -30,6 +30,7 @@ dtb-$(CONFIG_ARCH_QCOM) += \
+ 	qcom-msm8226-samsung-ms013g.dtb \
+ 	qcom-msm8226-samsung-matisse3g.dtb \
+ 	qcom-msm8226-samsung-matisse3g-native.dtb \
++	qcom-msm8226-samsung-matisse3g-native-icc.dtb \
+ 	qcom-msm8226-samsung-s3ve3g.dtb \
+ 	qcom-msm8660-surf.dtb \
+ 	qcom-msm8916-samsung-e5.dtb \
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native-icc.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native-icc.dts
+new file mode 100644
+index 000000000..462425cdc
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native-icc.dts
+@@ -0,0 +1,86 @@
++// SPDX-License-Identifier: BSD-3-Clause
++/* Opt-in memory interconnect experiment, separate from display bring-up. */
++#include "qcom-msm8226-samsung-matisse3g-native.dts"
++#include <dt-bindings/interconnect/qcom,msm8226.h>
++
++&soc {
++	bimc: interconnect@fc380000 {
++		compatible = "qcom,msm8226-bimc";
++		reg = <0xfc380000 0x6a000>;
++		#interconnect-cells = <1>;
++	};
++	mmssnoc: interconnect@fc478000 {
++		compatible = "qcom,msm8226-mmssnoc";
++		reg = <0xfc478000 0x4000>;
++		#interconnect-cells = <1>;
++		clocks = <&mmcc MMSS_AXI_CLK_SRC>;
++		clock-names = "bus";
++	};
++	ocmemnoc: interconnect-ocmem {
++		compatible = "qcom,msm8226-ocmem-vnoc";
++		#interconnect-cells = <1>;
++	};
++};
++
++&cpu0 {
++	interconnects = <&bimc BIMC_MAS_CPU &bimc BIMC_SLV_EBI>;
++};
++
++&cpu_opp_table {
++	opp-300000000 {
++		opp-peak-kBps = <1600000>;
++	};
++	opp-384000000 {
++		opp-peak-kBps = <1600000>;
++	};
++	opp-600000000 {
++		opp-peak-kBps = <1600000>;
++	};
++	opp-787200000 {
++		opp-peak-kBps = <1600000>;
++	};
++	opp-998400000 {
++		opp-peak-kBps = <4264000>;
++	};
++	opp-1094400000 {
++		opp-peak-kBps = <4264000>;
++	};
++	opp-1190400000 {
++		opp-peak-kBps = <4264000>;
++	};
++};
++
++&gpu {
++	interconnects = <&mmssnoc MMSS_MAS_GFX &bimc BIMC_SLV_EBI>,
++		       <&ocmemnoc OCMEM_MAS_GFX &ocmemnoc OCMEM_SLV_OCMEM>;
++	interconnect-names = "gfx-mem", "ocmem";
++};
++
++&gpu_opp_table {
++	opp-450000000 {
++		opp-avg-kBps = <2128000 0>;
++		opp-peak-kBps = <4256000 6400000>;
++	};
++	opp-320000000 {
++		opp-avg-kBps = <1600000 0>;
++		opp-peak-kBps = <3200000 5120000>;
++	};
++	opp-200000000 {
++		opp-avg-kBps = <800000 0>;
++		opp-peak-kBps = <1600000 3200000>;
++	};
++	opp-19000000 {
++		opp-avg-kBps = <0 0>;
++		opp-peak-kBps = <0 0>;
++	};
++};
++
++&mdss_mdp {
++	interconnects = <&mmssnoc MMSS_MAS_MDP &bimc BIMC_SLV_EBI>;
++	interconnect-names = "mdp0-mem";
++};
++
++&{/soc/sram@fdd00000} {
++	interconnects = <&ocmemnoc OCMEM_MAS_GFX &ocmemnoc OCMEM_SLV_OCMEM>;
++	interconnect-names = "memory";
++};

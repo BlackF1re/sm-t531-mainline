@@ -1,0 +1,41 @@
+# Patch review and deployment boundary, 2026-10-17
+
+This is a bring-up snapshot, not a completed production graphics release.
+The native Linux patch series is applied to the pinned v7.2.9 base and the
+built source matches that complete series. Number0117 is intentionally unused:
+the brightness defect is fixed in Phosh rather than by changing LED current.
+
+Focused review of0112–0121 and Phosh0002 found no clear new deployment blocker.
+This is not an exhaustive upstream review of all earlier patches.0116 retains
+Dmitry Baryshkov's original authorship and v4 message metadata; it remains
+unmerged in the checked mainline/linux-next sources. BMS characterization
+retains Samsung's GPL-2.0-only license and copyright.
+
+The production commit excludes local experimental Mesa, Phoc, wlroots and
+Pixman patch sets and their optional build path. In particular rejected tiled
+uploads, cached compositor layers and their misleading presentation-only FPS
+results are not installed. Local research files may remain untracked.
+Only ordinary system Mesa/Phoc and the rebuilt Phosh are selected on-device.
+
+The kernel series still contains explicitly gated bring-up diagnostics.
+Firmware bridge power, LP11/deferred-video/PHY profile7, the Mesa inorder
+workaround and the device GPU runtime hold are not a finished native power
+implementation. Removing these requires separate source cleanup and hardware
+acceptance; this snapshot does not silently classify them as production fixes.
+The bounded NULL-domain guard does not prove all domain-lifetime races fixed.
+GPU recovery after an actual fault remains unverified.
+
+The latest ordinary Phosh drawer regression before the brightness rebuild
+is33.14 DRM presentations/s, with zero logged underruns; p95 is about50ms.
+The earlier59.993 result belongs to a simple fullscreen client using direct
+scanout, not the entire composited interface. Memory/bus rates and unresolved
+OCMEM/power-state limits are recorded in MEMORY-BUS.md. No overclock is applied.
+
+Brightness has an actual GUI/register before-and-after acceptance: maximum
+37→255 after fixing false sensor claims. Battery telemetry uses real measured
+OCV, coulombs, voltage/current and temperature through power_supply/UPower.
+Its nominal cell model,2.4% sense-resistor uncertainty, absent learned ageing
+and untested full discharge/recharge prevent a gauge-accuracy claim.
+
+See GRAPHICS-STABILITY.md, BACKLIGHT.md and BATTERY.md for exact tests,
+artifact hashes and the rollback path. Internal boot/lk2nd are unchanged.

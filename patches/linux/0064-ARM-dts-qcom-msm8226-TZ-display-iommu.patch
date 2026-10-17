@@ -1,0 +1,50 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] ARM: dts: qcom: use TZ-managed MSM8226 display IOMMU
+
+The controlled module test isolated an external abort reading global
+IDR0 at fd928020. Vendor DT declares MDP secure ID1, and vendor attach
+uses SCM instead of global register programming. Switch the display
+instance to qcom_iommu and describe only accessible non-secure bank0
+(fd930000, IRQ47, explicit ASID0). Do not expose the protected global
+register region as a local register resource. GPU keeps its verified
+non-secure arm-smmu implementation unchanged.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi b/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
+index 61bb37145..311d8dc0a 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
+@@ -1151,18 +1151,24 @@ mmcc: clock-controller@fd8c0000 {
+ 		};
+ 
+ 		mdp_smmu: iommu@fd928000 {
+-			compatible = "qcom,msm8226-smmu", "arm,smmu-v1";
+-			reg = <0xfd928000 0x10000>;
++			compatible = "qcom,msm8226-iommu", "qcom,msm-iommu-v1";
++			/* Global registers are secure; expose only non-secure CB0. */
++			ranges = <0 0xfd928000 0x10000>;
++			#address-cells = <1>;
++			#size-cells = <1>;
+ 			#iommu-cells = <1>;
+-			#global-interrupts = <1>;
+-			interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
++			qcom,iommu-secure-id = <1>;
+ 			clocks = <&mmcc MDSS_AHB_CLK>, <&mmcc MDSS_AXI_CLK>;
+ 			clock-names = "iface", "bus";
+ 			power-domains = <&mmcc MDSS_GDSC>;
+ 			status = "disabled";
++
++			iommu-ctx@8000 {
++				compatible = "qcom,msm-iommu-v1-ns";
++				reg = <0x8000 0x1000>;
++				qcom,ctx-asid = <0>;
++				interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
++			};
+ 		};
+ 
+ 		mdss: display-subsystem@fd900000 {

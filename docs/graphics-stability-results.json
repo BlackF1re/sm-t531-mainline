@@ -1,0 +1,197 @@
+{
+  "board": "Samsung Galaxy Tab4 SM-T531",
+  "state": "PARTIAL",
+  "kernel": "#8 SMP Sat Oct 17 15:07:43 +07 2026",
+  "kernel_container_sha256": "9d76269c14fb76cc9e171044532c417df3d78f43301a3fc57c1aba3ea00e7d92",
+  "msm_0114_sha256": "c3ff1917d724ef997443310f68dc628307d9b28a88e1df3815b020c9c5443e32",
+  "msm_0115_sha256": "ba2eb19923cf5210ed67b2d7e9090667c7c641a2e6a9232fa51190562c92dd2d",
+  "iommu_faults": {
+    "guard_only_logged_unattached": 10,
+    "managed_dma_trial_boots": [
+      0,
+      0
+    ],
+    "managed_dma_persistent_boot": 0
+  },
+  "blanking_samples": [
+    {
+      "condition": "fifo-lines",
+      "total_samples": 20000,
+      "target_period_us": 250,
+      "raw_active_lines": [
+        67,
+        866
+      ],
+      "active_samples": 17816,
+      "active_underflow_samples": 0,
+      "active_new_flag_transitions": 0,
+      "blank_new_flag_transitions": 300
+    },
+    {
+      "condition": "fifo-panel-lines",
+      "total_samples": 20000,
+      "target_period_us": 250,
+      "raw_active_lines": [
+        67,
+        866
+      ],
+      "active_samples": 17824,
+      "active_underflow_samples": 0,
+      "active_new_flag_transitions": 0,
+      "blank_new_flag_transitions": 299
+    }
+  ],
+  "irq_comparison": {
+    "before": {
+      "seconds": 19.976400384999977,
+      "dsi_irqs": 24357,
+      "dsi_irqs_per_second": 1219.288737238635,
+      "mdp_irqs_per_second": 10.061872816232114,
+      "aggregate_cpu_busy_percent": 4.106250761545023,
+      "cpu_khz_observed": [
+        998400,
+        1094400,
+        1190400
+      ],
+      "gpu_hz_observed": [
+        19000000,
+        450000000
+      ]
+    },
+    "after": {
+      "seconds": 20.115632223999995,
+      "dsi_irqs": 0,
+      "dsi_irqs_per_second": 0.0,
+      "mdp_irqs_per_second": 9.14711493782777,
+      "aggregate_cpu_busy_percent": 2.8519195612431445,
+      "cpu_khz_observed": [
+        998400,
+        1094400,
+        1190400
+      ],
+      "gpu_hz_observed": [
+        19000000,
+        200000000,
+        450000000
+      ]
+    }
+  },
+  "limits": [
+    "Software screenshots do not constitute physical LCD/touch acceptance",
+    "Short comparison, not long-term stability or cold-boot validation",
+    "CPU/GPU governors unchanged but instantaneous frequencies differ",
+    "No new GUI FPS result claimed",
+    "Firmware-powered bridge and suspend remain diagnostic",
+    "Mesa inorder and GPU runtime power hold remain diagnostic workarounds"
+  ],
+  "irq_comparison_conditions": {
+    "system_mesa_debug": "inorder",
+    "gtk_enable_animations_during_comparison": false,
+    "note": "The pre-existing disabled animation setting was subsequently restored to true and acceptance checks repeated."
+  },
+  "persistent_0115_check": {
+    "kernel_and_module_boot": "PASS",
+    "presentation": "native MDP5/DSI, Adreno renderD128",
+    "cycles_before_animation_restore": 32,
+    "cycles_after_animation_restore": 8,
+    "gtk_enable_animations_final": true,
+    "diagnostic_mesa_inorder_retained": true,
+    "repeat_logged_fault_counts": {
+      "context fault": 0,
+      "dsi_err_worker": 0,
+      "panic": 0,
+      "hangcheck": 0,
+      "recover!": 0,
+      "vblank wait timed out": 0,
+      "mdp5_irq_error_handler": 1
+    },
+    "animations-enabled_logged_fault_counts": {
+      "context fault": 0,
+      "dsi_err_worker": 0,
+      "panic": 0,
+      "hangcheck": 0,
+      "recover!": 0,
+      "vblank wait timed out": 0,
+      "mdp5_irq_error_handler": 1
+    }
+  },
+  "session_integration": {
+    "xwaylandvideobridge_white_window": "VERIFIED_DEVICE",
+    "observed_geometry": "1280x753+0+32",
+    "stopping_helper_restores_overview": true,
+    "phosh_only_autostart_exclusion": true,
+    "package_and_xwayland_retained": true,
+    "animations_enabled_after_session_restart": true
+  },
+  "mdp_restart_investigation": {
+    "state": "PARTIAL",
+    "0115_logged_intf1_underruns": [
+      33.836347,
+      622.062891,
+      1252.108438,
+      1379.6544
+    ],
+    "association": "mode enables; final event reproduced with Phosh PowerSaveMode 3 then 0",
+    "smp_blocks_vendor_and_driver": 7,
+    "smp_block_bytes": 4096,
+    "candidate_patch": "0116",
+    "candidate_msm_sha256": "8f6a70bd3350add8a427263706952dc0fb04820e5f88fe5a54ec596c6351fa6f",
+    "upstream_author": "Dmitry Baryshkov",
+    "upstream_revision": "v4 04/10",
+    "upstream_message_id": "20261003-fd-kms-fix-smmu-v4-4-2a44d4d8ac77@oss.qualcomm.com",
+    "mainline_and_linux_next_order_checked": "2026-10-17",
+    "merge_state": "not present in checked mainline and linux-next source",
+    "trial_result": "PASS: boot plus five normal display power cycles with no logged underrun, context fault, DSI error worker or GPU hang",
+    "persistent_install": "PASS: ordinary boot verified; native Phoc/Phosh and module hash match",
+    "before_power_cycle_logged_underruns": 1,
+    "after_power_cycles": 5,
+    "after_power_cycle_logged_underruns": 0,
+    "persistent_power_cycles": 4,
+    "persistent_logged_mdp_underruns": 0,
+    "persistent_logged_context_faults": 0,
+    "persistent_logged_dsi_error_workers": 0,
+    "persistent_logged_gpu_hangs": 0,
+    "persistent_animations_enabled": true,
+    "persistent_suspend_observation": {
+      "type": "s2idle",
+      "monotonic_seconds_observed": 1672.373470398,
+      "boottime_seconds_observed": 45601.670784788,
+      "limitation": "One naturally occurring long sleep; no physical acceptance or repeated suspend reliability claim"
+    }
+  },
+  "runtime_pm_0116_check": {
+    "workload": "12 independent 32x32 FD305 rendering processes, 12 pixel-checked cases each",
+    "gpu_suspend_events": 16,
+    "gpu_resume_events": 16,
+    "pre_render_suspended": 11,
+    "pre_render_active": 1,
+    "gpu_power_policy_restored": "on",
+    "logged_graphics_faults": 0,
+    "limitation": "Bounded non-fault-injection test; does not prove intermittent hang recovery or long-term runtime-PM reliability"
+  },
+  "persistent_0116_panel_regression": {
+    "cycles": 4,
+    "animations_enabled": true,
+    "active_fps": 33.1433533941547,
+    "frame_interval": {
+      "samples": 158,
+      "p50_ms": 33.329999999750726,
+      "p95_ms": 50.020000000131404,
+      "p99_ms": 50.05100000016682,
+      "over_25ms_percent": 72.15189873417721
+    },
+    "gpu_busy_percent_recording": 19.280985149275683,
+    "cpu_busy_percent_recording_all_cores": 9.285201149425287,
+    "logged_mdp5_underruns": 0,
+    "limitation": "Unchanged approximately33FPS GUI baseline; presentation bursts are not optical FPS; utilization includes idle gaps"
+  },
+  "graphics_baseline_kernel": "7.2.9-dirty #5 SMP Sat Oct 17 01:02:17 +07 2026",
+  "graphics_baseline_kernel_container_sha256": "c0c83d66678d784a358d90ad30e36163d0b4aa6f4c1d84c49ae9b32e494a4390",
+  "battery_followup_persistent_boot": {
+    "native_path": "PASS",
+    "animations_enabled": true,
+    "msm_module_unchanged": true,
+    "power_cycles": 1,
+    "logged_mdp5_underruns": 0
+  }
+}

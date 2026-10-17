@@ -1,0 +1,59 @@
+Subject: [PATCH] interconnect: qcom: msm8226: avoid RPM votes for local bridge nodes
+
+The Samsung MSM8226 bus topology marks MMSS-to-BIMC slave16 as
+hw-sel=NoC. Its NoC driver only commits remote bandwidth for RPM-owned
+nodes. The virtual OCMEM graphics master55 has no master ports, so the
+vendor update routine skips the master vote altogether. Clock aggregation
+still traverses both nodes, and OCMEM slave18 remains a remote resource.
+
+Sending bandwidth requests for these local/virtual nodes produces ENXIO
+on SM-T531 for every update. Remove their remote IDs and stop ignoring
+ENXIO for the three MSM8226 providers: genuine remaining failures must
+reach consumers. Do not alter rates, bandwidth aggregation or QoS policy.
+
+Source: LineageOS/android_kernel_samsung_msm8226 at
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256,
+arch/arm/boot/dts/msm8226/msm8226-bus.dtsi and
+arch/arm/mach-msm/msm_bus/msm_bus_noc.c (msm_bus_noc_update_bw).
+---
+diff --git a/drivers/interconnect/qcom/msm8226.c b/drivers/interconnect/qcom/msm8226.c
+--- a/drivers/interconnect/qcom/msm8226.c
++++ b/drivers/interconnect/qcom/msm8226.c
+@@ -50,13 +50,15 @@
+ };
+ static struct qcom_icc_node mmss_out = {
+ 	.name = "msm8226_mmss_out", .id = MMSS_OUT, .buswidth = 16,
+-	.mas_rpm_id = -1, .slv_rpm_id = 16,
++	/* BSP hw-sel is NoC: slave 16 is not an RPM bandwidth resource. */
++	.mas_rpm_id = -1, .slv_rpm_id = -1,
+ 	.links = mmss_out_links, .num_links = ARRAY_SIZE(mmss_out_links),
+ };
+ /* The virtual OCMEM fabric clock scales against its 16-byte slave port. */
+ static struct qcom_icc_node gfx_ocmem = {
+ 	.name = "msm8226_gfx_ocmem", .id = GFX_OCMEM, .buswidth = 16,
+-	.mas_rpm_id = 55, .slv_rpm_id = -1,
++	/* Virtual master has no physical master ports to vote through RPM. */
++	.mas_rpm_id = -1, .slv_rpm_id = -1,
+ 	.links = gfx_ocmem_links, .num_links = ARRAY_SIZE(gfx_ocmem_links),
+ };
+ static struct qcom_icc_node ocmem = {
+@@ -90,18 +92,16 @@
+ 	.nodes = bimc_nodes, .num_nodes = ARRAY_SIZE(bimc_nodes),
+ 	.bus_clk_desc = &bimc_clk, .type = QCOM_ICC_BIMC,
+ 	.keep_alive = true, .get_bw = msm8226_get_bw,
+-	.ignore_enxio = true,
+ };
+ static const struct qcom_icc_desc mmss_desc = {
+ 	.nodes = mmss_nodes, .num_nodes = ARRAY_SIZE(mmss_nodes),
+ 	.type = QCOM_ICC_NOC, .keep_alive = true,
+-	.get_bw = msm8226_get_bw, .ignore_enxio = true,
++	.get_bw = msm8226_get_bw,
+ };
+ static const struct qcom_icc_desc ocmem_desc = {
+ 	.nodes = ocmem_nodes, .num_nodes = ARRAY_SIZE(ocmem_nodes),
+ 	.bus_clk_desc = &gpu_mem_2_clk, .type = QCOM_ICC_NOC,
+ 	.keep_alive = true, .get_bw = msm8226_get_bw,
+-	.ignore_enxio = true,
+ };
+ static const struct of_device_id msm8226_noc_match[] = {
+ 	{ .compatible = "qcom,msm8226-bimc", .data = &bimc_desc },

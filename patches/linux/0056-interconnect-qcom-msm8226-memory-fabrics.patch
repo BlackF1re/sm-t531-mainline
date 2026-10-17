@@ -1,0 +1,178 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] interconnect: qcom: add MSM8226 graphics and CPU memory fabrics
+
+Describe the MSM8226 CPU/GPU/MDP memory fabrics using the exact vendor
+MSM8226 topology and RPM resource IDs, not an MSM8974 compatible.
+Use RPM BIMC/OCMEM clock votes and the HLOS MMSS AXI clock. Rate conversion
+for MMSS and virtual OCMEM follows downstream slave/fabric clock domains
+(16 bytes), while BIMC/DDR uses 8 bytes.
+
+Initial graphics bring-up only: preserve firmware QoS, especially the CPU
+BIMC limiter; do not write guessed QoS registers. The remaining SoC fabrics
+are not modeled. ENXIO handling follows the shared MSM8974 RPM framework
+policy, other RPM errors propagate. Hardware validation remains pending.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/interconnect/qcom/Kconfig b/drivers/interconnect/qcom/Kconfig
+index 5b8a094ca..30ce9353b 100644
+--- a/drivers/interconnect/qcom/Kconfig
++++ b/drivers/interconnect/qcom/Kconfig
+@@ -94,6 +94,16 @@ config INTERCONNECT_QCOM_MSM8953
+ 	  This is a driver for the Qualcomm Network-on-Chip on msm8953-based
+ 	  platforms.
+ 
++config INTERCONNECT_QCOM_MSM8226
++	tristate "Qualcomm MSM8226 graphics and CPU memory interconnect driver"
++	depends on INTERCONNECT_QCOM
++	depends on QCOM_SMD_RPM
++	select INTERCONNECT_QCOM_SMD_RPM
++	help
++	  This driver scales MMSS AXI, BIMC DDR and OCMEM bandwidth for
++	  the CPU, Adreno and MDP on MSM8226. Initial bring-up preserves
++	  firmware QoS configuration. Other SoC fabrics are not yet modeled.
++
+ config INTERCONNECT_QCOM_MSM8974
+ 	tristate "Qualcomm MSM8974 interconnect driver"
+ 	depends on INTERCONNECT_QCOM
+diff --git a/drivers/interconnect/qcom/Makefile b/drivers/interconnect/qcom/Makefile
+index 1c7d410b4..096c406df 100644
+--- a/drivers/interconnect/qcom/Makefile
++++ b/drivers/interconnect/qcom/Makefile
+@@ -98,3 +98,5 @@ obj-$(CONFIG_INTERCONNECT_QCOM_SM8650) += qnoc-sm8650.o
+ obj-$(CONFIG_INTERCONNECT_QCOM_SM8750) += qnoc-sm8750.o
+ obj-$(CONFIG_INTERCONNECT_QCOM_X1E80100) += qnoc-x1e80100.o
+ obj-$(CONFIG_INTERCONNECT_QCOM_SMD_RPM) += icc-smd-rpm.o
++
++obj-$(CONFIG_INTERCONNECT_QCOM_MSM8226) += msm8226.o
+diff --git a/drivers/interconnect/qcom/msm8226.c b/drivers/interconnect/qcom/msm8226.c
+new file mode 100644
+index 000000000..61332ca5e
+--- /dev/null
++++ b/drivers/interconnect/qcom/msm8226.c
+@@ -0,0 +1,124 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/* MSM8226 graphics/CPU memory fabrics, from the Samsung MSM8226 BSP.
++ * Preserve firmware QoS until its limiter policy is represented upstream.
++ */
++#include <linux/interconnect-provider.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <dt-bindings/interconnect/qcom,msm8226.h>
++#include "icc-rpm.h"
++
++enum {
++	CPU = 2000, MMSS_IN, DDR, GFX, MDP, MMSS_OUT, GFX_OCMEM, OCMEM,
++};
++
++static const u16 cpu_links[] = { DDR };
++static const u16 mmss_in_links[] = { DDR };
++static const u16 gfx_links[] = { MMSS_OUT };
++static const u16 mdp_links[] = { MMSS_OUT };
++static const u16 mmss_out_links[] = { MMSS_IN };
++static const u16 gfx_ocmem_links[] = { OCMEM };
++
++static struct qcom_icc_node cpu = {
++	.name = "msm8226_cpu", .id = CPU, .buswidth = 8,
++	.mas_rpm_id = 0, .slv_rpm_id = -1,
++	.qos.ap_owned = true,
++	.links = cpu_links, .num_links = ARRAY_SIZE(cpu_links),
++};
++static struct qcom_icc_node mmss_in = {
++	.name = "msm8226_mmss_in", .id = MMSS_IN, .buswidth = 8,
++	.mas_rpm_id = 2, .slv_rpm_id = -1,
++	.qos.ap_owned = true,
++	.links = mmss_in_links, .num_links = ARRAY_SIZE(mmss_in_links),
++};
++static struct qcom_icc_node ddr = {
++	.name = "msm8226_ebi", .id = DDR, .buswidth = 8,
++	.mas_rpm_id = -1, .slv_rpm_id = 0,
++};
++/* Rate conversion follows the 16-byte MMSS fabric egress clock domain. */
++static struct qcom_icc_node gfx = {
++	.name = "msm8226_gfx", .id = GFX, .buswidth = 16,
++	.mas_rpm_id = 6, .slv_rpm_id = -1,
++	.qos.ap_owned = true,
++	.links = gfx_links, .num_links = ARRAY_SIZE(gfx_links),
++};
++static struct qcom_icc_node mdp = {
++	.name = "msm8226_mdp", .id = MDP, .buswidth = 16,
++	.mas_rpm_id = 8, .slv_rpm_id = -1,
++	.qos.ap_owned = true,
++	.links = mdp_links, .num_links = ARRAY_SIZE(mdp_links),
++};
++static struct qcom_icc_node mmss_out = {
++	.name = "msm8226_mmss_out", .id = MMSS_OUT, .buswidth = 16,
++	.mas_rpm_id = -1, .slv_rpm_id = 16,
++	.links = mmss_out_links, .num_links = ARRAY_SIZE(mmss_out_links),
++};
++/* The virtual OCMEM fabric clock scales against its 16-byte slave port. */
++static struct qcom_icc_node gfx_ocmem = {
++	.name = "msm8226_gfx_ocmem", .id = GFX_OCMEM, .buswidth = 16,
++	.mas_rpm_id = 55, .slv_rpm_id = -1,
++	.links = gfx_ocmem_links, .num_links = ARRAY_SIZE(gfx_ocmem_links),
++};
++static struct qcom_icc_node ocmem = {
++	.name = "msm8226_ocmem", .id = OCMEM, .buswidth = 16,
++	.mas_rpm_id = -1, .slv_rpm_id = 18,
++};
++
++static struct qcom_icc_node * const bimc_nodes[] = {
++	[BIMC_MAS_CPU] = &cpu,
++	[BIMC_MAS_MMSS] = &mmss_in,
++	[BIMC_SLV_EBI] = &ddr,
++};
++static struct qcom_icc_node * const mmss_nodes[] = {
++	[MMSS_MAS_GFX] = &gfx,
++	[MMSS_MAS_MDP] = &mdp,
++	[MMSS_SLV_BIMC] = &mmss_out,
++};
++static struct qcom_icc_node * const ocmem_nodes[] = {
++	[OCMEM_MAS_GFX] = &gfx_ocmem,
++	[OCMEM_SLV_OCMEM] = &ocmem,
++};
++
++static int msm8226_get_bw(struct icc_node *node, u32 *avg, u32 *peak)
++{
++	*avg = 0;
++	*peak = 0;
++	return 0;
++}
++
++static const struct qcom_icc_desc bimc_desc = {
++	.nodes = bimc_nodes, .num_nodes = ARRAY_SIZE(bimc_nodes),
++	.bus_clk_desc = &bimc_clk, .type = QCOM_ICC_BIMC,
++	.keep_alive = true, .get_bw = msm8226_get_bw,
++	.ignore_enxio = true,
++};
++static const struct qcom_icc_desc mmss_desc = {
++	.nodes = mmss_nodes, .num_nodes = ARRAY_SIZE(mmss_nodes),
++	.type = QCOM_ICC_NOC, .keep_alive = true,
++	.get_bw = msm8226_get_bw, .ignore_enxio = true,
++};
++static const struct qcom_icc_desc ocmem_desc = {
++	.nodes = ocmem_nodes, .num_nodes = ARRAY_SIZE(ocmem_nodes),
++	.bus_clk_desc = &gpu_mem_2_clk, .type = QCOM_ICC_NOC,
++	.keep_alive = true, .get_bw = msm8226_get_bw,
++	.ignore_enxio = true,
++};
++static const struct of_device_id msm8226_noc_match[] = {
++	{ .compatible = "qcom,msm8226-bimc", .data = &bimc_desc },
++	{ .compatible = "qcom,msm8226-mmssnoc", .data = &mmss_desc },
++	{ .compatible = "qcom,msm8226-ocmem-vnoc", .data = &ocmem_desc },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, msm8226_noc_match);
++static struct platform_driver msm8226_noc_driver = {
++	.probe = qnoc_probe,
++	.remove = qnoc_remove,
++	.driver = {
++		.name = "qnoc-msm8226",
++		.of_match_table = msm8226_noc_match,
++		.sync_state = icc_sync_state,
++	},
++};
++module_platform_driver(msm8226_noc_driver);
++MODULE_DESCRIPTION("Qualcomm MSM8226 graphics and CPU memory interconnects");
++MODULE_LICENSE("GPL");

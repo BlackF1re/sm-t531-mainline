@@ -1,0 +1,36 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: match MSM8226 BSP short-descriptor security bits
+
+The earlier MSM8226 MDP ARM_V7S adaptation enabled ARM_NS without verifying
+the display BSP descriptors. This does not match the exact Samsung
+page-table implementation:
+make_second_level() sets only physical address and FL_TYPE_TABLE, without
+coarse descriptor bit3. The MSM8974 upstream v1 format patch also does not
+add ARM_NS to qcom_iommu.
+
+After proper reset/ASID setup, hardware ATOS reports a level2 translation
+operation timeout while CPU-visible L1 descriptors contain the extra bit.
+Remove the unsupported assumption for this TZ-managed display instance.
+The independently working GPU arm-smmu path is unaffected. Validate hardware
+translations and physical LCD output before treating this as a fix.
+
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu_pagetable.c
+Link: https://lore.kernel.org/r/20260809-msm8974-iommu-upstream-v1-4-87f5cd492560@oss.qualcomm.com
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 757e955ef..0c3a0c236 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -373,9 +373,6 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 	qcom_domain->iommu = qcom_iommu;
+ 	qcom_domain->fwspec = fwspec;
+ 
+-	if (qcom_iommu->short_desc)
+-		pgtbl_cfg.quirks |= IO_PGTABLE_QUIRK_ARM_NS;
+-
+ 	pgtbl_ops = alloc_io_pgtable_ops(qcom_iommu->short_desc ? ARM_V7S :
+ 					ARM_32_LPAE_S1, &pgtbl_cfg, qcom_domain);
+ 	if (!pgtbl_ops) {

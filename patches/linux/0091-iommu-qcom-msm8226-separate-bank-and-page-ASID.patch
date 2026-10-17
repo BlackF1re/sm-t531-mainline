@@ -1,0 +1,77 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: separate MSM8226 context bank and page-table ASID
+
+The exact BSP assigns ASIDs starting at1, separately from context bank
+indices starting at0. Our CB0 incorrectly also uses page-table ASID0.
+With the reset sequence restored, hardware returns a different mapping
+at0x03e00000+IOVA while software points at the new GEM pages.
+
+Keep the DT argument and context-array index unchanged. Use a separate
+nonzero page-table ASID for MSM8226 in CONTEXTIDR and TLB maintenance;
+other SoCs retain their previous numbering. TrustZone's context argument
+still receives the actual bank index. There is one non-secure MDP bank.
+
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu-v1.c
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index f2632f43a..553809db5 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -81,7 +81,8 @@ struct qcom_iommu_ctx {
+ 	void __iomem		*base;
+ 	bool			 secure_init;
+ 	bool			 secured_ctx;
+-	u8			 asid;      /* asid and ctx bank # are 1:1 */
++	u8			 asid;      /* context bank index and DT argument */
++	u8			 pt_asid;   /* page-table namespace, separate on MSM8226 */
+ 	struct iommu_domain	*domain;
+ 	/* programmed context bank state */
+ 	u64			 ttbr0;
+@@ -165,7 +166,7 @@ static void qcom_iommu_tlb_inv_context(void *cookie)
+ 
+ 	for (i = 0; i < fwspec->num_ids; i++) {
+ 		struct qcom_iommu_ctx *ctx = to_ctx(qcom_domain, fwspec->ids[i]);
+-		iommu_writel(ctx, ARM_SMMU_CB_S1_TLBIASID, ctx->asid);
++		iommu_writel(ctx, ARM_SMMU_CB_S1_TLBIASID, ctx->pt_asid);
+ 	}
+ 
+ 	qcom_iommu_tlb_sync(cookie);
+@@ -185,7 +186,7 @@ static void qcom_iommu_tlb_inv_range_nosync(unsigned long iova, size_t size,
+ 		size_t s = size;
+ 
+ 		iova = (iova >> 12) << 12;
+-		iova |= ctx->asid;
++		iova |= ctx->pt_asid;
+ 		do {
+ 			iommu_writel(ctx, reg, iova);
+ 			iova += granule;
+@@ -322,7 +323,7 @@ static int qcom_iommu_program_ctx(struct qcom_iommu_dev *qcom_iommu,
+ 	iommu_writel(ctx, ARM_SMMU_CB_TCR2, ctx->tcr[1]);
+ 	iommu_writel(ctx, ARM_SMMU_CB_TCR, ctx->tcr[0]);
+ 	if (qcom_iommu->short_desc)
+-		iommu_writel(ctx, ARM_SMMU_CB_CONTEXTIDR, ctx->asid);
++		iommu_writel(ctx, ARM_SMMU_CB_CONTEXTIDR, ctx->pt_asid);
+ 
+ 	/* MAIRs (stage-1 only) */
+ 	iommu_writel(ctx, ARM_SMMU_CB_S1_MAIR0, ctx->mair[0]);
+@@ -401,7 +402,7 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 			ctx->mair[1] = pgtbl_cfg.arm_v7s_cfg.nmrr;
+ 		} else {
+ 			ctx->ttbr0 = pgtbl_cfg.arm_lpae_s1_cfg.ttbr |
+-				     FIELD_PREP(ARM_SMMU_TTBRn_ASID, ctx->asid);
++				     FIELD_PREP(ARM_SMMU_TTBRn_ASID, ctx->pt_asid);
+ 			ctx->tcr[0] = arm_smmu_lpae_tcr(&pgtbl_cfg) | ARM_SMMU_TCR_EAE;
+ 			ctx->tcr[1] = arm_smmu_lpae_tcr2(&pgtbl_cfg);
+ 			ctx->mair[0] = pgtbl_cfg.arm_lpae_s1_cfg.mair;
+@@ -851,6 +852,8 @@ static int qcom_iommu_ctx_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	ctx->asid = ret;
++	/* BSP allocates nonzero page-table ASIDs independently of CB indices. */
++	ctx->pt_asid = qcom_iommu->short_desc ? ret + 1 : ret;
+ 
+ 	dev_dbg(dev, "found asid %u\n", ctx->asid);
+ 

@@ -1,0 +1,34 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/msm: clear DRM device pointer on initialization failure
+
+When component or KMS initialization fails, priv->dev retains the DRM
+device pointer after its reference is dropped. msm_kms_shutdown later
+dereferences that pointer to check registered, allowing a use-after-free
+on a subsequent reboot. Clear the pointer on both initialization failure
+paths. SM-T531 native bring-up reproduced a shutdown loss of console after
+a KMS ENODEV failure; the dangling pointer is established by code review,
+while the physical shutdown cause awaits pstore evidence.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/msm_drv.c b/drivers/gpu/drm/msm/msm_drv.c
+index fa46ab306..e00ee2c0a 100644
+--- a/drivers/gpu/drm/msm/msm_drv.c
++++ b/drivers/gpu/drm/msm/msm_drv.c
+@@ -98,6 +98,7 @@ static int msm_drm_uninit(struct device *dev, const struct component_ops *gpu_op
+ 		component_unbind_all(dev, ddev);
+ 
+ 	ddev->dev_private = NULL;
++	priv->dev = NULL;
+ 	drm_dev_put(ddev);
+ 
+ 	return 0;
+@@ -186,6 +187,7 @@ static int msm_drm_init(struct device *dev, const struct drm_driver *drv,
+ 	return ret;
+ 
+ err_put_dev:
++	priv->dev = NULL;
+ 	drm_dev_put(ddev);
+ 
+ 	return ret;

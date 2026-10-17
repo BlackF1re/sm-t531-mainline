@@ -1,0 +1,469 @@
+{
+  "device": "Samsung SM-T531 / MSM8226 / Adreno 305B",
+  "display": "1280x800 nominal 60 Hz, firmware RGB888",
+  "mesa": "25.0.7-2+deb13u1",
+  "kwin": "6.3.6",
+  "kernel_base": "v7.2.9 / 5fce161649b4d779d1b76d9fcd52dc77779774b8",
+  "metric": "Synthetic DRM frame completion; not optical refresh or tear-free scanout",
+  "method": "25-second QML animation, exclude first 5 and final second; perf tracepoints and CPU ticks",
+  "runs": {
+    "counter-fixed": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 355,
+      "fps": 18.699489588451716,
+      "frame_interval": {
+        "samples": 354,
+        "mean_ms": 53.47739548022596,
+        "p50_ms": 55.626499999988255,
+        "p95_ms": 56.148000000007414,
+        "p99_ms": 56.393000000014126
+      },
+      "blit": {
+        "samples": 355,
+        "mean_ms": 7.116808450703895,
+        "p50_ms": 7.0660000000088985,
+        "p95_ms": 7.686000000006743,
+        "p99_ms": 7.965999999981932
+      },
+      "update": {
+        "samples": 355,
+        "mean_ms": 7.147450704225317,
+        "p50_ms": 7.088000000010197,
+        "p95_ms": 7.719000000008691,
+        "p99_ms": 7.997000000017351
+      },
+      "wait": {
+        "samples": 355,
+        "mean_ms": 0.02070422535179922,
+        "p50_ms": 0.020000000006348273,
+        "p95_ms": 0.027999999986150215,
+        "p99_ms": 0.03699999999184911
+      },
+      "gpu_busy_percent_devfreq": 99.99788169176712,
+      "gpu_busy_samples": 268,
+      "cpu_busy_percent_all_cores": 8.332181843305237,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0
+    },
+    "axi200": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 460,
+      "fps": 24.181364660300098,
+      "frame_interval": {
+        "samples": 459,
+        "mean_ms": 41.35415904139422,
+        "p50_ms": 39.19200000007095,
+        "p95_ms": 55.55700000002162,
+        "p99_ms": 55.708000000095126
+      },
+      "blit": {
+        "samples": 459,
+        "mean_ms": 7.187786492374109,
+        "p50_ms": 7.124999999973625,
+        "p95_ms": 7.814000000053056,
+        "p99_ms": 7.959000000028027
+      },
+      "update": {
+        "samples": 459,
+        "mean_ms": 7.218211328980336,
+        "p50_ms": 7.1580000000039945,
+        "p95_ms": 7.843999999977314,
+        "p99_ms": 7.9859999999598585
+      },
+      "wait": {
+        "samples": 459,
+        "mean_ms": 0.020915032680680554,
+        "p50_ms": 0.020000000063191692,
+        "p95_ms": 0.029000000040468876,
+        "p99_ms": 0.034999999911633495
+      },
+      "gpu_busy_percent_devfreq": 99.82942884434242,
+      "gpu_busy_samples": 283,
+      "cpu_busy_percent_all_cores": 10.349592372530054,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0
+    },
+    "software-brightness100": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 470,
+      "fps": 24.735865522966016,
+      "frame_interval": {
+        "samples": 469,
+        "mean_ms": 40.42712793176976,
+        "p50_ms": 39.51999999981126,
+        "p95_ms": 56.04199999993398,
+        "p99_ms": 57.005000000117434
+      },
+      "blit": {
+        "samples": 470,
+        "mean_ms": 8.189423404255262,
+        "p50_ms": 7.575500000029933,
+        "p95_ms": 10.83199999993667,
+        "p99_ms": 23.594999999886568
+      },
+      "update": {
+        "samples": 470,
+        "mean_ms": 8.226182978718343,
+        "p50_ms": 7.6060000001234584,
+        "p95_ms": 10.878999999931693,
+        "p99_ms": 23.6250000000382
+      },
+      "wait": {
+        "samples": 470,
+        "mean_ms": 0.03156382979244533,
+        "p50_ms": 0.02300000005561742,
+        "p95_ms": 0.04100000001017179,
+        "p99_ms": 0.19000000020241714
+      },
+      "gpu_busy_percent_devfreq": 99.88950082948907,
+      "gpu_busy_samples": 297,
+      "cpu_busy_percent_all_cores": 27.992811722421898,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0
+    },
+    "bright100-axi266": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 827,
+      "fps": 43.52732361869517,
+      "frame_interval": {
+        "samples": 826,
+        "mean_ms": 22.974075060532684,
+        "p50_ms": 22.919000000001688,
+        "p95_ms": 23.511999999982436,
+        "p99_ms": 23.826999999982945
+      },
+      "blit": {
+        "samples": 826,
+        "mean_ms": 7.605161016949068,
+        "p50_ms": 7.57049999992887,
+        "p95_ms": 8.1119999999828,
+        "p99_ms": 8.303000000069005
+      },
+      "update": {
+        "samples": 826,
+        "mean_ms": 7.638261501205588,
+        "p50_ms": 7.603999999901134,
+        "p95_ms": 8.14700000000812,
+        "p99_ms": 8.337999999866952
+      },
+      "wait": {
+        "samples": 827,
+        "mean_ms": 0.022320435306839848,
+        "p50_ms": 0.021000000060666935,
+        "p95_ms": 0.03100000003541936,
+        "p99_ms": 0.04899999998997373
+      },
+      "gpu_busy_percent_devfreq": 92.78560019327186,
+      "gpu_busy_samples": 318,
+      "cpu_busy_percent_all_cores": 19.039665970772443,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0
+    },
+    "nativebrightness-axi-warm": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 785,
+      "fps": 41.35765796647136,
+      "frame_interval": {
+        "samples": 784,
+        "mean_ms": 24.17931887755104,
+        "p50_ms": 23.075500000004467,
+        "p95_ms": 24.133000000006177,
+        "p99_ms": 55.81399999999803
+      },
+      "blit": {
+        "samples": 785,
+        "mean_ms": 7.768691719745074,
+        "p50_ms": 7.725000000021964,
+        "p95_ms": 8.481999999986556,
+        "p99_ms": 8.732000000009066
+      },
+      "update": {
+        "samples": 785,
+        "mean_ms": 7.80339363057314,
+        "p50_ms": 7.75600000000054,
+        "p95_ms": 8.512999999993554,
+        "p99_ms": 8.776000000011663
+      },
+      "wait": {
+        "samples": 785,
+        "mean_ms": 0.02434267515943514,
+        "p50_ms": 0.022999999998774,
+        "p95_ms": 0.03300000000194814,
+        "p99_ms": 0.05300000000829641
+      },
+      "gpu_busy_percent_devfreq": 81.8068194384688,
+      "gpu_busy_samples": 301,
+      "mem_available_kib_min": 683884,
+      "cpu_busy_percent_all_cores": 19.33785842914531,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0
+    },
+    "neon-warm": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 803,
+      "fps": 42.226105526302156,
+      "frame_interval": {
+        "samples": 802,
+        "mean_ms": 23.682032418952573,
+        "p50_ms": 22.20199999999295,
+        "p95_ms": 38.89500000002499,
+        "p99_ms": 39.162999999973636
+      },
+      "blit": {
+        "samples": 802,
+        "mean_ms": 6.895516209475775,
+        "p50_ms": 6.863500000008571,
+        "p95_ms": 7.359999999948741,
+        "p99_ms": 7.614999999987049
+      },
+      "update": {
+        "samples": 802,
+        "mean_ms": 6.928137157107547,
+        "p50_ms": 6.898000000006732,
+        "p95_ms": 7.38899999998921,
+        "p99_ms": 7.654999999999745
+      },
+      "wait": {
+        "samples": 802,
+        "mean_ms": 0.022536159601013468,
+        "p50_ms": 0.02200000000129876,
+        "p95_ms": 0.03100000003541936,
+        "p99_ms": 0.0390000000152213
+      },
+      "gpu_busy_percent_devfreq": 99.96717003827008,
+      "gpu_busy_samples": 323,
+      "mem_available_kib_min": 740484,
+      "cpu_busy_percent_all_cores": 17.403885903265813,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0,
+      "axi_hz_median": 266666666.0
+    },
+    "neon-margin4000-warm": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 796,
+      "fps": 41.86999288210132,
+      "frame_interval": {
+        "samples": 795,
+        "mean_ms": 23.883452830188613,
+        "p50_ms": 19.624000000021624,
+        "p95_ms": 36.45499999998947,
+        "p99_ms": 36.59600000003138
+      },
+      "blit": {
+        "samples": 796,
+        "mean_ms": 6.669834170853851,
+        "p50_ms": 6.666999999993095,
+        "p95_ms": 7.24800000000414,
+        "p99_ms": 7.5489999999831525
+      },
+      "update": {
+        "samples": 796,
+        "mean_ms": 6.702319095477001,
+        "p50_ms": 6.698999999997568,
+        "p95_ms": 7.281999999975142,
+        "p99_ms": 7.577000000026146
+      },
+      "wait": {
+        "samples": 796,
+        "mean_ms": 0.02210301507563003,
+        "p50_ms": 0.021000000003823516,
+        "p95_ms": 0.030999999978575943,
+        "p99_ms": 0.038999999958377884
+      },
+      "gpu_busy_percent_devfreq": 98.66684847516717,
+      "gpu_busy_samples": 301,
+      "mem_available_kib_min": 601588,
+      "cpu_busy_percent_all_cores": 17.542888765910348,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0,
+      "axi_hz_median": 266666666.0
+    },
+    "native-margin9000-warm-fixed": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 792,
+      "fps": 41.688549641654994,
+      "frame_interval": {
+        "samples": 791,
+        "mean_ms": 23.987402022756022,
+        "p50_ms": 31.897999999955573,
+        "p95_ms": 33.278999999993175,
+        "p99_ms": 33.83399999995618
+      },
+      "blit": {
+        "samples": 792,
+        "mean_ms": 7.654626262627167,
+        "p50_ms": 7.678499999997257,
+        "p95_ms": 8.836000000030708,
+        "p99_ms": 9.36100000001261
+      },
+      "update": {
+        "samples": 792,
+        "mean_ms": 7.68679545454538,
+        "p50_ms": 7.713500000022577,
+        "p95_ms": 8.872999999994136,
+        "p99_ms": 9.391000000050553
+      },
+      "wait": {
+        "samples": 792,
+        "mean_ms": 0.021109848483585936,
+        "p50_ms": 0.020000000006348273,
+        "p95_ms": 0.038999999958377884,
+        "p99_ms": 0.04900000004681715
+      },
+      "gpu_busy_percent_devfreq": 82.83456675917361,
+      "gpu_busy_samples": 307,
+      "mem_available_kib_min": 689188,
+      "cpu_busy_percent_all_cores": 19.151296630148384,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0,
+      "axi_hz_median": 266666666.0
+    },
+    "neon-legacy-warm": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 679,
+      "fps": 35.7684338928386,
+      "frame_interval": {
+        "samples": 678,
+        "mean_ms": 27.957612094395206,
+        "p50_ms": 28.536999999971613,
+        "p95_ms": 30.463000000054308,
+        "p99_ms": 30.693999999925836
+      },
+      "blit": {
+        "samples": 679,
+        "mean_ms": 6.344491899857235,
+        "p50_ms": 6.325999999944543,
+        "p95_ms": 6.5520000000560685,
+        "p99_ms": 6.751000000008389
+      },
+      "update": {
+        "samples": 679,
+        "mean_ms": 6.379135493372864,
+        "p50_ms": 6.3589999999749125,
+        "p95_ms": 6.586999999967702,
+        "p99_ms": 6.805999999983214
+      },
+      "wait": {
+        "samples": 679,
+        "mean_ms": 10.773240058911135,
+        "p50_ms": 10.769999999979518,
+        "p95_ms": 11.114000000020496,
+        "p99_ms": 11.291000000028362
+      },
+      "gpu_busy_percent_devfreq": 83.32311504910302,
+      "gpu_busy_samples": 331,
+      "mem_available_kib_min": 632480,
+      "cpu_busy_percent_all_cores": 13.948318977493749,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0,
+      "axi_hz_median": 266666666.0
+    },
+    "neon-default-submit": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 790,
+      "fps": 41.57905334771714,
+      "frame_interval": {
+        "samples": 789,
+        "mean_ms": 24.050571609632474,
+        "p50_ms": 22.337000000106855,
+        "p95_ms": 39.027000000032785,
+        "p99_ms": 39.46900000005371
+      },
+      "blit": {
+        "samples": 790,
+        "mean_ms": 7.019756962030373,
+        "p50_ms": 6.997999999953208,
+        "p95_ms": 7.532999999966705,
+        "p99_ms": 8.141999999907057
+      },
+      "update": {
+        "samples": 790,
+        "mean_ms": 7.05306455696631,
+        "p50_ms": 7.03000000009979,
+        "p95_ms": 7.561000000123386,
+        "p99_ms": 8.185000000139553
+      },
+      "wait": {
+        "samples": 790,
+        "mean_ms": 0.01929873417137497,
+        "p50_ms": 0.01799999995455437,
+        "p95_ms": 0.02700000004551839,
+        "p99_ms": 0.050999999984924216
+      },
+      "gpu_busy_percent_devfreq": 99.44513421536429,
+      "gpu_busy_samples": 298,
+      "gpu_submit_to_retire": {
+        "samples": 3949,
+        "mean_ms": 20.968436312988498,
+        "p50_ms": 20.935000000008586,
+        "p95_ms": 30.58499999997366,
+        "p99_ms": 31.407000000172047
+      },
+      "mem_available_kib_min": 632108,
+      "cpu_busy_percent_all_cores": 31.72050464439207,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0,
+      "axi_hz_median": 266666666.0
+    },
+    "production-first": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 760,
+      "fps": 40.28713100053331,
+      "frame_interval": {
+        "samples": 759,
+        "mean_ms": 24.82182213438734,
+        "p50_ms": 22.354999999990355,
+        "p95_ms": 39.11200000000292,
+        "p99_ms": 40.23300000000063
+      },
+      "gpu_busy_percent_devfreq": 96.67659543975195,
+      "gpu_busy_samples": 235,
+      "mem_available_kib_min": 771264,
+      "cpu_busy_percent_all_cores": 44.831398562741846,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0,
+      "axi_hz_median": 266666666.0
+    },
+    "production-warm": {
+      "kind": "DRM completion, synthetic simpledrm events",
+      "window_seconds": 19.0,
+      "frames": 792,
+      "fps": 41.64526270395053,
+      "frame_interval": {
+        "samples": 791,
+        "mean_ms": 24.01233501896336,
+        "p50_ms": 22.176999999999225,
+        "p95_ms": 38.86499999998705,
+        "p99_ms": 39.09500000000321
+      },
+      "gpu_busy_percent_devfreq": 99.37872545600672,
+      "gpu_busy_samples": 291,
+      "mem_available_kib_min": 749012,
+      "cpu_busy_percent_all_cores": 18.008298755186722,
+      "cpu_khz_median": 1190400.0,
+      "gpu_hz_median": 450000000.0,
+      "axi_hz_median": 266666666.0
+    }
+  },
+  "invalid_runs": {
+    "margin9000-fixed450": "OOM killed plasmashell",
+    "neon-legacy-first": "compositor restart overlapped recording"
+  },
+  "physical_owner_feedback": "Display/colors/touch/brightness work as before; FPS visibly higher; moving rectangle edge splits (tearing persists).",
+  "rgb888_correctness": {
+    "cases": 10248,
+    "result": "PASS on physical SM-T531, same ARM NEON assembly"
+  },
+  "configuration": "Normal CPU schedutil and GPU devfreq, no KWIN_DRM_NO_AMS, COMPOSE or SAFETY_MARGIN override; FD_MESA_DEBUG=inorder retained"
+}

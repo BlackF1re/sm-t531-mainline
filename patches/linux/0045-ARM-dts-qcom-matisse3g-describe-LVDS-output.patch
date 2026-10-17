@@ -1,0 +1,29 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] ARM: dts: qcom: matisse3g: describe firmware LVDS output
+
+KWin/PowerDevil associates internal backlights only with internal outputs.
+The Unknown simpledrm connector on SM-T531 leaves its working LP8556 PWM
+backlight unmatched and enables software brightness, adding an expensive
+full-screen rendering pass on Adreno 305.
+
+Describe the verified LVDS transport behind the board's TC358764 bridge.
+Use a local binding extension until native DRM panel topology is complete;
+this does not claim an exact LCD module or initialize any bridge/MDP block.
+Unknown remains the default for existing firmware framebuffers.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+index 6d29a00bd..8d2d0d03d 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -89,6 +89,8 @@ &modem {
+ };
+ 
+ &framebuffer0 {
++	/* Firmware drives the internal LCD through TC358764 DSI-to-LVDS. */
++	connector-type = "lvds";
+ 	backlight = <&lcd_backlight>;
+ 	clocks = <&mmcc MDSS_AHB_CLK>,
+ 		 <&mmcc MDSS_AXI_CLK>,

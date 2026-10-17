@@ -1,0 +1,79 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: restore MSM8226 contexts on runtime resume
+
+SM-T531 display context0 reads all zeros after the first runtime suspend
+and resume, despite a registered software domain. Holding the IOMMU on
+before loading DRM preserves SCTLR/TTBR/TCR/MAIR, removes the MDP underrun
+and produces real page flips at 59.98-59.99 Hz. The DSI bridge still fails
+separately, so this does not establish working LCD output.
+
+Replay the cached non-secure context after the existing SCM restore on
+MSM8226. Keep TrustZone in charge of global registers and secure banks.
+Do not hold the domain permanently powered; other compatibles retain their
+existing resume behavior. Balance clocks on SCM errors.
+
+Uses Dmitry Baryshkov's context caching refactor (preceding patch).
+The resume approach is adapted from [PATCH 07/12] of his v1 series:
+https://lore.kernel.org/r/20260809-msm8974-iommu-upstream-v1-7-87f5cd492560@oss.qualcomm.com
+That patch's OS-managed MSM8974 global setup is deliberately not imported:
+MSM8226 display global IDR0 access was verified to abort non-secure reads.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 65039aada..96cb05654 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -51,6 +51,7 @@ struct qcom_iommu_dev {
+ 	void __iomem		*local_base;
+ 	u32			 sec_id;
+ 	u8			 max_asid;
++	bool			 restore_ctx;
+ 	struct qcom_iommu_ctx	*ctxs[];   /* indexed by asid */
+ };
+ 
+@@ -805,6 +806,8 @@ static int qcom_iommu_device_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	qcom_iommu->max_asid = max_asid;
+ 	qcom_iommu->dev = dev;
++	qcom_iommu->restore_ctx = of_device_is_compatible(dev->of_node,
++							"qcom,msm8226-iommu");
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res) {
+@@ -905,14 +908,32 @@ static void qcom_iommu_device_remove(struct platform_device *pdev)
+ static int __maybe_unused qcom_iommu_resume(struct device *dev)
+ {
+ 	struct qcom_iommu_dev *qcom_iommu = dev_get_drvdata(dev);
++	unsigned int i;
+ 	int ret;
+ 
+ 	ret = clk_bulk_prepare_enable(CLK_NUM, qcom_iommu->clks);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (dev->pm_domain)
+-		return qcom_scm_restore_sec_cfg(qcom_iommu->sec_id, 0);
++	if (dev->pm_domain) {
++		ret = qcom_scm_restore_sec_cfg(qcom_iommu->sec_id, 0);
++		if (ret) {
++			clk_bulk_disable_unprepare(CLK_NUM, qcom_iommu->clks);
++			return ret;
++		}
++	}
++
++	/* MSM8226 loses non-secure context state across MDSS power collapse. */
++	if (qcom_iommu->restore_ctx) {
++		for (i = 0; i <= qcom_iommu->max_asid; i++) {
++			struct qcom_iommu_ctx *ctx = qcom_iommu->ctxs[i];
++
++			if (ctx && ctx->domain && !ctx->secured_ctx)
++				qcom_iommu_program_ctx(qcom_iommu, ctx);
++		}
++		/* Finish context programming before the master resumes. */
++		wmb();
++	}
+ 
+ 	return ret;
+ }

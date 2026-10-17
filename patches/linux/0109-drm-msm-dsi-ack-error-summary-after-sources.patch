@@ -1,0 +1,42 @@
+Subject: [PATCH] drm/msm/dsi: acknowledge error summary after clearing sources
+
+The later Qualcomm downstream handler leaves the error summary pending
+until its peripheral causes are cleared and ignores processing when its
+source mask is disabled. Follow that ordering instead of acknowledging the
+summary before the detailed FIFO/timeout/PHY status. Keep existing
+error masks, reset policy and display timings. This is a diagnostic
+candidate for the measured recurring DSI IRQs; it does not claim to fix
+HS underflow.
+
+Link: https://android.googlesource.com/kernel/msm/+/ddc71b24ab0b8cb5bc73f6e9a89bdb48da052cd8/drivers/video/fbdev/msm/mdss_dsi_host.c
+The older pinned Samsung tree still acknowledges the summary first.
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -1742,6 +1742,9 @@
+ 	dsi_status(msm_host);
+ 	dsi_dln0_phy_err(msm_host);
+ 
++	/* W1C the summary after acknowledging all detailed error sources. */
++	dsi_intr_ctrl(msm_host, DSI_IRQ_ERROR, 1);
++
+ 	queue_work(msm_host->workqueue, &msm_host->err_work);
+ }
+ 
+@@ -1756,12 +1759,13 @@
+ 
+ 	spin_lock_irqsave(&msm_host->intr_lock, flags);
+ 	isr = dsi_read(msm_host, REG_DSI_INTR_CTRL);
+-	dsi_write(msm_host, REG_DSI_INTR_CTRL, isr);
++	/* Clear the summary only after its peripheral causes are cleared. */
++	dsi_write(msm_host, REG_DSI_INTR_CTRL, isr & ~DSI_IRQ_ERROR);
+ 	spin_unlock_irqrestore(&msm_host->intr_lock, flags);
+ 
+ 	DBG("isr=0x%x, id=%d", isr, msm_host->id);
+ 
+-	if (isr & DSI_IRQ_ERROR)
++	if ((isr & DSI_IRQ_ERROR) && (isr & DSI_IRQ_MASK_ERROR))
+ 		dsi_error(msm_host, isr);
+ 
+ 	if (isr & DSI_IRQ_VIDEO_DONE)

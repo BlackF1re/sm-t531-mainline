@@ -1,0 +1,935 @@
+{
+  "device": "Samsung Galaxy Tab 4 SM-T531 (MSM8226)",
+  "evidence": "VERIFIED_DEVICE",
+  "implementation": "PARTIAL",
+  "kernel": "v7.2.9 plus project patches",
+  "native_lcd_acceptance": true,
+  "kwin_native_fps": 42.05426371928013,
+  "experiments": [
+    {
+      "patches_through": 65,
+      "fbdev_emulation": false,
+      "iommu_power": "auto",
+      "rcg_update_timeouts": false,
+      "pll_locked": true,
+      "pixel_clock_hz": 74239942,
+      "byte_clock_hz": 55679956,
+      "vco_hz": 445439648,
+      "bridge_initialization": "EIO, invalid DSI response",
+      "iommu_context_at_scanout": "all-zero hardware registers"
+    },
+    {
+      "patches_through": 65,
+      "iommu_power": "on before DRM load",
+      "test": "20-second modetest hardware page flips",
+      "steady_flip_hz_range": [
+        59.98,
+        59.99
+      ],
+      "first_flip_hz_sample": 60.92,
+      "iommu_sctlr": "0x10e7",
+      "mdp_underruns_seen": 0,
+      "bridge_initialization": "DMA timeout",
+      "dsi_fifo_irq_storm": true
+    },
+    {
+      "patches_through": 67,
+      "iommu_power": "auto",
+      "test": "15-second modetest hardware page flips",
+      "steady_flip_hz_range": [
+        59.98,
+        59.99
+      ],
+      "iommu_sctlr": "0x10e7",
+      "initial_mdp_underruns_seen": 1,
+      "recurring_mdp_underruns_seen": 0,
+      "bridge_initialization": "EIO, invalid DSI response",
+      "dsi_fifo_irq_storm": true
+    },
+    {
+      "patches_through": 69,
+      "iommu_power": "auto",
+      "test": "20-second modetest hardware page flips",
+      "steady_flip_hz_range": [
+        59.98,
+        60.0
+      ],
+      "bridge_initialization": "EIO, zero response header",
+      "initial_mdp_underruns_seen": 1,
+      "dsi_fifo_irq_storm": true
+    },
+    {
+      "patches_through": 70,
+      "iommu_power": "auto",
+      "test": "20-second modetest hardware page flips",
+      "steady_flip_hz_range": [
+        59.98,
+        60.01
+      ],
+      "initial_mdp_underruns_seen": 1,
+      "bridge_initialization": "EIO, zero response header",
+      "bridge_i2c_after_modeset": "ENXIO",
+      "phy_regulator_controls": [
+        7,
+        8,
+        7,
+        0,
+        32,
+        7,
+        1
+      ],
+      "dsi_fifo_irq_storm": true
+    },
+    {
+      "patches_through": 71,
+      "iommu_power": "auto",
+      "test": "20-second modetest hardware page flips",
+      "steady_flip_hz_range": [
+        59.98,
+        60.01
+      ],
+      "bridge_initialization": "EIO on first write; padded packet length violates expected payload count",
+      "dsi_fifo_irq_storm": true,
+      "probe_tlb_sync_timeout_seen": true,
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 72,
+      "iommu_power": "auto",
+      "test": "20-second modetest hardware page flips",
+      "steady_flip_hz_range": [
+        59.96,
+        60.01
+      ],
+      "bridge_initialization": "no software transfer error",
+      "bridge_i2c_after_modeset": "ENXIO",
+      "initial_mdp_underruns_seen": 1,
+      "dsi_fifo_irq_storm": true,
+      "owner_observation": "black screen, backlight working, no test pattern",
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 74,
+      "matisse_lp11_reset": true,
+      "test": "15-minute modetest with held stdin and active framebuffer; owner observation during test",
+      "bridge_initialization": "first write DMA timeout; data lane FIFOs full",
+      "steady_flip_hz_range": [
+        59.98,
+        60.01
+      ],
+      "active_dsi_fifo_status": "0x33333000",
+      "active_dsi_status": "0x0b",
+      "owner_observation": "black screen with working backlight while modetest active",
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 74,
+      "matisse_lp11_reset": true,
+      "test": "I2C factory configuration during held native page flips",
+      "bridge_id": "0x6500",
+      "factory_writes_acked": 27,
+      "critical_register_readback": "matches factory sequence",
+      "active_dsi_fifo_status": "0x33333000",
+      "owner_observation": "screen remains black with backlight working",
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 75,
+      "matisse_lp11_reset": false,
+      "test": "held native page flips with active framebuffer",
+      "active_dsi_fifo_status": [
+        "0x11111000",
+        "0x88881000"
+      ],
+      "active_phy_lane_cfg4": [
+        0,
+        5,
+        10,
+        15
+      ],
+      "bridge_i2c_after_modeset": "ENXIO",
+      "mmss_misc_clamp": "0",
+      "mmss_misc_phy_power_collapse": "0",
+      "dsi_fifo_irq_storm": true,
+      "owner_observation": "black screen with backlight during test",
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 76,
+      "matisse_lp11_reset": true,
+      "matisse_defer_video": true,
+      "test": "held native page flips, then verified factory I2C configuration",
+      "bridge_initialization": "first write DMA timeout",
+      "bridge_id": "0x6500",
+      "critical_i2c_register_readback": "matches factory profile after diagnostic writer",
+      "active_dsi_status": "0x0b",
+      "active_dsi_fifo_status": "0x55551000",
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 77,
+      "diagnostic_irq_masking": "corrected peripheral mask",
+      "invalid_command_errno": 22,
+      "powered_off_reset_errno": 16,
+      "active_reset_completed": true,
+      "tpg_enable_disable_completed": true,
+      "ssh_survived": true,
+      "bridge_i2c_readback": "factory profile matches",
+      "owner_tpg_observation": "thin vertical stripes at left",
+      "owner_mdp_observation_after_tpg_off": "more stripes across width",
+      "native_visible_pixels": true,
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 78,
+      "test": "fixed-white internal pattern",
+      "tpg_control": "0x21",
+      "tpg_initial_value": "0xffffff",
+      "tpg_video_config": "5",
+      "owner_observation": "fully black screen with backlight working",
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 79,
+      "test": "ARM_V7S context and bounded architectural translation query",
+      "iommu_sctlr": "0x10e3",
+      "iommu_ttbr0": "0x06eec002",
+      "iommu_tcr": "0",
+      "iommu_prrr": "0x800b8204",
+      "iommu_nmrr": "0x40004000",
+      "hardware_translation_query": "100ms timeout; PAR not captured",
+      "post_query_vblank_timeouts": true,
+      "dsi_fifo_irq_storm": true,
+      "native_lcd_acceptance": false,
+      "bfb_readback_mismatch": {
+        "0x514": [
+          "0",
+          "4"
+        ],
+        "0x540": [
+          "0",
+          "0x10"
+        ],
+        "0x15c": [
+          "0x00e8743a",
+          "0x13"
+        ],
+        "0x20c": [
+          "0",
+          "0x17"
+        ],
+        "0x394": [
+          "0",
+          "0x13"
+        ],
+        "0x414": [
+          "0",
+          "0x23"
+        ]
+      }
+    },
+    {
+      "patches_through": 81,
+      "test": "BFB factory table restored; held native modetest and hardware ATOS query",
+      "bfb_table_readback": "all allowlisted entries match factory",
+      "micro_mmu_control": "0x8 (idle)",
+      "probe_tlb_sync_timeout_seen": false,
+      "first_dsi_dma_timeout_seen": false,
+      "bridge_i2c_id": "0",
+      "bridge_i2c_configuration": "reset defaults; expected DSI writes not established",
+      "steady_flip_hz_range": [
+        59.98,
+        60.0
+      ],
+      "dsi_fifo_irq_storm": true,
+      "hardware_translation_query": {
+        "iova": "0x1000",
+        "software_phys": "0x305ae000",
+        "par": "0x0000000280000003",
+        "atsr": "0x1",
+        "timeout_ms": 100,
+        "fsr": "0"
+      },
+      "post_query_vblank_timeouts": true,
+      "owner_observation": "blue after boot; possible image for a fraction of a second, then black with backlight",
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 83,
+      "test": "terminate faults; held modetest and hardware translation",
+      "iommu_sctlr": "0x1063",
+      "hardware_atos_poll_timeout": false,
+      "hardware_par_all_queries": "0x0000000280000003",
+      "hardware_par_decode": "F=1 TF=1 ATOT=1 PLVL=2 per exact BSP header; not valid translations",
+      "queried_iovas": [
+        "0x1000",
+        "0x2000",
+        "0x100000"
+      ],
+      "first_dsi_dma_timeout_seen": true,
+      "dsi_fifo_irq_storm": true,
+      "native_lcd_acceptance": false,
+      "physical_observation": "not yet repeated for this candidate"
+    },
+    {
+      "patches_through": 87,
+      "test": "BSP ACTLR cache-routing bits; raw page-table readback and ATOS",
+      "iommu_actlr": "0x70000000",
+      "probe_tlb_sync_timeout_seen": true,
+      "first_dsi_dma_timeout_seen": true,
+      "software_l1_l2_descriptors_valid": true,
+      "software_phys": [
+        "0x3044e000",
+        "0x306d7000",
+        "0x3882e000"
+      ],
+      "hardware_par_all_queries": "0xa290",
+      "hardware_atos_poll_timeout": false,
+      "hardware_translation_matches_software": false,
+      "bsp_memory_barrier_and_10us_settle_repeat": "same mismatch",
+      "native_lcd_acceptance": false,
+      "physical_observation": "not yet repeated for this candidate"
+    },
+    {
+      "patches_through": 90,
+      "test": "BSP halt/context-local reset sequence",
+      "probe_tlb_sync_timeout_seen": false,
+      "micro_mmu_halt_timeout_seen": false,
+      "hardware_par": [
+        "0x03e01290",
+        "0x03e02290",
+        "0x03f00290"
+      ],
+      "software_phys": [
+        "0x303f7000",
+        "0x304e8000",
+        "0x306fa000"
+      ],
+      "hardware_translation_matches_software": false,
+      "steady_flip_hz_range": [
+        59.99,
+        60.0
+      ],
+      "dsi_fifo_irq_storm": true,
+      "direct_user_cbar0_read": "SIGBUS, process exit135; Linux remains accessible",
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 92,
+      "test": "BSP nonzero table-ASID and pre-init TLB synchronization",
+      "context_id": "0x1",
+      "probe_tlb_sync_timeout_seen": false,
+      "hardware_par_all_queries": "0x0000000280000003",
+      "hardware_par_decode": "F=1 TF=1 ATOT=1 PLVL=2",
+      "software_l1_descriptors": [
+        "0x0b3a5409",
+        "0x0b668009"
+      ],
+      "hardware_translation_matches_software": false,
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 93,
+      "test": "BSP descriptor NS bits removed",
+      "software_l1_ns_bit": false,
+      "software_l1_descriptors": [
+        "0x0b6ee801",
+        "0x0b701401"
+      ],
+      "hardware_par_all_queries": "0x0000000280000003",
+      "hardware_translation_matches_software": false,
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 93,
+      "native_icc": true,
+      "test": "native CPU/GPU/MDP fabrics and broader translation sample",
+      "icc_cpu_peak_kBps": 4264000,
+      "icc_mdp_peak_kBps": 4256000,
+      "mmss_axi_clock_hz": 266666666,
+      "mdss_axi_clock_hz": 266666666,
+      "actual_ddr_frequency_hz": null,
+      "rpm_resource_ENXIO_seen": [
+        "master55",
+        "slave16"
+      ],
+      "hardware_par_all_9_queries": "0x0000000280000003",
+      "tested_l2_offsets_in_4K_page": [
+        "0",
+        "0x400",
+        "0x800",
+        "0xc00"
+      ],
+      "translation_matches_software": false,
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 94,
+      "native_icc": true,
+      "test": "BSP utility SCM context snapshot",
+      "scm_convention": "legacy",
+      "firmware_transport_status": -95,
+      "returned_bytes": 0,
+      "snapshot_available": false,
+      "native_lcd_acceptance": false,
+      "physical_observation": "Owner clarifies all tests: blue during SD-kernel boot logs, then black with backlight; no visible improvement"
+    },
+    {
+      "patches_through": 95,
+      "native_icc": true,
+      "test": "Exact BSP non-shareable noncoherent TTBR attributes",
+      "ttbr0_attributes": "0x0",
+      "hardware_par_all_9_queries": "0x0000000280000003",
+      "translation_matches_software": false,
+      "native_lcd_acceptance": false
+    },
+    {
+      "patches_through": 96,
+      "native_icc": true,
+      "test": "One-level section through normal IOMMU API, then unmap",
+      "software_section_iova": "0xf0000000",
+      "software_section_phys": "0x0b900000",
+      "software_l1_descriptor": "0x0b931c02",
+      "hardware_par_mapped": [
+        "0x03e00290",
+        "0x03e01290",
+        "0x03eff290"
+      ],
+      "hardware_par_after_unmap": "0x03e00290",
+      "translation_tracks_linux_mapping": false,
+      "native_lcd_acceptance": false,
+      "bridge_i2c_snapshot": "INVALID: chip ID0 instead of verified6500; remaining values not accepted"
+    },
+    {
+      "patches_through": 97,
+      "native_icc": true,
+      "test": "BSP shared TZ table initialization before NS context setup",
+      "tz_table_size_bytes": 90112,
+      "hardware_translation_matches_software_all_9_queries": true,
+      "section_translation_offsets_pass": [
+        0,
+        4096,
+        1044480
+      ],
+      "section_unmap_hardware_fault": true,
+      "bridge_i2c_id": "0x6500",
+      "bridge_config_matches_factory": true,
+      "native_lcd_acceptance": false,
+      "physical_observation": "Owner: black screen with backlight",
+      "dsi_hs_fifo_underflow": true,
+      "protected_reserved_context_register": "CB0+0x10 (TCR2) userspace read SIGBUS; removed from reader; Linux stays accessible"
+    },
+    {
+      "patches_through": 98,
+      "native_icc": true,
+      "matisse_phy_profile": 3,
+      "test": "Actual working PHY timing/regulator controls at first enable",
+      "phy_profile_applied_in_registers": true,
+      "dsi_hs_fifo_underflow": true,
+      "native_lcd_acceptance": false,
+      "physical_observation": "not yet repeated for this exact profile"
+    },
+    {
+      "patches_through": 98,
+      "native_icc": true,
+      "matisse_phy_profile": 3,
+      "test": "Near factory pixel clock after atomic ACTIVE=0",
+      "requested_mode_clock_kHz": 76331,
+      "observed_flip_Hz_range": [
+        61.67,
+        61.68
+      ],
+      "pll_sdm_cfg1": "0x4a",
+      "pll_seed": "0xed0e",
+      "dsi_hs_fifo_underflow": true,
+      "native_lcd_acceptance": false,
+      "physical_observation": "pending owner response"
+    },
+    {
+      "patches_through": 99,
+      "native_icc": true,
+      "matisse_phy_profile": 7,
+      "test": "BSP PLL controls, before byte mux reconciliation",
+      "hardware_translation_matches_software_all_9_queries": true,
+      "pll_sdm_cfg1": "0x0a",
+      "pll_cal_cfg4": "0x66",
+      "pll_vcolpf_cfg": "0x71",
+      "vco_hz": 457958203,
+      "pixel_hz": 76326368,
+      "ccf_byte_hz": 57244775,
+      "ccf_byte_mux_parent": "indirect VCO/DIV1/2",
+      "hardware_vreg_cfg": "0x00 (direct VCO)",
+      "dsi_hs_fifo_underflow": true,
+      "native_lcd_acceptance": false,
+      "physical_observation": "Thin stripes on right reported, reply timing relative to profile98/99 ambiguous"
+    },
+    {
+      "patches_through": 99,
+      "native_icc": true,
+      "matisse_phy_profile": 7,
+      "test": "Live clk_set_parent direct then cached indirect through CCF",
+      "hardware_vreg_cfg_before": "0x00",
+      "hardware_vreg_cfg_after": "0x02",
+      "ccf_byte_hz_before": 57244775,
+      "ccf_byte_hz_after": 57244775,
+      "native_lcd_acceptance": true,
+      "native_lcd_acceptance_scope": "Native modetest colour test pattern, owner physical confirmation",
+      "physical_observation": "Owner: test worked, colours like an old TV test",
+      "mode_flip_hz": 61.68,
+      "plane": "RGB0, source1408x880 scaled to full1280x800",
+      "remaining_fifo_errors": true,
+      "after_sample": {
+        "duration_s": 5.0017011579998325,
+        "cpu_busy_percent_all_cores": 1.208313194780087,
+        "irq_per_s": {
+          "msm": 61.778980838505014,
+          "dsi_isr": 1099.425940553201
+        }
+      },
+      "kwin_native_fps": null
+    },
+    {
+      "patches_through": 100,
+      "native_icc": true,
+      "matisse_phy_profile": 7,
+      "test": "First fresh boot with byte mux prepare replay",
+      "msm_module_sha256": "eb8924ce59e5f14560415760fae9f8956c98fc26601b425324e5267c600e57ca",
+      "first_module_activation_uptime_s": 22.8,
+      "drm_registered": false,
+      "tlb_sync_timeouts": 4,
+      "failure": "ETIMEDOUT on early ARM32 DMA and MDP domain attach",
+      "native_lcd_acceptance": false,
+      "byte_mux_prepare_physical_retest": "not reached",
+      "unload_reprobe": "external abort in PLL prepare during unpowered CCF provider removal; blocked CCF/storage; physical reset required",
+      "recovery": "Owner lk2nd fastboot, SHA-verified RAM-only rescue; unchanged SD command line confirmed",
+      "iommu_passthrough_trial": "not executed"
+    },
+    {
+      "patches_through": 101,
+      "test": "Fresh native activation, unhalt before TLBSYNC plus mux prepare replay",
+      "native_icc": true,
+      "matisse_phy_profile": 7,
+      "activation_uptime_s": 572.3,
+      "drm_registered": true,
+      "tlb_sync_timeouts": 0,
+      "inherited_framebuffer_context_faults_at_probe": true,
+      "byte_mux_hardware_selector": "0x02 without live diagnostic",
+      "native_lcd_acceptance": true,
+      "physical_observation": "Owner confirmed full colour pattern; later normal Plasma image",
+      "native_plasma_device": "platform-fd900100.display-controller-card",
+      "native_plasma_scanout": "DMA0",
+      "native_plasma_physical_image": true,
+      "touch_physical_acceptance": false,
+      "gpu_dynamic_frequency_test": "REGRESSION: repeated GPU hangcheck and GL_CONTEXT_LOST, frequent19MHz; no valid UI FPS result",
+      "remaining_dsi_fifo_errors": true,
+      "touch_evdev_events": 908,
+      "touch_evdev_release_seen": true,
+      "gpu_fixed450_trial": "Repeated GPU hangs persist; no valid workload FPS",
+      "gpu_runtime_power_on_trial": "Repeated hangs in already-faulted boot; no valid workload FPS"
+    },
+    {
+      "patches_through": 101,
+      "native_icc": false,
+      "separate_gpu_kms": true,
+      "test": "KWin-only loader; ordinary GPU-rendered clients, fixed450",
+      "metrics": {
+        "kind": "DRM completion, native hardware vblank; not optical measurement",
+        "window_seconds": 19.0,
+        "frames": 874,
+        "fps": 46.023942572241765,
+        "frame_interval": {
+          "samples": 873,
+          "mean_ms": 21.72782130584193,
+          "p50_ms": 16.672000000085063,
+          "p95_ms": 33.343000000058964,
+          "p99_ms": 33.35800000002109
+        },
+        "gpu_busy_percent_devfreq": 98.5806887953573,
+        "gpu_busy_samples": 306,
+        "gpu_submit_to_retire": {
+          "samples": 4364,
+          "mean_ms": 18.962772914757036,
+          "p50_ms": 19.293500000003405,
+          "p95_ms": 27.574999999956162,
+          "p99_ms": 28.997000000003936
+        },
+        "mem_available_kib_min": 630744,
+        "cpu_busy_percent_all_cores": 13.720573896085806,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "native_lcd_acceptance": true,
+      "physical_acceptance": "Desktop and touch working; owner confirmation",
+      "gpu_hangcheck_during_recording": false
+    },
+    {
+      "patches_through": 101,
+      "native_icc": false,
+      "separate_gpu_kms": true,
+      "test": "KWin-only loader; default GPU frequency range, runtime power on",
+      "metrics": {
+        "kind": "DRM completion, native hardware vblank; not optical measurement",
+        "window_seconds": 19.0,
+        "frames": 817,
+        "fps": 43.05679613535696,
+        "frame_interval": {
+          "samples": 816,
+          "mean_ms": 23.225137254902013,
+          "p50_ms": 16.674999999963802,
+          "p95_ms": 33.34299999994528,
+          "p99_ms": 33.357999999907406
+        },
+        "gpu_busy_percent_devfreq": 99.99749005896209,
+        "gpu_busy_samples": 280,
+        "gpu_submit_to_retire": {
+          "samples": 4080,
+          "mean_ms": 21.346142647058993,
+          "p50_ms": 20.989500000041517,
+          "p95_ms": 30.24500000003627,
+          "p99_ms": 30.49599999997099
+        },
+        "mem_available_kib_min": 618120,
+        "cpu_busy_percent_all_cores": 9.237228831350595,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "native_lcd_acceptance": true,
+      "physical_acceptance": "Desktop and touch working; owner confirmation",
+      "gpu_hangcheck_during_recording": false
+    },
+    {
+      "patches_through": 101,
+      "native_icc": false,
+      "separate_gpu_kms": true,
+      "test": "Default GPU frequency range and runtime power auto, scoped KWin loader",
+      "metrics": {
+        "kind": "DRM completion, native hardware vblank; not optical measurement",
+        "window_seconds": 19.0,
+        "frames": 817,
+        "fps": 42.981185565421974,
+        "frame_interval": {
+          "samples": 816,
+          "mean_ms": 23.265993872549018,
+          "p50_ms": 16.674000000080014,
+          "p95_ms": 33.34499999994023,
+          "p99_ms": 33.36800000010953
+        },
+        "gpu_busy_percent_devfreq": 98.82732166636823,
+        "gpu_busy_samples": 289,
+        "gpu_submit_to_retire": {
+          "samples": 4080,
+          "mean_ms": 20.658484803921144,
+          "p50_ms": 20.334000000048036,
+          "p95_ms": 30.122000000005755,
+          "p99_ms": 30.49599999997099
+        },
+        "mem_available_kib_min": 628380,
+        "cpu_busy_percent_all_cores": 11.258741258741258,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "gpu_hangcheck_during_recording": false,
+      "native_lcd_acceptance": true
+    },
+    {
+      "patches_through": 101,
+      "native_icc": true,
+      "separate_gpu_kms": true,
+      "test": "First ICC boot workload, startup still active",
+      "metrics": {
+        "kind": "DRM completion, native hardware vblank; not optical measurement",
+        "window_seconds": 19.0,
+        "frames": 1074,
+        "fps": 56.56787269582129,
+        "frame_interval": {
+          "samples": 1073,
+          "mean_ms": 17.67787884436161,
+          "p50_ms": 16.668000000009897,
+          "p95_ms": 16.68900000001372,
+          "p99_ms": 33.35399999997435
+        },
+        "gpu_busy_percent_devfreq": 46.84132852146939,
+        "gpu_busy_samples": 305,
+        "gpu_submit_to_retire": {
+          "samples": 2575,
+          "mean_ms": 9.152119223300598,
+          "p50_ms": 6.919000000010556,
+          "p95_ms": 17.05999999998653,
+          "p99_ms": 70.10300000001735
+        },
+        "mem_available_kib_min": 764728,
+        "cpu_busy_percent_all_cores": 57.55773751901535,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "gpu_hangcheck_during_recording": false
+    },
+    {
+      "patches_through": 101,
+      "native_icc": true,
+      "separate_gpu_kms": true,
+      "test": "Warmed ICC workload, FD305 client confirmed",
+      "metrics": {
+        "kind": "DRM completion, native hardware vblank; not optical measurement",
+        "window_seconds": 19.0,
+        "frames": 815,
+        "fps": 42.87582597197368,
+        "frame_interval": {
+          "samples": 814,
+          "mean_ms": 23.323165847665827,
+          "p50_ms": 16.675000000020646,
+          "p95_ms": 33.34300000000212,
+          "p99_ms": 33.358999999961725
+        },
+        "gpu_busy_percent_devfreq": 98.26995089621393,
+        "gpu_busy_samples": 181,
+        "gpu_submit_to_retire": {
+          "samples": 4066,
+          "mean_ms": 20.634322675848264,
+          "p50_ms": 20.580999999992855,
+          "p95_ms": 30.018999999981588,
+          "p99_ms": 30.447999999978492
+        },
+        "mem_available_kib_min": 763428,
+        "cpu_busy_percent_all_cores": 13.621817169890079,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "gpu_hangcheck_during_recording": false
+    },
+    {
+      "patches_through": 101,
+      "native_icc": true,
+      "separate_gpu_kms": true,
+      "test": "Temporary client-only removal of inorder, no improvement",
+      "metrics": {
+        "kind": "DRM completion, native hardware vblank; not optical measurement",
+        "window_seconds": 19.0,
+        "frames": 810,
+        "fps": 42.687429607294035,
+        "frame_interval": {
+          "samples": 809,
+          "mean_ms": 23.426100123609437,
+          "p50_ms": 16.675000000020646,
+          "p95_ms": 33.34499999999707,
+          "p99_ms": 33.3599999999592
+        },
+        "gpu_busy_percent_devfreq": 98.98230125482873,
+        "gpu_busy_samples": 294,
+        "gpu_submit_to_retire": {
+          "samples": 4050,
+          "mean_ms": 20.989295308641932,
+          "p50_ms": 20.83600000000274,
+          "p95_ms": 30.214999999998327,
+          "p99_ms": 30.59200000001283
+        },
+        "mem_available_kib_min": 763780,
+        "cpu_busy_percent_all_cores": 11.166597308919407,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "gpu_hangcheck_during_recording": false
+    },
+    {
+      "patches_through": 101,
+      "native_icc": true,
+      "separate_gpu_kms": true,
+      "test": "Proper packaged msm-kms Mesa entry, warmed complete desktop",
+      "mesa_driver_override": null,
+      "render_device": "FD305",
+      "fps": 42.86079630509381,
+      "frame_interval_p50_ms": 16.674,
+      "frame_interval_p95_ms": 33.345,
+      "gpu_busy_percent": 98.93491898082499,
+      "cpu_busy_percent_all_cores": 12.176454216532147,
+      "gpu_hz": 450000000,
+      "axi_hz": 266666666,
+      "scanout": "MDP5 DMA0 imported linear AB24 DMA-BUF, pitch5120",
+      "new_gpu_faults": false
+    },
+    {
+      "test": "Owner manual notification drawer gestures, 15 seconds",
+      "evidence": "VERIFIED_DEVICE",
+      "active_fps": 23.280452009317703,
+      "p50_ms": 49.998,
+      "p95_ms": 50.015,
+      "gpu_busy_percent": 97.49663622023171,
+      "cpu_busy_percent": null,
+      "cpu_limitation": "Sampler began after this recording; no overlapping CPU samples",
+      "idle_gap_threshold_ms": 100,
+      "limitation": "No per-gesture boundaries; excludes pauses or severe jank over threshold"
+    },
+    {
+      "test": "Temporary background contrast unload, owner manual gestures, 15 seconds",
+      "active_fps": 29.068812378314522,
+      "p50_ms": 33.339,
+      "p95_ms": 50.013,
+      "cpu_busy_percent_all_cores": 19.524130948363144,
+      "gpu_busy_percent": 98.90667276589525,
+      "contrast_restored": true,
+      "animation_settings_changed": false,
+      "limitation": "Different manual gestures; not isolated causal proof"
+    },
+    {
+      "test": "Identical virtual touch gestures, ordinary linear textures, discard first cycle",
+      "open_fps": 26.29925511469246,
+      "close_fps": 23.476333768771433,
+      "new_gpu_faults": false
+    },
+    {
+      "test": "First attempted ttile configuration",
+      "result": "INVALID",
+      "reason": "Drop-in creation failed due to root-owned user systemd directories; flag was not applied"
+    },
+    {
+      "test": "Plasmashell-only FD_MESA_DEBUG=inorder,ttile",
+      "result": "REGRESSION",
+      "evidence": "VERIFIED_DEVICE",
+      "reason": "Owner reports broken image",
+      "observed_active_fps_not_accepted": 30.47353202329642,
+      "action": "Drop-in removed; Plasma restarted with original inorder; further tiling tests stopped",
+      "physical_restore_acceptance": "VERIFIED_DEVICE: owner confirms full image restoration"
+    },
+    {
+      "test": "ARM uprobe frame-path observation",
+      "result": "INVALID",
+      "reason": "Installed KWin is Thumb-2; current ARM uprobes only supports ARM instructions",
+      "connectivity_after_attempt": "SSH and USB console unresponsive; cause UNKNOWN, recovery pending",
+      "persistent_boot_changes": false
+    },
+    {
+      "test": "Recovery timer silently restored simpledrm during frame-path diagnostics",
+      "result": "INVALID_FOR_NATIVE_KMS",
+      "fallback_fps": [
+        41.85,
+        42.21,
+        44.92
+      ],
+      "action": "Corrected documentation; masked automatic rollback timer; profilers now inspect actual open KMS/render devices before and after recording"
+    },
+    {
+      "test": "Native kernel with CONFIG_DRM_SIMPLEDRM disabled",
+      "evidence": "VERIFIED_DEVICE",
+      "kernel_config": "# CONFIG_DRM_SIMPLEDRM is not set",
+      "native_kms_driver": "msm-kms dev=fd900100.display-controller",
+      "renderer": "freedreno FD305",
+      "mesa_simpledrm_package": "Removed; native msm-kms entry retained",
+      "before": {
+        "kind": "DRM completion, native hardware vblank; not optical measurement",
+        "window_seconds": 19.0,
+        "frames": 785,
+        "fps": 41.33197781316299,
+        "frame_interval": {
+          "samples": 784,
+          "mean_ms": 24.194341836734704,
+          "p50_ms": 16.679499999980862,
+          "p95_ms": 33.34599999999455,
+          "p99_ms": 49.99900000001389
+        },
+        "gpu_busy_percent_devfreq": 98.58198869869922,
+        "gpu_busy_samples": 313,
+        "mem_available_kib_min": 631616,
+        "cpu_busy_percent_all_cores": 40.62242939402248,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "after": {
+        "kind": "DRM completion, native hardware vblank; not optical measurement",
+        "window_seconds": 19.0,
+        "frames": 798,
+        "fps": 42.05426371928013,
+        "frame_interval": {
+          "samples": 797,
+          "mean_ms": 23.778801756587207,
+          "p50_ms": 16.67799999999886,
+          "p95_ms": 33.34700000000623,
+          "p99_ms": 33.364000000005944
+        },
+        "gpu_busy_percent_devfreq": 98.2262200169985,
+        "gpu_busy_samples": 304,
+        "mem_available_kib_min": 733812,
+        "cpu_busy_percent_all_cores": 16.913290001382933,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "physical_acceptance": "Pending owner feedback for this configuration-only boot",
+      "comparison_limit": "Before/after native kernels; no FPS improvement claimed. Background startup load differs; before aggregate CPU was40.62% vs16.91% after."
+    },
+    {
+      "test": "Identical native uinput drawer gestures",
+      "active_fps": 27.218228085685215,
+      "p50_ms": 33.338,
+      "p95_ms": 50.013,
+      "cpu_busy_percent_all_cores": 9.765395894428153,
+      "physical_acceptance": true
+    },
+    {
+      "test": "Same gestures with contrast temporarily unloaded",
+      "active_fps": 26.72848188953089,
+      "result": "NO_IMPROVEMENT",
+      "restored": true
+    },
+    {
+      "test": "KWin GLES3.0 on same native path",
+      "active_fps": 26.3180198143466,
+      "p95_ms": 66.675,
+      "result": "NO_IMPROVEMENT",
+      "restored_desktop_opengl": true
+    },
+    {
+      "test": "KWin safety margin12000us",
+      "active_fps": 26.299294740580677,
+      "p95_ms": 66.68,
+      "result": "REJECTED",
+      "worse_target_misses": true,
+      "temporary_configuration_removed": true
+    },
+    {
+      "test": "simplefb boot-console handoff",
+      "patches_through": 102,
+      "boot_text_physical_acceptance": true,
+      "native_image": "REGRESSION: black despite native DMA-BUF scanout",
+      "supply_after_handoff": "L5 has no native consumer"
+    },
+    {
+      "test": "Retain existing L5 supply at1.2V through handoff",
+      "patches_through": 103,
+      "evidence": "VERIFIED_DEVICE",
+      "boot_text_and_native_desktop_physical_acceptance": true,
+      "bridge_readback_chip_id": "0x6500",
+      "firmware_supply_policy_limitation": true
+    },
+    {
+      "test": "A3xx shader counters initial diagnostic",
+      "result": "INVALID",
+      "reason": "All counters zero under a workload; selector/enable readback alone does not validate counting"
+    }
+  ],
+  "limits": [
+    "DRM flips are not physical LCD acceptance or GUI FPS",
+    "ICC profile deployed; votes and AXI clock observed, actual DDR frequency and power policy unverified",
+    "Bridge power wiring and suspend remain incomplete",
+    "Warmed complete native desktop workload remains approximately43FPS, not stable60FPS",
+    "Owner repeated notification drawer gestures approximately23FPS; texture tiling damages image and is rejected",
+    "Combined GPU/KMS DRM ownership hangs GPU; split native DRM currently required",
+    "DSI FIFO error interrupts and inherited-display shutdown/driver-unload remain unresolved"
+  ],
+  "latest_candidate": {
+    "patches_through": 103,
+    "profile": "Native MDP5/DSI + ICC, CONFIG_DRM_SIMPLEDRM=n, boot-only simplefb with aperture handoff, firmware L5 vote retained; split DRM, proper Mesa entry",
+    "native_lcd_acceptance": true,
+    "cold_automatic_activation": "Owner confirms boot text then working native Plasma after retaining L5",
+    "raw_zimage_sha256": "dec205ad5a8e2db0c837d7acbc53653c728bb415f2f3b325559e89499cdee042",
+    "sd_kernel_sha256": "76414b85b55f61bb71ef84a37e765440e391435a99accbaa668476456bb4763b"
+  },
+  "native_lcd_acceptance_scope": "Owner confirmed native pattern, Plasma desktop/tray, touch, colours and brightness; full image restoration after rejected tiling trial also physically accepted",
+  "notification_drawer_active_fps": 23.280452009317703
+}

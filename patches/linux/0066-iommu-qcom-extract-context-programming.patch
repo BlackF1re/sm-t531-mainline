@@ -1,0 +1,128 @@
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Date: Sun, 09 Aug 2026 23:15:42 +0300
+Subject: [PATCH 03/12] iommu: qcom_iommu: extract context bank programming
+ into a helper
+Message-Id: <20260809-msm8974-iommu-upstream-v1-3-87f5cd492560@oss.qualcomm.com>
+
+qcom_iommu_init_domain() programs the context bank registers inline,
+with values computed on the spot, so no record of the programmed state
+is kept. The MSM8974 QSMMU instances about to be supported sit in MMSS
+GDSCs and lose the context bank state whenever the power domain
+collapses, which requires the driver to reprogram the banks at runtime
+resume.
+
+Stash the computed register values in struct qcom_iommu_ctx and move
+the programming sequence into a new qcom_iommu_program_ctx() helper
+that can later be replayed from the resume path. No functional change.
+
+Assisted-by: Claude:claude-fable-5
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Link: https://lore.kernel.org/r/20260809-msm8974-iommu-upstream-v1-3-87f5cd492560@oss.qualcomm.com
+[BlackF1re: select context-cache refactor only; retain TZ ownership on MSM8226]
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+ drivers/iommu/arm/arm-smmu/qcom_iommu.c | 66 ++++++++++++++++++++-------------
+ 1 file changed, 40 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 21d18ce67b98..5bbb51d9bd65 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -61,6 +61,11 @@ struct qcom_iommu_ctx {
+ 	bool			 secured_ctx;
+ 	u8			 asid;      /* asid and ctx bank # are 1:1 */
+ 	struct iommu_domain	*domain;
++	/* programmed context bank state */
++	u64			 ttbr0;
++	u32			 tcr[2];
++	u32			 mair[2];
++	u32			 sctlr;
+ };
+ 
+ struct qcom_iommu_domain {
+@@ -213,6 +218,32 @@ static irqreturn_t qcom_iommu_fault(int irq, void *dev)
+ 	return IRQ_HANDLED;
+ }
+ 
++static void qcom_iommu_program_ctx(struct qcom_iommu_dev *qcom_iommu,
++				   struct qcom_iommu_ctx *ctx)
++{
++	/* Disable context bank before programming */
++	iommu_writel(ctx, ARM_SMMU_CB_SCTLR, 0);
++
++	/* Clear context bank fault address fault status registers */
++	iommu_writel(ctx, ARM_SMMU_CB_FAR, 0);
++	iommu_writel(ctx, ARM_SMMU_CB_FSR, ARM_SMMU_CB_FSR_FAULT);
++
++	/* TTBRs */
++	iommu_writeq(ctx, ARM_SMMU_CB_TTBR0, ctx->ttbr0);
++	iommu_writeq(ctx, ARM_SMMU_CB_TTBR1, 0);
++
++	/* TCR */
++	iommu_writel(ctx, ARM_SMMU_CB_TCR2, ctx->tcr[1]);
++	iommu_writel(ctx, ARM_SMMU_CB_TCR, ctx->tcr[0]);
++
++	/* MAIRs (stage-1 only) */
++	iommu_writel(ctx, ARM_SMMU_CB_S1_MAIR0, ctx->mair[0]);
++	iommu_writel(ctx, ARM_SMMU_CB_S1_MAIR1, ctx->mair[1]);
++
++	/* SCTLR */
++	iommu_writel(ctx, ARM_SMMU_CB_SCTLR, ctx->sctlr);
++}
++
+ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 				  struct qcom_iommu_dev *qcom_iommu,
+ 				  struct device *dev)
+@@ -267,32 +298,13 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 			continue;
+ 		}
+ 
+-		/* Disable context bank before programming */
+-		iommu_writel(ctx, ARM_SMMU_CB_SCTLR, 0);
++		ctx->ttbr0 = pgtbl_cfg.arm_lpae_s1_cfg.ttbr |
++			     FIELD_PREP(ARM_SMMU_TTBRn_ASID, ctx->asid);
++		ctx->tcr[0] = arm_smmu_lpae_tcr(&pgtbl_cfg) | ARM_SMMU_TCR_EAE;
++		ctx->tcr[1] = arm_smmu_lpae_tcr2(&pgtbl_cfg);
++		ctx->mair[0] = pgtbl_cfg.arm_lpae_s1_cfg.mair;
++		ctx->mair[1] = pgtbl_cfg.arm_lpae_s1_cfg.mair >> 32;
+ 
+-		/* Clear context bank fault address fault status registers */
+-		iommu_writel(ctx, ARM_SMMU_CB_FAR, 0);
+-		iommu_writel(ctx, ARM_SMMU_CB_FSR, ARM_SMMU_CB_FSR_FAULT);
+-
+-		/* TTBRs */
+-		iommu_writeq(ctx, ARM_SMMU_CB_TTBR0,
+-				pgtbl_cfg.arm_lpae_s1_cfg.ttbr |
+-				FIELD_PREP(ARM_SMMU_TTBRn_ASID, ctx->asid));
+-		iommu_writeq(ctx, ARM_SMMU_CB_TTBR1, 0);
+-
+-		/* TCR */
+-		iommu_writel(ctx, ARM_SMMU_CB_TCR2,
+-				arm_smmu_lpae_tcr2(&pgtbl_cfg));
+-		iommu_writel(ctx, ARM_SMMU_CB_TCR,
+-			     arm_smmu_lpae_tcr(&pgtbl_cfg) | ARM_SMMU_TCR_EAE);
+-
+-		/* MAIRs (stage-1 only) */
+-		iommu_writel(ctx, ARM_SMMU_CB_S1_MAIR0,
+-				pgtbl_cfg.arm_lpae_s1_cfg.mair);
+-		iommu_writel(ctx, ARM_SMMU_CB_S1_MAIR1,
+-				pgtbl_cfg.arm_lpae_s1_cfg.mair >> 32);
+-
+-		/* SCTLR */
+ 		reg = ARM_SMMU_SCTLR_CFIE | ARM_SMMU_SCTLR_CFRE |
+ 		      ARM_SMMU_SCTLR_AFE | ARM_SMMU_SCTLR_TRE |
+ 		      ARM_SMMU_SCTLR_M | ARM_SMMU_SCTLR_S1_ASIDPNE |
+@@ -301,7 +313,9 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 		if (IS_ENABLED(CONFIG_CPU_BIG_ENDIAN))
+ 			reg |= ARM_SMMU_SCTLR_E;
+ 
+-		iommu_writel(ctx, ARM_SMMU_CB_SCTLR, reg);
++		ctx->sctlr = reg;
++
++		qcom_iommu_program_ctx(qcom_iommu, ctx);
+ 
+ 		ctx->domain = domain;
+ 	}
+
+-- 
+2.47.3

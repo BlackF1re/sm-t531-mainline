@@ -1,0 +1,30 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: use terminate fault policy for MSM8226 MDP
+
+Match the MSM8226 BSP non-secure context fault model: its reset and
+context-programming sequence does not set SCTLR.CFCFG. Terminate faults
+instead of leaving a transaction pending after firmware-display handoff.
+Keep fault interrupts and reporting enabled.
+
+With the BFB table corrected, the native MDP still gives a100ms ATOS
+translation timeout followed by recurrent vblank timeouts. This change
+isolates stall policy; it does not change PHY, pixel clocks or page tables.
+Physical LCD output and hardware translation must still be tested.
+
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu-v1.c
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 190de5957..4759f9798 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -1033,6 +1033,7 @@ static const struct qcom_iommu_bfb_reg msm8226_mdp_bfb[] = {
+ };
+ 
+ static const struct qcom_iommu_cfg msm8226_mdp_cfg = {
++	.no_stall = true,
+ 	.bfb = msm8226_mdp_bfb,
+ 	.num_bfb = ARRAY_SIZE(msm8226_mdp_bfb),
+ };

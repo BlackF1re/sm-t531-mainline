@@ -1,0 +1,44 @@
+From: T531 Project <noreply@localhost>
+Date: Thu, 15 Oct 2026 09:10:00 +0000
+Subject: [PATCH] brightness: tolerate pre-GNOME-49 shortcut schemas
+
+Phosh 0.58 aborts on Debian 13 because org.gnome.shell.keybindings from
+GNOME 48 lacks the new screen brightness keys. Before GNOME 49 those
+shortcuts belong to gnome-settings-daemon's media-keys schema instead.
+Keep their legacy owner when running on the older schema. This does not
+skip initialization of the backlight adjustment, D-Bus API or slider.
+
+Runtime reproduction: GLib fatal error for screen-brightness-up, SIGTRAP
+at startup on the SM-T531 with gnome-shell-common 48.7-0+deb13u2.
+
+Forwarded: not-yet
+---
+diff --git a/src/brightness-manager.c b/src/brightness-manager.c
+--- a/src/brightness-manager.c
++++ b/src/brightness-manager.c
+@@ -808,6 +808,7 @@ phosh_brightness_manager_init (PhoshBrightnessManager *self)
+ {
+   PhoshShell *shell = phosh_shell_get_default ();
+   PhoshAmbient *ambient = phosh_shell_get_ambient (phosh_shell_get_default ());
++  g_autoptr (GSettingsSchema) schema = NULL;
+ 
+   self->saved_brightness = -1.0;
+   self->icon_name = "display-brightness-symbolic";
+@@ -863,6 +864,17 @@ phosh_brightness_manager_init (PhoshBrightnessManager *self)
+                            self,
+                            G_CONNECT_SWAPPED);
+ 
++  schema = g_settings_schema_source_lookup (g_settings_schema_source_get_default (),
++                                            KEYBINDINGS_SCHEMA_ID, TRUE);
++  if (!schema ||
++      !g_settings_schema_has_key (schema, KEYBINDING_KEY_BRIGHTNESS_UP) ||
++      !g_settings_schema_has_key (schema, KEYBINDING_KEY_BRIGHTNESS_DOWN) ||
++      !g_settings_schema_has_key (schema, KEYBINDING_KEY_BRIGHTNESS_UP_MONITOR) ||
++      !g_settings_schema_has_key (schema, KEYBINDING_KEY_BRIGHTNESS_DOWN_MONITOR)) {
++    g_debug ("Keeping brightness shortcuts with the legacy settings daemon");
++    return;
++  }
++
+   self->settings = g_settings_new (KEYBINDINGS_SCHEMA_ID);
+   g_signal_connect_object (self->settings,
+                            "changed",

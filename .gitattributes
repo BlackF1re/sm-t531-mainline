@@ -1,0 +1,3 @@
+# Unified-diff context and format-patch signatures contain intentional spaces.
+# Check the applied kernel changes with checkpatch instead.
+*.patch -whitespace

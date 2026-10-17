@@ -1,0 +1,48 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/msm/dsi: add Matisse fixed-color link diagnostics
+
+The controlled native DSI pattern produces thin visible stripes on the
+LCD, but a complete image has not passed physical acceptance. Add fixed
+blue, green, red and white pattern choices using the existing VID_FIXED
+selector, to distinguish the general pattern's geometry from link issues.
+
+Commands3..6 choose fixed colors. Power/modeset/command serialization and
+peripheral interrupt masking from the previous diagnostic remain in use.
+This is an opt-in diagnostic, not a production display interface.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+index f28db30a1..9185d8cae 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -2787,7 +2787,7 @@ static int matisse_link_diag_set(void *data, u64 command)
+ 		DSI_IRQ_MASK_BTA_DONE | DSI_IRQ_MASK_ERROR;
+ 	int ret = 0;
+ 
+-	if (command > 2)
++	if (command > 6)
+ 		return -EINVAL;
+ 
+ 	drm_modeset_lock_all(msm_host->dev);
+@@ -2813,6 +2813,19 @@ static int matisse_link_diag_set(void *data, u64 command)
+ 		clocks = dsi_read(msm_host, REG_DSI_CLK_CTRL);
+ 		dsi_sw_reset(msm_host);
+ 		dsi_write(msm_host, REG_DSI_CLK_CTRL, clocks);
++	} else if (command >= 3) {
++		static const u32 colors[] = {
++			0x0000ff, 0x00ff00, 0xff0000, 0xffffff,
++		};
++
++		dsi_write(msm_host, REG_DSI_TEST_PATTERN_GEN_VIDEO_INIT_VAL,
++			  colors[command - 3]);
++		dsi_write(msm_host, REG_DSI_TPG_VIDEO_CONFIG,
++			  DSI_TPG_VIDEO_CONFIG_BPP(VIDEO_CONFIG_24BPP) |
++			  DSI_TPG_VIDEO_CONFIG_RGB);
++		dsi_write(msm_host, REG_DSI_TEST_PATTERN_GEN_CTRL,
++			  DSI_TEST_PATTERN_GEN_CTRL_VIDEO_PATTERN_SEL(VID_FIXED) |
++			  DSI_TEST_PATTERN_GEN_CTRL_EN);
+ 	} else if (command == 1) {
+ 		msm_dsi_host_test_pattern_en(&msm_host->base);
+ 	} else {

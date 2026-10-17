@@ -1,0 +1,34 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: restrict TCR2 to long-descriptor contexts
+
+The MSM8226 BSP uses TTBCR only for its short-descriptor contexts.
+The upstream MSM8974 short-descriptor proposal likewise programs TCR2
+only on the LPAE path. Avoid writing this absent register on MSM8226.
+
+After the shared TZ table initialization was restored, a bounded
+userspace configuration snapshot faults precisely at CB0+0x10, while
+SCTLR/ACTLR and the actual TTBR/TCR registers remain accessible.
+Hardware address translation is now valid after patch0097, so the
+unsupported access is unnecessary rather than a candidate fix for
+the remaining DSI video failure.
+
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu-v1.c
+Link: https://lore.kernel.org/r/20260809-msm8974-iommu-upstream-v1-4-87f5cd492560@oss.qualcomm.com
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index d037585cc..25e5f299d 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -334,7 +334,8 @@ static int qcom_iommu_program_ctx(struct qcom_iommu_dev *qcom_iommu,
+ 	iommu_writeq(ctx, ARM_SMMU_CB_TTBR1, 0);
+ 
+ 	/* TCR */
+-	iommu_writel(ctx, ARM_SMMU_CB_TCR2, ctx->tcr[1]);
++	if (!qcom_iommu->short_desc)
++		iommu_writel(ctx, ARM_SMMU_CB_TCR2, ctx->tcr[1]);
+ 	iommu_writel(ctx, ARM_SMMU_CB_TCR, ctx->tcr[0]);
+ 	if (qcom_iommu->short_desc)
+ 		iommu_writel(ctx, ARM_SMMU_CB_CONTEXTIDR, ctx->pt_asid);

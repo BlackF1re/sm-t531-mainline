@@ -1,0 +1,51 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: configure MSM8226 MDP context cache routing
+
+With terminate faults enabled, architectural ATOS no longer hangs.
+It completes but returns PAR0x0000000280000003 for three mapped IOVAs.
+The exact BSP definitions decode F, TF and ATOT set, page level2. This
+is a hardware translation timeout result, not a valid physical address.
+
+The BSP non-secure context setup programs ACTLR BPRCOSH/ISH/NSH at
+bits28/29/30 to redirect cacheable requests to the L2 slave port. Current
+readback is0. Carry the instance-specific ACTLR value and program it
+while the context is disabled, including resume after power collapse.
+Other instances keep their existing ACTLR state. Do not claim this
+repairs memory access until architectural translation matches software.
+
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu-v1.c
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 4759f9798..c0f619611 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -52,6 +52,7 @@ struct qcom_iommu_bfb_reg {
+ struct qcom_iommu_cfg {
+ 	/* Faulting transactions must terminate rather than stall. */
+ 	bool no_stall;
++	u32 actlr;
+ 	const struct qcom_iommu_bfb_reg *bfb;
+ 	unsigned int num_bfb;
+ };
+@@ -264,6 +265,9 @@ static void qcom_iommu_program_ctx(struct qcom_iommu_dev *qcom_iommu,
+ 	iommu_writel(ctx, ARM_SMMU_CB_FAR, 0);
+ 	iommu_writel(ctx, ARM_SMMU_CB_FSR, ARM_SMMU_CB_FSR_FAULT);
+ 
++	if (qcom_iommu->cfg && qcom_iommu->cfg->actlr)
++		iommu_writel(ctx, ARM_SMMU_CB_ACTLR, qcom_iommu->cfg->actlr);
++
+ 	/* TTBRs */
+ 	iommu_writeq(ctx, ARM_SMMU_CB_TTBR0, ctx->ttbr0);
+ 	iommu_writeq(ctx, ARM_SMMU_CB_TTBR1, 0);
+@@ -1034,6 +1038,8 @@ static const struct qcom_iommu_bfb_reg msm8226_mdp_bfb[] = {
+ 
+ static const struct qcom_iommu_cfg msm8226_mdp_cfg = {
+ 	.no_stall = true,
++	/* BPRCOSH/ISH/NSH: direct cacheable requests to the L2 slave port. */
++	.actlr = GENMASK(30, 28),
+ 	.bfb = msm8226_mdp_bfb,
+ 	.num_bfb = ARRAY_SIZE(msm8226_mdp_bfb),
+ };

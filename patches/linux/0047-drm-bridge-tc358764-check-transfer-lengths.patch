@@ -1,0 +1,51 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/bridge: tc358764: reject incomplete transfers
+
+Stop initialization on failed or short DSI transfers. A failed ID read
+must not leave the driver programming a bridge that did not respond.
+Do not attempt reset or initialization if enabling the supplies failed.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/bridge/tc358764.c b/drivers/gpu/drm/bridge/tc358764.c
+index 12b43245b..248b3ab36 100644
+--- a/drivers/gpu/drm/bridge/tc358764.c
++++ b/drivers/gpu/drm/bridge/tc358764.c
+@@ -172,8 +172,11 @@ static void tc358764_read(struct tc358764 *ctx, u16 addr, u32 *val)
+ 
+ 	cpu_to_le16s(&addr);
+ 	ret = mipi_dsi_generic_read(dsi, &addr, sizeof(addr), val, sizeof(*val));
+-	if (ret >= 0)
+-		le32_to_cpus(val);
++	if (ret != sizeof(*val)) {
++		ctx->error = ret < 0 ? ret : -EIO;
++		return;
++	}
++	le32_to_cpus(val);
+ 
+ 	dev_dbg(ctx->dev, "read: addr=0x%04x data=0x%08x\n", addr, *val);
+ }
+@@ -195,8 +198,8 @@ static void tc358764_write(struct tc358764 *ctx, u16 addr, u32 val)
+ 	data[5] = val >> 24;
+ 
+ 	ret = mipi_dsi_generic_write(dsi, data, sizeof(data));
+-	if (ret < 0)
+-		ctx->error = ret;
++	if (ret != sizeof(data))
++		ctx->error = ret < 0 ? ret : -EIO;
+ }
+ 
+ static inline struct tc358764 *bridge_to_tc358764(struct drm_bridge *bridge)
+@@ -284,8 +287,10 @@ static void tc358764_pre_enable(struct drm_bridge *bridge)
+ 	int ret;
+ 
+ 	ret = regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		dev_err(ctx->dev, "error enabling regulators (%d)\n", ret);
++		return;
++	}
+ 	usleep_range(10000, 15000);
+ 	tc358764_reset(ctx);
+ 	ret = tc358764_init(ctx);

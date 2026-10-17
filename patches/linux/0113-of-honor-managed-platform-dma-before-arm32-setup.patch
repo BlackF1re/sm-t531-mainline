@@ -1,0 +1,137 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sat, 17 Oct 2026 01:00:00 +0700
+Subject: [PATCH] of: avoid automatic ARM32 domains for managed platform DMA
+
+ARM32 arch_setup_dma_ops() creates and attaches a legacy UNMANAGED DMA
+domain inside of_dma_configure(), before platform_dma_configure() checks
+driver_managed_dma. An active firmware display then reads through empty
+page tables even if its native driver intends to stop it first.
+
+Provide an OF helper that retains ranges, masks, coherency and IOMMU
+discovery without installing DMA operations. Use it for driver-managed
+platform devices with ARM_DMA_USE_IOMMU. Also defer DMA-ops setup when
+IOMMU discovery calls platform DMA configuration before any driver is
+bound. The ordinary DMA-API driver will install its operations when it
+subsequently probes. Existing OF callers and other architectures retain
+their setup path.
+
+This is a project fix awaiting upstream review, under test on SM-T531.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/of/device.c b/drivers/of/device.c
+--- a/drivers/of/device.c
++++ b/drivers/of/device.c
+@@ -66,12 +66,13 @@
+ }
+ 
+ /**
+- * of_dma_configure_id - Setup DMA configuration
++ * __of_dma_configure_id - Setup DMA configuration
+  * @dev:	Device to apply DMA configuration
+  * @np:		Pointer to OF node having DMA configuration
+  * @force_dma:  Whether device is to be set up by of_dma_configure() even if
+  *		DMA capability is not explicitly described by firmware.
+  * @id:		Optional const pointer value input id
++ * @managed:	Leave DMA operations and address-space ownership to the driver
+  *
+  * Try to get devices's DMA configuration from DT and update it
+  * accordingly.
+@@ -80,8 +81,8 @@
+  * can use a platform bus notifier and handle BUS_NOTIFY_ADD_DEVICE events
+  * to fix up DMA configuration.
+  */
+-int of_dma_configure_id(struct device *dev, struct device_node *np,
+-			bool force_dma, const u32 *id)
++static int __of_dma_configure_id(struct device *dev, struct device_node *np,
++				 bool force_dma, const u32 *id, bool managed)
+ {
+ 	const struct bus_dma_region *map = NULL;
+ 	struct device_node *bus_np;
+@@ -160,6 +161,13 @@
+ 	dev_dbg(dev, "device is%sbehind an iommu\n",
+ 		!ret ? " " : " not ");
+ 
++	if (managed) {
++		/* Keep DT metadata without attaching an ARM32 DMA domain. */
++		if (coherent)
++			dev_set_dma_coherent(dev);
++		return 0;
++	}
++
+ 	arch_setup_dma_ops(dev, coherent);
+ 
+ 	if (ret)
+@@ -167,7 +175,30 @@
+ 
+ 	return 0;
+ }
++
++int of_dma_configure_id(struct device *dev, struct device_node *np,
++			bool force_dma, const u32 *id)
++{
++	return __of_dma_configure_id(dev, np, force_dma, id, false);
++}
+ EXPORT_SYMBOL_GPL(of_dma_configure_id);
++
++/**
++ * of_dma_configure_managed - Parse DMA metadata without installing DMA ops
++ * @dev: Device whose driver manages its own DMA address space
++ * @np: Device tree node providing DMA configuration
++ * @force_dma: Configure devices without an explicit DMA capability
++ *
++ * Discover DMA ranges, masks, coherency and the IOMMU, but leave attaching
++ * a translated domain to the driver. In particular, ARM32's legacy DMA
++ * setup must not attach an empty page table to an active firmware device.
++ */
++int of_dma_configure_managed(struct device *dev, struct device_node *np,
++			     bool force_dma)
++{
++	return __of_dma_configure_id(dev, np, force_dma, NULL, true);
++}
++EXPORT_SYMBOL_GPL(of_dma_configure_managed);
+ 
+ const void *of_device_get_match_data(const struct device *dev)
+ {
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -1477,7 +1477,12 @@
+ 	int ret = 0;
+ 
+ 	if (is_of_node(fwnode)) {
+-		ret = of_dma_configure(dev, to_of_node(fwnode), true);
++		/* IOMMU discovery also calls this before a driver is bound. */
++		if (IS_ENABLED(CONFIG_ARM_DMA_USE_IOMMU) &&
++		    (!drv || to_platform_driver(drv)->driver_managed_dma))
++			ret = of_dma_configure_managed(dev, to_of_node(fwnode), true);
++		else
++			ret = of_dma_configure(dev, to_of_node(fwnode), true);
+ 	} else if (is_acpi_device_node(fwnode)) {
+ 		attr = acpi_get_dma_attr(to_acpi_device_node(fwnode));
+ 		ret = acpi_dma_configure(dev, attr);
+diff --git a/include/linux/of_device.h b/include/linux/of_device.h
+--- a/include/linux/of_device.h
++++ b/include/linux/of_device.h
+@@ -31,6 +31,8 @@
+ int of_dma_configure_id(struct device *dev,
+ 		     struct device_node *np,
+ 		     bool force_dma, const u32 *id);
++int of_dma_configure_managed(struct device *dev, struct device_node *np,
++			     bool force_dma);
+ static inline int of_dma_configure(struct device *dev,
+ 				   struct device_node *np,
+ 				   bool force_dma)
+@@ -41,6 +43,12 @@
+ void of_device_make_bus_id(struct device *dev);
+ 
+ #else /* CONFIG_OF */
++
++static inline int of_dma_configure_managed(struct device *dev,
++					  struct device_node *np, bool force_dma)
++{
++	return 0;
++}
+ 
+ static inline int of_driver_match_device(struct device *dev,
+ 					 const struct device_driver *drv)

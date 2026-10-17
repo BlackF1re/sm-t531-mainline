@@ -1,0 +1,33 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] dt-bindings: display: add Matisse TC358764 assembly
+
+Add the Samsung Matisse r01 bridge configuration. Counter values, video
+control, LVDS polarity and mux were verified by read-only I2C register
+readback on SM-T531; they match Samsung downstream revision 3fa1853e.
+Keep other boards on their existing initialization and burst mode.
+
+TEMPORARY DIAGNOSTIC: firmware_power=1 is explicitly opt-in and restricted
+to this board. It preserves bootloader-powered bridge rails while their
+board net mapping is being established. It is not production power or
+suspend support and must be replaced by verified regulator wiring.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/Documentation/devicetree/bindings/display/bridge/toshiba,tc358764.yaml b/Documentation/devicetree/bindings/display/bridge/toshiba,tc358764.yaml
+index 866607400..964e4c256 100644
+--- a/Documentation/devicetree/bindings/display/bridge/toshiba,tc358764.yaml
++++ b/Documentation/devicetree/bindings/display/bridge/toshiba,tc358764.yaml
+@@ -11,7 +11,11 @@ maintainers:
+ 
+ properties:
+   compatible:
+-    const: toshiba,tc358764
++    oneOf:
++      - const: toshiba,tc358764
++      - items:
++          - const: samsung,matisse-tc358764
++          - const: toshiba,tc358764
+ 
+   reg:
+     description: Virtual channel number of a DSI peripheral

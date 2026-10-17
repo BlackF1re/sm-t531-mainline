@@ -1,0 +1,96 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/format-helper: pack RGB888 rows with ARM NEON
+
+The simpledrm RGB888 output path on SM-T531 spends about 7.7 ms per full
+1280x800 conversion and copy. Pack eight pixels with NEON deinterleave /
+interleave instructions, keeping the existing scratch-row, MMIO copy,
+clipping and scalar tail handling. Fall back on CPUs without NEON or when
+SIMD context is unavailable. Limit preemption-off sections to a single row.
+
+The same assembly is callable by an on-device userspace correctness test,
+covering unaligned buffers, row tails, byte order and overwrite guards.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
+index e97faabcd..9895c59e2 100644
+--- a/drivers/gpu/drm/Makefile
++++ b/drivers/gpu/drm/Makefile
+@@ -157,6 +157,7 @@ drm_kms_helper-y := \
+ 	drm_simple_kms_helper.o \
+ 	drm_vblank_helper.o
+ drm_kms_helper-$(CONFIG_DRM_PANEL_BRIDGE) += bridge/panel.o
++drm_kms_helper-$(CONFIG_KERNEL_MODE_NEON) += drm_format_rgb888_neon.o
+ drm_kms_helper-$(CONFIG_DRM_FBDEV_EMULATION) += drm_fb_helper.o
+ obj-$(CONFIG_DRM_KMS_HELPER) += drm_kms_helper.o
+ 
+diff --git a/drivers/gpu/drm/drm_format_helper.c b/drivers/gpu/drm/drm_format_helper.c
+index 6cddf05c4..b6aa50fb3 100644
+--- a/drivers/gpu/drm/drm_format_helper.c
++++ b/drivers/gpu/drm/drm_format_helper.c
+@@ -23,6 +23,12 @@
+ 
+ #include "drm_format_internal.h"
+ 
++#if defined(CONFIG_ARM) && defined(CONFIG_KERNEL_MODE_NEON)
++#include <asm/simd.h>
++
++void drm_fb_xrgb8888_to_rgb888_neon(void *dst, const void *src, unsigned int pixels);
++#endif
++
+ /**
+  * drm_format_conv_state_init - Initialize format-conversion state
+  * @state: The state to initialize
+@@ -755,6 +761,19 @@ EXPORT_SYMBOL(drm_fb_xrgb8888_to_rgba5551);
+ 
+ static void drm_fb_xrgb8888_to_rgb888_line(void *dbuf, const void *sbuf, unsigned int pixels)
+ {
++#if defined(CONFIG_ARM) && defined(CONFIG_KERNEL_MODE_NEON)
++	if (pixels >= 32 && cpu_has_neon() && may_use_simd()) {
++		unsigned int count = round_down(pixels, 8);
++
++		/* Only the cached scratch row is written here, never MMIO. */
++		kernel_neon_begin();
++		drm_fb_xrgb8888_to_rgb888_neon(dbuf, sbuf, count);
++		kernel_neon_end();
++		dbuf += count * 3;
++		sbuf += count * 4;
++		pixels -= count;
++	}
++#endif
+ 	drm_fb_xfrm_line_32to24(dbuf, sbuf, pixels, drm_pixel_xrgb8888_to_rgb888);
+ }
+ 
+diff --git a/drivers/gpu/drm/drm_format_rgb888_neon.S b/drivers/gpu/drm/drm_format_rgb888_neon.S
+new file mode 100644
+index 000000000..bbcc57e1f
+--- /dev/null
++++ b/drivers/gpu/drm/drm_format_rgb888_neon.S
+@@ -0,0 +1,26 @@
++/* SPDX-License-Identifier: GPL-2.0 OR MIT */
++/* Pack eight little-endian XRGB8888 pixels into 24 RGB888 bytes.
++ * Call with a nonzero multiple of eight; caller owns the NEON context.
++ */
++#ifdef __KERNEL__
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++#else
++#define ENTRY(name) .global name; .type name, %function; name:
++#define ENDPROC(name) .size name, . - name
++#endif
++
++	.syntax unified
++	.fpu neon
++	.text
++	.align 2
++ENTRY(drm_fb_xrgb8888_to_rgb888_neon)
++1:
++	vld4.8 {d0, d1, d2, d3}, [r1]!
++	vst3.8 {d0, d1, d2}, [r0]!
++	subs r2, r2, #8
++	bne 1b
++	bx lr
++ENDPROC(drm_fb_xrgb8888_to_rgb888_neon)
++
++	.section .note.GNU-stack,"",%progbits

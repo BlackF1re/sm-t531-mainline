@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Sat, 17 Oct 2026 09:45:00 +0700
+Subject: [PATCH] power: supply: convert battery-info temperature limits to ABI units
+
+Battery-info temperatures are stored in whole degrees Celsius, following
+DT binding units and the documented struct power_supply_battery_info
+contract. Standard power_supply temperature properties instead require
+tenths of degrees Celsius.
+
+Convert all six temperature-limit properties in the battery-info property
+getter. Keep internal battery-info units unchanged, as charger drivers
+already consume those fields in degrees Celsius. On SM-T531 the automatic
+battery metadata fallback previously exported temp_max=60 and temp_min=-5,
+which userspace interpreted as6C and-0.5C rather than60C and-5C.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/power/supply/power_supply_core.c b/drivers/power/supply/power_supply_core.c
+--- a/drivers/power/supply/power_supply_core.c
++++ b/drivers/power/supply/power_supply_core.c
+@@ -952,22 +952,22 @@
+ 		val->intval = info->constant_charge_voltage_max_uv;
+ 		return 0;
+ 	case POWER_SUPPLY_PROP_TEMP_AMBIENT_ALERT_MIN:
+-		val->intval = info->temp_ambient_alert_min;
++		val->intval = info->temp_ambient_alert_min * 10;
+ 		return 0;
+ 	case POWER_SUPPLY_PROP_TEMP_AMBIENT_ALERT_MAX:
+-		val->intval = info->temp_ambient_alert_max;
++		val->intval = info->temp_ambient_alert_max * 10;
+ 		return 0;
+ 	case POWER_SUPPLY_PROP_TEMP_ALERT_MIN:
+-		val->intval = info->temp_alert_min;
++		val->intval = info->temp_alert_min * 10;
+ 		return 0;
+ 	case POWER_SUPPLY_PROP_TEMP_ALERT_MAX:
+-		val->intval = info->temp_alert_max;
++		val->intval = info->temp_alert_max * 10;
+ 		return 0;
+ 	case POWER_SUPPLY_PROP_TEMP_MIN:
+-		val->intval = info->temp_min;
++		val->intval = info->temp_min * 10;
+ 		return 0;
+ 	case POWER_SUPPLY_PROP_TEMP_MAX:
+-		val->intval = info->temp_max;
++		val->intval = info->temp_max * 10;
+ 		return 0;
+ 	default:
+ 		return -EINVAL;

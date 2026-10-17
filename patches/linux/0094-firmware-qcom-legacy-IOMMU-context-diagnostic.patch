@@ -1,0 +1,104 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] firmware: qcom: expose legacy IOMMU context snapshot diagnostic
+
+Expose the exact Android BSP secure context diagnostic: legacy SCM
+utility service3, command0xc, with instance, bank,32-bit buffer address
+and length. Reject other SCM conventions and high DMA addresses. Use a
+coherent, bounded buffer and let the caller validate the returned length.
+
+The native MDP still reports level2 ATOS timeout despite descriptor,
+ASID, context-reset and interconnect corrections. Direct global/CBAR reads
+are protected, and SCM IO_READ is rejected. This existing BSP diagnostic
+can distinguish firmware-visible context state from the Linux view without
+CPU accesses to the protected global window. It does not run automatically
+and does not install mappings or modify page-table memory.
+
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu-sec.c
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/firmware/qcom/qcom_scm.c b/drivers/firmware/qcom/qcom_scm.c
+index dd5042fb9..e2ed8c463 100644
+--- a/drivers/firmware/qcom/qcom_scm.c
++++ b/drivers/firmware/qcom/qcom_scm.c
+@@ -1225,6 +1225,66 @@ int qcom_scm_restore_sec_cfg(u32 device_id, u32 spare)
+ }
+ EXPORT_SYMBOL_GPL(qcom_scm_restore_sec_cfg);
+ 
++/**
++ * qcom_scm_iommu_fault_dump_legacy() - Read a legacy QSMMU context via TZ
++ * @device_id: secure IOMMU instance ID
++ * @context: context bank number
++ * @buffer: caller's output buffer
++ * @size: output buffer size, including the returned length word
++ *
++ * Legacy SCM utility service3, command0xc, from the MSM8226 Android BSP.
++ * The returned buffer contains a byte length followed by register/value pairs.
++ * The caller must validate that length before parsing. No automatic call is
++ * made from the IOMMU driver; this entry point supports controlled diagnostics.
++ * Return: SCM transport status, matching the BSP interface.
++ */
++int qcom_scm_iommu_fault_dump_legacy(u32 device_id, u32 context,
++				    void *buffer, size_t size)
++{
++	struct qcom_scm_desc desc = {
++		.svc = 0x03,
++		.cmd = 0x0c,
++		.arginfo = QCOM_SCM_ARGS(4, QCOM_SCM_VAL, QCOM_SCM_VAL,
++				       QCOM_SCM_RW, QCOM_SCM_VAL),
++		.args[0] = device_id,
++		.args[1] = context,
++		.args[3] = size,
++		.owner = ARM_SMCCC_OWNER_SIP,
++	};
++	struct qcom_scm_res res;
++	dma_addr_t address;
++	void *data;
++	int ret;
++
++	if (__get_convention() != SMC_CONVENTION_LEGACY)
++		return -EOPNOTSUPP;
++	if (!buffer || size < sizeof(u32) || size > SZ_4K || size % sizeof(u32))
++		return -EINVAL;
++
++	data = dma_alloc_coherent(__scm->dev, size, &address, GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++	if (upper_32_bits(address)) {
++		ret = -ERANGE;
++		goto free;
++	}
++	memset(data, 0, size);
++	desc.args[2] = address;
++	/* Make the buffer visible before firmware writes its register snapshot. */
++	dma_wmb();
++	ret = qcom_scm_call(__scm->dev, &desc, &res);
++	if (!ret) {
++		/* Consume the completed firmware writes before copying the result. */
++		dma_rmb();
++		memcpy(buffer, data, size);
++	}
++free:
++	dma_free_coherent(__scm->dev, size, data, address);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(qcom_scm_iommu_fault_dump_legacy);
++
++
+ #define QCOM_SCM_CP_APERTURE_CONTEXT_MASK	GENMASK(7, 0)
+ 
+ bool qcom_scm_set_gpu_smmu_aperture_is_available(void)
+diff --git a/include/linux/firmware/qcom/qcom_scm.h b/include/linux/firmware/qcom/qcom_scm.h
+index e4057ac4a..30cc63afa 100644
+--- a/include/linux/firmware/qcom/qcom_scm.h
++++ b/include/linux/firmware/qcom/qcom_scm.h
+@@ -101,6 +101,8 @@ int qcom_scm_io_writel(phys_addr_t addr, unsigned int val);
+ 
+ bool qcom_scm_restore_sec_cfg_available(void);
+ int qcom_scm_restore_sec_cfg(u32 device_id, u32 spare);
++int qcom_scm_iommu_fault_dump_legacy(u32 device_id, u32 context,
++				    void *buffer, size_t size);
+ int qcom_scm_set_gpu_smmu_aperture(unsigned int context_bank);
+ bool qcom_scm_set_gpu_smmu_aperture_is_available(void);
+ int qcom_scm_iommu_secure_ptbl_size(u32 spare, size_t *size);

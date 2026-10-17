@@ -1,0 +1,57 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: initialize shared TZ tables for MSM8226
+
+The exact Samsung MSM8226 BSP runs msm_iommu_sec_ptbl_init() from its
+secure-driver subsys_initcall when any enabled IOMMU has a secure ID.
+This precedes the non-secure display-context attach and is independent
+of which contexts clients actually use.
+
+The current diagnostic DT describes only the non-secure MDP context.
+qcom_iommu therefore skips this shared TZ setup when it checks for
+secure context children. Match the BSP initialization requirement using
+the existing once-only secure-table helper, restricted to MSM8226 match
+data. Keep firmware-service errors fatal and preserve the existing
+retained-allocation handling. No protected global-register access or
+new firmware ABI is added.
+
+Hardware ATOS repeatedly ignored the Linux test section mapping and
+its removal, returning the same unrelated physical address. This is
+a further evidenced missing BSP step; physical scanout and translation
+validation are still required.
+
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu-sec.c
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 37a319bef..d037585cc 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -56,6 +56,8 @@ struct qcom_iommu_cfg {
+ 	/* Faulting transactions must terminate rather than stall. */
+ 	bool no_stall;
+ 	bool halt;
++	/* Older TZ initializes shared tables even for non-secure clients. */
++	bool needs_secure_ptbl;
+ 	u32 actlr;
+ 	const struct qcom_iommu_bfb_reg *bfb;
+ 	unsigned int num_bfb;
+@@ -983,7 +985,8 @@ static int qcom_iommu_device_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	if (qcom_iommu_has_secure_context(qcom_iommu)) {
++	if (qcom_iommu_has_secure_context(qcom_iommu) ||
++	    (qcom_iommu->cfg && qcom_iommu->cfg->needs_secure_ptbl)) {
+ 		ret = qcom_iommu_sec_ptbl_init(dev);
+ 		if (ret) {
+ 			dev_err(dev, "cannot init secure pg table(%d)\n", ret);
+@@ -1113,6 +1116,7 @@ static const struct qcom_iommu_bfb_reg msm8226_mdp_bfb[] = {
+ static const struct qcom_iommu_cfg msm8226_mdp_cfg = {
+ 	.no_stall = true,
+ 	.halt = true,
++	.needs_secure_ptbl = true,
+ 	/* BPRCOSH/ISH/NSH: direct cacheable requests to the L2 slave port. */
+ 	.actlr = GENMASK(30, 28),
+ 	.bfb = msm8226_mdp_bfb,

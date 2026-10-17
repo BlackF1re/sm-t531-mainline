@@ -1,0 +1,111 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/msm: scale MSM8226 graphics AXI alongside core OPPs
+
+At 450 MHz SM-T531 still runs MMSS AXI at its firmware 100 MHz setting.
+A reversible CCF-only device experiment shows that 266.67 MHz substantially
+reduces GPU rendering latency. Samsung's MSM8226 GPU bandwidth levels are
+1.6/3.2/4.256 GB/s, matching 100/200/266.67 MHz on the 16-byte interface.
+
+Use a single-clock OPP callback so existing devfreq, cooling and idle paths
+retain their single-frequency API. Raise AXI before core and lower it after
+core, including runtime suspend. Scope rate propagation to MSM8226 MMCC.
+This is a temporary clock-based solution pending an MSM8226 interconnect
+provider; it does not model DDR bandwidth votes and does not overclock.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/clk/qcom/mmcc-msm8974.c b/drivers/clk/qcom/mmcc-msm8974.c
+index f2e802cf6..07ce89502 100644
+--- a/drivers/clk/qcom/mmcc-msm8974.c
++++ b/drivers/clk/qcom/mmcc-msm8974.c
+@@ -2738,6 +2738,11 @@ MODULE_DEVICE_TABLE(of, mmcc_msm8974_match_table);
+ 
+ static void msm8226_clock_override(void)
+ {
++	static struct clk_init_data axi_init;
++
++	axi_init = *oxilicx_axi_clk.clkr.hw.init;
++	axi_init.flags |= CLK_SET_RATE_PARENT;
++	oxilicx_axi_clk.clkr.hw.init = &axi_init;
+ 	mmss_axi_clk_src.freq_tbl = ftbl_mmss_axi_clk_msm8226;
+ 	vfe0_clk_src.freq_tbl = ftbl_camss_vfe_vfe0_clk_msm8226;
+ 	mdp_clk_src.freq_tbl = ftbl_mdss_mdp_clk_msm8226;
+diff --git a/drivers/gpu/drm/msm/adreno/adreno_gpu.c b/drivers/gpu/drm/msm/adreno/adreno_gpu.c
+index 29c59899f..d3bf36c71 100644
+--- a/drivers/gpu/drm/msm/adreno/adreno_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/adreno_gpu.c
+@@ -1182,6 +1182,39 @@ int adreno_read_speedbin(struct device *dev, u32 *speedbin)
+ 	return nvmem_cell_read_variable_le_u32(dev, "speed_bin", speedbin);
+ }
+ 
++/* MSM8226 has no upstream interconnect provider yet. Keep its graphics AXI
++ * clock proportional to the core instead of leaving the bootloader's 100 MHz
++ * rate in place at every OPP. Rates match the downstream bandwidth levels.
++ */
++static int msm8226_config_clks(struct device *dev, struct opp_table *table,
++		struct dev_pm_opp *opp, void *data, bool scaling_down)
++{
++	struct msm_gpu *gpu = dev_to_gpu(dev);
++	struct adreno_gpu *adreno_gpu = to_adreno_gpu(gpu);
++	struct clk *mem = adreno_gpu->mem_iface_clk;
++	unsigned long core = data ? *(unsigned long *)data : dev_pm_opp_get_freq(opp);
++	unsigned long bus = core > 320000000 ? 266666666 :
++			    core > 200000000 ? 200000000 : 100000000;
++	unsigned long old_bus = clk_get_rate(mem);
++	int ret;
++
++	/* Raise memory bandwidth first, and lower it after the core. */
++	if (bus > old_bus) {
++		ret = clk_set_rate(mem, bus);
++		if (ret)
++			return ret;
++	}
++	ret = clk_set_rate(gpu->core_clk, core);
++	if (ret) {
++		if (bus > old_bus)
++			clk_set_rate(mem, old_bus);
++		return ret;
++	}
++	if (bus < old_bus)
++		return clk_set_rate(mem, bus);
++	return 0;
++}
++
+ int adreno_gpu_init(struct drm_device *drm, struct platform_device *pdev,
+ 		struct adreno_gpu *adreno_gpu,
+ 		const struct adreno_gpu_funcs *funcs, int nr_rings)
+@@ -1208,7 +1241,20 @@ int adreno_gpu_init(struct drm_device *drm, struct platform_device *pdev,
+ 		 * This can only be done before devm_pm_opp_of_add_table(), or
+ 		 * dev_pm_opp_set_config() will WARN_ON()
+ 		 */
+-		if (IS_ERR(devm_clk_get(dev, "core"))) {
++		if (adreno_is_a305b(adreno_gpu)) {
++			static const char * const names[] = { "core", NULL };
++			struct dev_pm_opp_config opp_config = {
++				.clk_names = names,
++				.config_clks = msm8226_config_clks,
++			};
++
++			adreno_gpu->mem_iface_clk = devm_clk_get(dev, "mem_iface");
++			if (IS_ERR(adreno_gpu->mem_iface_clk))
++				return PTR_ERR(adreno_gpu->mem_iface_clk);
++			ret = devm_pm_opp_set_config(dev, &opp_config);
++			if (ret < 0)
++				return ret;
++		} else if (IS_ERR(devm_clk_get(dev, "core"))) {
+ 			/*
+ 			 * If "core" is absent, go for the legacy clock name.
+ 			 * If we got this far in probing, it's a given one of
+diff --git a/drivers/gpu/drm/msm/adreno/adreno_gpu.h b/drivers/gpu/drm/msm/adreno/adreno_gpu.h
+index 1f201322c..5f561dca8 100644
+--- a/drivers/gpu/drm/msm/adreno/adreno_gpu.h
++++ b/drivers/gpu/drm/msm/adreno/adreno_gpu.h
+@@ -202,6 +202,7 @@ static const struct adreno_reglist_pipe_list name = {		\
+ 
+ struct adreno_gpu {
+ 	struct msm_gpu base;
++	struct clk *mem_iface_clk;
+ 	const struct adreno_info *info;
+ 	uint32_t chip_id;
+ 	uint16_t speedbin;

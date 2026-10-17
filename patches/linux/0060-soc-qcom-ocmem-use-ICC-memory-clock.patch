@@ -1,0 +1,55 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] soc: qcom: ocmem: allow ICC to own the memory clock
+
+Allow standard ICC control of the OCMEM memory clock. Keep a minimal
+allocator-access vote and let the GPU OPP client request the factory
+bandwidth. With ICC, do not issue the independent legacy 1 kHz RPM clock
+vote, which can overwrite the aggregated vote for the same resource.
+Preserve legacy operation when no interconnect path is present.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/soc/qcom/ocmem.c b/drivers/soc/qcom/ocmem.c
+index 96ca0b87b..d61ba046e 100644
+--- a/drivers/soc/qcom/ocmem.c
++++ b/drivers/soc/qcom/ocmem.c
+@@ -13,6 +13,7 @@
+ #include <linux/cleanup.h>
+ #include <linux/clk.h>
+ #include <linux/io.h>
++#include <linux/interconnect.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+@@ -57,6 +58,7 @@ struct ocmem {
+ 	struct resource *memory;
+ 	void __iomem *mmio;
+ 	struct clk *core_clk;
++	struct icc_path *memory_path;
+ 	struct clk *iface_clk;
+ 	unsigned int num_ports;
+ 	unsigned int num_macros;
+@@ -329,8 +331,20 @@ static int ocmem_dev_probe(struct platform_device *pdev)
+ 		return -ENXIO;
+ 	}
+ 
+-	/* The core clock is synchronous with graphics */
+-	WARN_ON(clk_set_rate(ocmem->core_clk, 1000) < 0);
++	ocmem->memory_path = devm_of_icc_get(dev, "memory");
++	if (IS_ERR(ocmem->memory_path))
++		return dev_err_probe(dev, PTR_ERR(ocmem->memory_path),
++				     "Unable to get memory interconnect\n");
++	if (ocmem->memory_path) {
++		/* Let ICC aggregate allocator access and GPU OPP requests. */
++		ret = icc_set_bw(ocmem->memory_path, 0, 16000);
++		if (ret)
++			return dev_err_probe(dev, ret, "Unable to vote memory clock\n");
++		ocmem->core_clk = NULL;
++	} else {
++		/* The core clock is synchronous with graphics. */
++		WARN_ON(clk_set_rate(ocmem->core_clk, 1000) < 0);
++	}
+ 
+ 	ret = clk_prepare_enable(ocmem->core_clk);
+ 	if (ret)

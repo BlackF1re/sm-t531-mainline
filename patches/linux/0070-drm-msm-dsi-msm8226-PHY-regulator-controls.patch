@@ -1,0 +1,44 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm: msm: dsi: use MSM8226 PHY regulator controls
+
+MSM8226 factory DT supplies internal PHY regulator controls
+[07 08 07 00 20 07 01]. The vendor PHY initialization explicitly maps
+these seven bytes to CTRL0..CTRL5 and CAL_PWR_CFG. The common upstream
+DCDC sequence instead programs CTRL1=09, CTRL2=03 and CTRL5=00.
+
+Use the verified MSM8226 controls under the existing PHY_8226 quirk.
+Preserve register order, CTRL0 initial disable, the calibration enable
+and the separate LDO path. No external PMIC voltage is changed.
+Native PLL lock and correct link clock rates alone have not established
+physical DSI transmission on SM-T531; validate the analogue PHY separately.
+
+Source: LineageOS/android_kernel_samsung_msm8226 commit
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256,
+arch/arm/boot/dts/msm8226/dsi_panel_tc358764_wxga_video-r01.dtsi and
+drivers/video/msm/mdss/msm_mdss_io_8974.c, mdss_dsi_phy_init().
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
+index d00e415b9..e7f021a98 100644
+--- a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
++++ b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
+@@ -751,13 +751,14 @@ static void dsi_28nm_dphy_set_timing(struct msm_dsi_phy *phy,
+ static void dsi_28nm_phy_regulator_enable_dcdc(struct msm_dsi_phy *phy)
+ {
+ 	void __iomem *base = phy->reg_base;
++	bool msm8226 = phy->cfg->quirks & DSI_PHY_28NM_QUIRK_PHY_8226;
+ 
+ 	writel(0x0, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_0);
+ 	writel(1, base + REG_DSI_28nm_PHY_REGULATOR_CAL_PWR_CFG);
+-	writel(0, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_5);
++	writel(msm8226 ? 0x7 : 0, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_5);
+ 	writel(0, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_3);
+-	writel(0x3, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_2);
+-	writel(0x9, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_1);
++	writel(msm8226 ? 0x7 : 0x3, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_2);
++	writel(msm8226 ? 0x8 : 0x9, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_1);
+ 	writel(0x7, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_0);
+ 	writel(0x20, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_4);
+ 	writel(0x00, phy->base + REG_DSI_28nm_PHY_LDO_CNTRL);

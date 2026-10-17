@@ -57,6 +57,17 @@ Build timestamp, user/host and initramfs ordering are fixed. Downloads are
 SHA-256 checked. Rootfs inputs use signed Debian snapshots; generated rootfs
 state is not claimed byte-reproducible. Compiler versions matter too.
 
+The main build defaults to native MDP5/DSI with interconnect support
+(`NATIVE_KMS=1 NATIVE_ICC=1`). Its kernel excludes simpledrm; Plasma renders
+on Adreno and MDP5 scans shared DMA-BUFs. A temporary simplefb console displays
+boot text until MSM KMS removes its aperture; it is not a Plasma output device.
+The mobile rootfs build installs the
+Mesa entry, native activation service and native Plasma configuration. Existing
+rootfs installations need `scripts/build-mesa-msm-kms.sh` and the corresponding
+native configuration before deploying this kernel.
+The frozen bootstrap remains independent. `NATIVE_KMS=0 NATIVE_ICC=0`
+explicitly selects the historical framebuffer recovery build.
+
 Outputs include genuine `zImage`, SM-T531 DTB, diagnostic initramfs, modules,
 `kernel.config`, `sd-kernel.img`, checksums and Debian package manifest.
 The installed bootstrap expects the Android-v0 `sd-kernel.img` container under
@@ -168,11 +179,11 @@ Compilation and probe messages do not constitute hardware acceptance.
 | CPU hotplug | CPU1, CPU2 and CPU3 each pass offline→online; verified collapse re-runs the existing ACC release path | Repeated long-duration stress pending |
 | System suspend | System-managed s2idle, standby and standalone CPU/L2 collapse return CPU/USB/Wi-Fi; physical desktop/touch recovery confirmed; Power wake completes one cycle after the PowerDevil backport | RPM-assisted collapse failed validation and is excluded; synchronized cluster idle/GDHS, native display power-off and suspend power consumption unfinished |
 | Storage | Two 32 MiB ext4 write/unmount/cache-drop/readback tests after regulator load-vote fix; rootfs boots | SD remains limited to 50 MHz/no 1.8 V; sustained stress and hotplug |
-| Display / touch | Continuing 1280×800 output; desktop touch interaction observed | Inherited simpledrm framebuffer; native MDP5/DSI scanout unfinished |
-| Backlight | LP8556 register control follows DRM blanking and sysfs power-off; actual_brightness reads the chip and reports zero while BL_CTL is off | Illumination control does not prove recovered panel/scanout after sleep |
-| GPU / desktop | FD305 GLES 3.0; full historic glmark2 score 74; three post-sleep scenes complete (score 106); accelerated Plasma | Mesa ordering workaround; post-sleep GPU recovery resolved in tested cycles; desktop 60 FPS unverified |
+| Display / touch | Native MDP5/DSI/TC358764; earlier physical image/touch acceptance; patched handoff and mode-enable pass logged checks | Full lifecycle/physical repeat acceptance pending; current Phosh shade ~33FPS; see [stability evidence](docs/GRAPHICS-STABILITY.md) |
+| Backlight | LP8556 full range verified; Phosh absent-sensor bug fixed, real GUI maximum now255 instead of37 | Optical range and full panel power/suspend remain separate acceptance; see [BACKLIGHT.md](docs/BACKLIGHT.md) |
+| GPU / desktop | FD305 GLES 3.0; full historic glmark2 score 74; three post-sleep scenes complete (score 106); accelerated Plasma | Mesa ordering and GPU power-hold workarounds; bounded runtime transitions pass, fault recovery and composited desktop60FPS unverified |
 | Wi-Fi / Bluetooth | Pronto/wcn36xx autoconnect and SSH traffic | Firmware scan-offload fails; software fallback; Bluetooth untested |
-| Charging / battery | SMB358 charging and thermistor read; AICL selected 2 A input ceiling | Actual source current not measured; full-cycle termination/recharge and accurate battery percentage unverified |
+| Charging / battery | PM8226 BMS exports real voltage/current/temperature/coulombs and model SOC through power_supply/UPower; load response verified | Nominal capacity, calibration/ageing and full charge-cycle accuracy remain unverified; [battery evidence](docs/BATTERY.md) |
 | Sound | Tapan identified from stock sources | Deferred |
 
 ### CPU implementation and diagnostics
@@ -347,7 +358,27 @@ It retains hardware rendering; no pixman, per-frame glFinish or diagnostic
 preload is installed. The underlying Mesa ordering problem is unresolved.
 Measured application swap rates were about 22 FPS in settings and 10–12 FPS
 in the drawer before the CPU changes, not physical scanout or input latency.
-Simpledrm copies/converts XRGB8888 to the inherited RGB888 framebuffer.
+The archived simpledrm recovery kernel copies/converts XRGB8888 to the inherited
+RGB888 framebuffer. The working kernel excludes simpledrm and native MDP5
+imports DMA-BUFs directly; no automatic framebuffer rollback is enabled.
+The [graphics investigation](docs/GRAPHICS.md) documents on-device profiling,
+AXI OPP scaling, hardware backlight matching, ARM NEON conversion, measured
+FPS improvement, current native desktop/shade measurements and remaining
+graphics limitations. Measurements are
+in [graphics-results.json](docs/graphics-results.json); synthetic DRM completion
+is not physical vblank. Recovery is available through
+`sudo /usr/local/sbin/t531-graphics-rollback` on the tablet followed by reboot.
+The separate [native KMS investigation](docs/NATIVE-KMS.md) records the
+MDP5/DSI/TC358764 bring-up, verified clock and IOMMU fixes, remaining lifecycle
+limitations and recovery. [Native results](docs/native-kms-results.json) distinguish
+hardware page-flip frequency from accepted LCD output and GUI FPS. Restore the
+physically accepted improved fallback with `t531-graphics-rollback native`.
+
+Split native KMS uses `msm.separate_gpu_kms=1`,
+`NATIVE_KMS=1 NATIVE_ICC=1 scripts/build.sh`, and the board-specific package
+built by `scripts/build-mesa-msm-kms.sh`. Install that package before using
+`scripts/configure-native-plasma.sh activate` and the native activation service.
+Do not set a global Mesa driver override; ordinary clients must select Freedreno.
 
 LP8556 now uses its existing I2C brightness path rather than a stopped CAMSS
 PWM clock whose inactive output level is unspecified. The driver honours

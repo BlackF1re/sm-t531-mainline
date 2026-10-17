@@ -1,0 +1,119 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] ARM: dts: qcom: add isolated Matisse native KMS diagnostic
+
+Add an opt-in diagnostic SM-T531 native MDP5/DSI/TC358764/LVDS graph.
+The normal board DT retains the verified simpledrm recovery path.
+Use Samsung r01 porch values confirmed by MDP and DSI register readback,
+and a 60 Hz pixel clock rather than the bootloader 61.68 Hz PLL rate.
+
+NOT PRODUCTION: bridge supplies remain firmware-powered, explicitly
+selected by tc358764.firmware_power=1. Their wiring and LCD part identity
+are unresolved; do not claim suspend or power-cycle validation.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/Makefile b/arch/arm/boot/dts/qcom/Makefile
+index 6b90ad741..afbe59c9d 100644
+--- a/arch/arm/boot/dts/qcom/Makefile
++++ b/arch/arm/boot/dts/qcom/Makefile
+@@ -29,6 +29,7 @@ dtb-$(CONFIG_ARCH_QCOM) += \
+ 	qcom-msm8226-microsoft-moneypenny.dtb \
+ 	qcom-msm8226-samsung-ms013g.dtb \
+ 	qcom-msm8226-samsung-matisse3g.dtb \
++	qcom-msm8226-samsung-matisse3g-native.dtb \
+ 	qcom-msm8226-samsung-s3ve3g.dtb \
+ 	qcom-msm8660-surf.dtb \
+ 	qcom-msm8916-samsung-e5.dtb \
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
+new file mode 100644
+index 000000000..b7b7adcfb
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
+@@ -0,0 +1,86 @@
++// SPDX-License-Identifier: BSD-3-Clause
++/* Diagnostic native KMS profile; firmware-powered bridge, no suspend yet. */
++#include "qcom-msm8226-samsung-matisse3g.dts"
++
++&framebuffer0 {
++	status = "disabled";
++};
++
++&mdss {
++	status = "okay";
++};
++
++&mdss_dsi0 {
++	vdda-supply = <&pm8226_l4>;
++
++	bridge@0 {
++		compatible = "samsung,matisse-tc358764", "toshiba,tc358764";
++		reg = <0>;
++		reset-gpios = <&tlmm 51 GPIO_ACTIVE_LOW>;
++		/* Unknown bridge supply nets: explicit firmware_power diagnostic. */
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			port@0 {
++				reg = <0>;
++				tc358764_in: endpoint {
++					remote-endpoint = <&mdss_dsi0_out>;
++				};
++			};
++			port@1 {
++				reg = <1>;
++				tc358764_out: endpoint {
++					remote-endpoint = <&lcd_in>;
++				};
++			};
++		};
++	};
++};
++
++&mdss_dsi0_out {
++	remote-endpoint = <&tc358764_in>;
++};
++
++&mdss_dsi0_phy {
++	vddio-supply = <&pm8226_l8>;
++};
++
++&pm8226_l4 {
++	regulator-allow-set-load;
++};
++
++&pm8226_l8 {
++	regulator-allow-set-load;
++};
++
++/ {
++	panel {
++		/* Board LCD assembly identity; do not guess a module part number. */
++		compatible = "samsung,matisse3g-lcd", "panel-lvds";
++		width-mm = <228>;
++		height-mm = <149>;
++		data-mapping = "vesa-24";
++		backlight = <&lcd_backlight>;
++		panel-timing {
++			/* 1378 x 898 totals, 60 Hz; four RGB888 DSI lanes. */
++			clock-frequency = <74246640>;
++			hactive = <1280>;
++			vactive = <800>;
++			hfront-porch = <48>;
++			hback-porch = <48>;
++			hsync-len = <2>;
++			vfront-porch = <32>;
++			vback-porch = <64>;
++			vsync-len = <2>;
++			hsync-active = <0>;
++			vsync-active = <0>;
++			de-active = <1>;
++		};
++		port {
++			lcd_in: endpoint {
++				remote-endpoint = <&tc358764_out>;
++			};
++		};
++	};
++};

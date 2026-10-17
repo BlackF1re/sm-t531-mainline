@@ -1,0 +1,109 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu/qcom: use MSM8226 short-descriptor context format
+
+The native MSM8226 display path currently uses qcom_iommu's fixed LPAE
+page tables, while the exact factory MDP context programs short descriptors
+(TTBCR0, TTBR0, PRRR/NMRR). The independently verified SM-T531 GPU path
+also uses short descriptors and requires AFE clear: hardware translation
+fails with AFE set and succeeds when only that bit is cleared.
+
+Select the maintained ARM_V7S io-pgtable backend for the board-specific
+MSM8226 display compatible. Cache its TTBR/TCR/PRRR/NMRR, program the
+short-descriptor CONTEXTIDR and retain full AP permission checking.
+Other qcom_iommu platforms keep their LPAE setup. Secure global registers
+remain firmware-owned. This isolated format comparison needs device
+validation; it is not yet a demonstrated native output fix.
+
+Source: LineageOS android_kernel_samsung_msm8226 at
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256,
+drivers/iommu/msm_iommu-v1.c, __program_context().
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 96cb05654..554ac1849 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -52,6 +52,7 @@ struct qcom_iommu_dev {
+ 	u32			 sec_id;
+ 	u8			 max_asid;
+ 	bool			 restore_ctx;
++	bool			 short_desc;
+ 	struct qcom_iommu_ctx	*ctxs[];   /* indexed by asid */
+ };
+ 
+@@ -236,6 +237,8 @@ static void qcom_iommu_program_ctx(struct qcom_iommu_dev *qcom_iommu,
+ 	/* TCR */
+ 	iommu_writel(ctx, ARM_SMMU_CB_TCR2, ctx->tcr[1]);
+ 	iommu_writel(ctx, ARM_SMMU_CB_TCR, ctx->tcr[0]);
++	if (qcom_iommu->short_desc)
++		iommu_writel(ctx, ARM_SMMU_CB_CONTEXTIDR, ctx->asid);
+ 
+ 	/* MAIRs (stage-1 only) */
+ 	iommu_writel(ctx, ARM_SMMU_CB_S1_MAIR0, ctx->mair[0]);
+@@ -263,7 +266,7 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 	pgtbl_cfg = (struct io_pgtable_cfg) {
+ 		.pgsize_bitmap	= domain->pgsize_bitmap,
+ 		.ias		= 32,
+-		.oas		= 40,
++		.oas		= qcom_iommu->short_desc ? 32 : 40,
+ 		.tlb		= &qcom_flush_ops,
+ 		.iommu_dev	= qcom_iommu->dev,
+ 	};
+@@ -271,7 +274,11 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 	qcom_domain->iommu = qcom_iommu;
+ 	qcom_domain->fwspec = fwspec;
+ 
+-	pgtbl_ops = alloc_io_pgtable_ops(ARM_32_LPAE_S1, &pgtbl_cfg, qcom_domain);
++	if (qcom_iommu->short_desc)
++		pgtbl_cfg.quirks |= IO_PGTABLE_QUIRK_ARM_NS;
++
++	pgtbl_ops = alloc_io_pgtable_ops(qcom_iommu->short_desc ? ARM_V7S :
++					ARM_32_LPAE_S1, &pgtbl_cfg, qcom_domain);
+ 	if (!pgtbl_ops) {
+ 		dev_err(qcom_iommu->dev, "failed to allocate pagetable ops\n");
+ 		ret = -ENOMEM;
+@@ -299,17 +306,28 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ 			continue;
+ 		}
+ 
+-		ctx->ttbr0 = pgtbl_cfg.arm_lpae_s1_cfg.ttbr |
+-			     FIELD_PREP(ARM_SMMU_TTBRn_ASID, ctx->asid);
+-		ctx->tcr[0] = arm_smmu_lpae_tcr(&pgtbl_cfg) | ARM_SMMU_TCR_EAE;
+-		ctx->tcr[1] = arm_smmu_lpae_tcr2(&pgtbl_cfg);
+-		ctx->mair[0] = pgtbl_cfg.arm_lpae_s1_cfg.mair;
+-		ctx->mair[1] = pgtbl_cfg.arm_lpae_s1_cfg.mair >> 32;
++		if (qcom_iommu->short_desc) {
++			ctx->ttbr0 = pgtbl_cfg.arm_v7s_cfg.ttbr;
++			ctx->tcr[0] = pgtbl_cfg.arm_v7s_cfg.tcr;
++			ctx->tcr[1] = 0;
++			ctx->mair[0] = pgtbl_cfg.arm_v7s_cfg.prrr;
++			ctx->mair[1] = pgtbl_cfg.arm_v7s_cfg.nmrr;
++		} else {
++			ctx->ttbr0 = pgtbl_cfg.arm_lpae_s1_cfg.ttbr |
++				     FIELD_PREP(ARM_SMMU_TTBRn_ASID, ctx->asid);
++			ctx->tcr[0] = arm_smmu_lpae_tcr(&pgtbl_cfg) | ARM_SMMU_TCR_EAE;
++			ctx->tcr[1] = arm_smmu_lpae_tcr2(&pgtbl_cfg);
++			ctx->mair[0] = pgtbl_cfg.arm_lpae_s1_cfg.mair;
++			ctx->mair[1] = pgtbl_cfg.arm_lpae_s1_cfg.mair >> 32;
++		}
+ 
+ 		reg = ARM_SMMU_SCTLR_CFIE | ARM_SMMU_SCTLR_CFRE |
+ 		      ARM_SMMU_SCTLR_AFE | ARM_SMMU_SCTLR_TRE |
+ 		      ARM_SMMU_SCTLR_M | ARM_SMMU_SCTLR_S1_ASIDPNE |
+ 		      ARM_SMMU_SCTLR_CFCFG;
++		/* MSM8226 short-descriptor contexts need full AP permissions. */
++		if (qcom_iommu->short_desc)
++			reg &= ~ARM_SMMU_SCTLR_AFE;
+ 
+ 		if (IS_ENABLED(CONFIG_CPU_BIG_ENDIAN))
+ 			reg |= ARM_SMMU_SCTLR_E;
+@@ -808,6 +826,7 @@ static int qcom_iommu_device_probe(struct platform_device *pdev)
+ 	qcom_iommu->dev = dev;
+ 	qcom_iommu->restore_ctx = of_device_is_compatible(dev->of_node,
+ 							"qcom,msm8226-iommu");
++	qcom_iommu->short_desc = qcom_iommu->restore_ctx;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res) {

@@ -1,0 +1,49 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm: msm: dsi: report controller state on command failure
+
+Preserve useful controller evidence before restoring command mode on DMA
+timeout: interrupt status, engine/FIFO state, clock control and command
+address/length. Include the received header bytes for an invalid response.
+Only existing error paths print; no additional accesses during healthy
+transfers and no changes to error masks, completions or retry behavior.
+Needed to distinguish missing command fetch from lost IRQ or bad BTA on
+MSM8226. Register reads are from the already-powered DSI host.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+index 9a829eb79..bd9a71a07 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -1472,10 +1472,18 @@ static int dsi_cmd_dma_tx(struct msm_dsi_host *msm_host, int len)
+ 		ret = wait_for_completion_timeout(&msm_host->dma_comp,
+ 					msecs_to_jiffies(200));
+ 		DBG("ret=%d", ret);
+-		if (ret == 0)
++		if (ret == 0) {
++			pr_err("%s: timeout: irq=%#x status=%#x fifo=%#x clocks=%#x dma=%#x/%u\n",
++			       __func__, dsi_read(msm_host, REG_DSI_INTR_CTRL),
++			       dsi_read(msm_host, REG_DSI_STATUS0),
++			       dsi_read(msm_host, REG_DSI_FIFO_STATUS),
++			       dsi_read(msm_host, REG_DSI_CLK_CTRL),
++			       dsi_read(msm_host, REG_DSI_DMA_BASE),
++			       dsi_read(msm_host, REG_DSI_DMA_LEN));
+ 			ret = -ETIMEDOUT;
+-		else
++		} else {
+ 			ret = len;
++		}
+ 	} else {
+ 		ret = len;
+ 	}
+@@ -2359,7 +2367,8 @@ int msm_dsi_host_cmd_rx(struct mipi_dsi_host *host,
+ 		ret = dsi_long_read_resp(buf, msg);
+ 		break;
+ 	default:
+-		pr_warn("%s:Invalid response cmd\n", __func__);
++		pr_warn("%s: invalid response type %#x: %*ph\n",
++			__func__, (u8)cmd, 16, buf);
+ 		ret = 0;
+ 	}
+ 

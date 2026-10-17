@@ -1,0 +1,60 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm: msm: dsi: force MSM8226 command-fetch clock
+
+The Samsung MSM8226 driver programs DSI_CLK_CTRL=0x23f, including
+FORCE_ON_DYN_AHBM_HCLK (bit9), when enabling the DSI controller. Mainline
+currently programs only 0x3f. Command DMA times out on SM-T531 even with
+valid, powered display IOMMU context state and correct pixel/byte clocks.
+
+Model the verified factory setting as a host-configuration quirk only for
+MSM8226. The existing XML already defines this hardware bit. This changes
+no frequency, voltage, memory ownership or IRQ masking. Leave other host
+configurations untouched; validate command completion on the device.
+
+Source: LineageOS/android_kernel_samsung_msm8226 commit
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256,
+drivers/video/msm/mdss/mdss_dsi_host.c, mdss_dsi_host_init().
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_cfg.c b/drivers/gpu/drm/msm/dsi/dsi_cfg.c
+index 828525128..9a2d9926d 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_cfg.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_cfg.c
+@@ -56,6 +56,7 @@ static const struct regulator_bulk_data msm8226_dsi_regulators[] = {
+ 
+ static const struct msm_dsi_config msm8226_dsi_cfg = {
+ 	.io_offset = DSI_6G_REG_SHIFT,
++	.force_ahbm_clk = true,
+ 	.regulator_data = msm8226_dsi_regulators,
+ 	.num_regulators = ARRAY_SIZE(msm8226_dsi_regulators),
+ 	.bus_clk_names = dsi_6g_bus_clk_names,
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_cfg.h b/drivers/gpu/drm/msm/dsi/dsi_cfg.h
+index c79925d16..4bee08b15 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_cfg.h
++++ b/drivers/gpu/drm/msm/dsi/dsi_cfg.h
+@@ -43,6 +43,7 @@
+ 
+ struct msm_dsi_config {
+ 	u32 io_offset;
++	bool force_ahbm_clk;
+ 	const struct regulator_bulk_data *regulator_data;
+ 	int num_regulators;
+ 	const char * const *bus_clk_names;
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+index bd9a71a07..a9df0e255 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -909,7 +909,10 @@ static void dsi_ctrl_enable(struct msm_dsi_host *msm_host,
+ 
+ 	dsi_intr_ctrl(msm_host, DSI_IRQ_MASK_ERROR, 1);
+ 
+-	dsi_write(msm_host, REG_DSI_CLK_CTRL, DSI_CLK_CTRL_ENABLE_CLKS);
++	data = DSI_CLK_CTRL_ENABLE_CLKS;
++	if (cfg_hnd->cfg->force_ahbm_clk)
++		data |= DSI_CLK_CTRL_FORCE_ON_DYN_AHBM_HCLK;
++	dsi_write(msm_host, REG_DSI_CLK_CTRL, data);
+ 
+ 	data = DSI_CTRL_CLK_EN;
+ 

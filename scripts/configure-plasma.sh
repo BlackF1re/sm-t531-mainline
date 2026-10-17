@@ -20,17 +20,21 @@ User=t531
 Session=plasma-mobile.desktop
 Relogin=false
 CONFIG
-# The framebuffer KMS node and Adreno render node are separate devices.
-# Mesa's installed simpledrm KMSRO entry point selects the Adreno renderer.
+# MDP5 KMS and the Adreno render node are separate devices.
+# Historical framebuffer recovery must be selected explicitly.
+graphics_device=/dev/dri/by-path/platform-fd900100.display-controller-card
+if [ "${NATIVE_KMS:-1}" = 0 ]; then
+    graphics_device=/dev/dri/by-path/platform-3200000.framebuffer-card
+fi
 # Disable Freedreno batch reordering: native Qt scrolling otherwise loses glyphs.
-cat > /etc/environment.d/60-t531-graphics.conf <<'CONFIG'
-KWIN_DRM_DEVICES=/dev/dri/by-path/platform-3200000.framebuffer-card
+cat > /etc/environment.d/60-t531-graphics.conf <<CONFIG
+KWIN_DRM_DEVICES=$graphics_device
 QSG_RHI_BACKEND=opengl
 FD_MESA_DEBUG=inorder
 CONFIG
-cat > /etc/systemd/system/sddm.service.d/20-t531-graphics.conf <<'CONFIG'
+cat > /etc/systemd/system/sddm.service.d/20-t531-graphics.conf <<CONFIG
 [Service]
-Environment=KWIN_DRM_DEVICES=/dev/dri/by-path/platform-3200000.framebuffer-card
+Environment=KWIN_DRM_DEVICES=$graphics_device
 Environment=QSG_RHI_BACKEND=opengl
 Environment=FD_MESA_DEBUG=inorder
 CONFIG

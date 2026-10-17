@@ -1,0 +1,40 @@
+{
+  "evidence": "VERIFIED_DEVICE",
+  "scope": "Native moving-square synthetic workload; owner confirmed smooth square, desktop return black with global Mesa override; not production acceptance",
+  "configuration": {
+    "patches_through": 101,
+    "native_icc": false,
+    "separate_gpu_kms": true,
+    "matisse_phy_profile": 7,
+    "gpu_min_hz": 450000000,
+    "gpu_runtime_power_control": "on",
+    "mesa_loader_override": "mediatek (temporary global; next scoped to KWin)"
+  },
+  "metrics": {
+    "kind": "DRM completion, native hardware vblank; not optical measurement",
+    "window_seconds": 19.0,
+    "frames": 1128,
+    "fps": 59.36250151369111,
+    "frame_interval": {
+      "samples": 1127,
+      "mean_ms": 16.8456512866016,
+      "p50_ms": 16.668000000009897,
+      "p95_ms": 16.680999999977075,
+      "p99_ms": 16.694000000001097
+    },
+    "gpu_busy_percent_devfreq": 69.63244455723387,
+    "gpu_busy_samples": 306,
+    "gpu_submit_to_retire": {
+      "samples": 2268,
+      "mean_ms": 6.6906102292769365,
+      "p50_ms": 11.518499999993992,
+      "p95_ms": 12.484000000000606,
+      "p99_ms": 15.602000000001226
+    },
+    "mem_available_kib_min": 742684,
+    "cpu_busy_percent_all_cores": 29.89244307864227,
+    "cpu_khz_median": 1190400,
+    "gpu_hz_median": 450000000,
+    "axi_hz_median": 266666666
+  }
+}

@@ -1,0 +1,40 @@
+Subject: [PATCH] drm/msm/mdp5: distinguish exhausted display resources from OOM
+
+Failure to find an unused compatible hardware pipe is a display resource
+constraint, not an allocation failure. Return ENOSPC for this case. Also
+preserve the SMP allocator's error instead of translating ENOSPC to ENOMEM.
+Actual memory-allocation errors from mdp5_get_global_state remain intact.
+
+libliftoff0.5 backs out and tries another allocation for EINVAL, ERANGE or
+ENOSPC. ENOMEM aborts its search. On MSM8226 a three-full-width-plane
+TEST_ONLY request exceeds the seven SMP blocks, so misreporting this
+constraint prevents otherwise valid two-plane allocations being explored.
+
+This does not increase hardware limits or alter register programming.
+Device test evidence: docs/GRAPHICS-BOTTLENECK.md.
+
+diff --git a/drivers/gpu/drm/msm/disp/mdp5/mdp5_pipe.c b/drivers/gpu/drm/msm/disp/mdp5/mdp5_pipe.c
+--- a/drivers/gpu/drm/msm/disp/mdp5/mdp5_pipe.c
++++ b/drivers/gpu/drm/msm/disp/mdp5/mdp5_pipe.c
+@@ -86,10 +86,10 @@ int mdp5_pipe_assign(struct drm_atomic_commit *s, struct drm_plane *plane,
+ 	}
+ 
+ 	if (!(*hwpipe))
+-		return -ENOMEM;
++		return -ENOSPC;
+ 
+ 	if (r_hwpipe && !(*r_hwpipe))
+-		return -ENOMEM;
++		return -ENOSPC;
+ 
+ 	if (mdp5_kms->smp) {
+ 		int ret;
+@@ -101,7 +101,7 @@ int mdp5_pipe_assign(struct drm_atomic_commit *s, struct drm_plane *plane,
+ 		ret = mdp5_smp_assign(mdp5_kms->smp, &new_global_state->smp,
+ 				(*hwpipe)->pipe, blkcfg);
+ 		if (ret)
+-			return -ENOMEM;
++			return ret;
+ 
+ 		(*hwpipe)->blkcfg = blkcfg;
+ 	}

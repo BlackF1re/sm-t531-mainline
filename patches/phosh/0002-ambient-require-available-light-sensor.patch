@@ -1,0 +1,355 @@
+From: T531 Project <noreply@localhost>
+Date: Sat, 17 Oct 2026 02:35:00 +0000
+Subject: [PATCH] ambient: require a light sensor before enabling auto brightness
+
+SensorProxy may successfully accept ClaimLight without a populated ambient
+light sensor. An unblank currently issues that claim whenever the ambient
+brightness preference is enabled, even with HasAmbientLight=false. The
+successful reply enables automatic brightness using an invalid zero-lux
+reading and changes the hidden-auto slider into an offset control.
+
+On SM-T531 / Phosh 0.58.0 with no ALS exposed, the actual GTK brightness
+slider at 0/25/50/75/100 percent writes LP8556 levels 2/2/3/11/37 instead of
+2/7/23/76/255. Its maximum is the zero-lux base 0.1 plus offset 0.5, not the
+hardware maximum. Preserve the existing curve and brightness preference;
+require sensor availability and an unblanked display for claims and auto
+activation. Release a disappearing sensor and reconcile availability after
+asynchronous replies, serializing calls to avoid stale or duplicate claims.
+
+Cover absent sensors, normal appearance/disappearance, disappearance while
+claiming and reappearance while releasing using the real ambient state
+machine with delayed successful D-Bus replies. Upstream source copyrights
+and authorship are retained.
+
+Forwarded: not-yet
+---
+diff --git a/src/ambient.c b/src/ambient.c
+--- a/src/ambient.c
++++ b/src/ambient.c
+@@ -55,6 +55,8 @@
+   GObject       parent;
+ 
+   int           claimed;
++  gboolean      claim_pending;
++  gboolean      release_pending;
+   PhoshSensorProxyManager *sensor_proxy_manager;
+   GCancellable *cancel;
+ 
+@@ -76,6 +78,8 @@
+ } PhoshAmbient;
+ 
+ G_DEFINE_TYPE (PhoshAmbient, phosh_ambient, G_TYPE_OBJECT);
++
++static void maybe_claim (PhoshAmbient *self);
+ 
+ 
+ static void
+@@ -245,7 +249,7 @@
+   const char *unit;
+   PhoshDBusSensorProxy *proxy;
+ 
+-  if (!self->claimed)
++  if (!self->has_sensor || self->blanked || !self->claimed)
+     return;
+ 
+   proxy = PHOSH_DBUS_SENSOR_PROXY (self->sensor_proxy_manager);
+@@ -274,7 +278,7 @@
+ 
+   g_return_if_fail (self->claimed >= 0);
+ 
+-  auto_brightness = (self->claimed &&
++  auto_brightness = (self->has_sensor && !self->blanked && self->claimed &&
+                      g_settings_get_boolean (self->power_settings, KEY_AMBIENT_ENABLED));
+ 
+   if (self->auto_brightness == auto_brightness)
+@@ -296,6 +300,7 @@
+   g_return_if_fail (PHOSH_IS_SENSOR_PROXY_MANAGER (proxy));
+   g_return_if_fail (proxy == PHOSH_DBUS_SENSOR_PROXY (self->sensor_proxy_manager));
+ 
++  self->claim_pending = FALSE;
+   success = phosh_dbus_sensor_proxy_call_claim_light_finish (proxy, res, &err);
+   if (!success) {
+     g_warning ("Failed to claim ambient sensor: %s", err->message);
+@@ -307,6 +312,7 @@
+ 
+   update_auto_brightness_enabled (self);
+   on_ambient_light_level_changed (self, NULL, self->sensor_proxy_manager);
++  maybe_claim (self);
+ }
+ 
+ 
+@@ -322,6 +328,7 @@
+   g_return_if_fail (PHOSH_IS_SENSOR_PROXY_MANAGER (proxy));
+   g_return_if_fail (proxy == PHOSH_DBUS_SENSOR_PROXY (self->sensor_proxy_manager));
+ 
++  self->release_pending = FALSE;
+   success = phosh_dbus_sensor_proxy_call_release_light_finish (proxy, res, &err);
+   if (success) {
+     g_debug ("Released ambient light sensor");
+@@ -334,6 +341,7 @@
+   self->claimed--;
+   update_auto_brightness_enabled (self);
+   stop_high_contrast_sampling (self);
++  maybe_claim (self);
+ }
+ 
+ 
+@@ -342,13 +350,16 @@
+ {
+   PhoshDBusSensorProxy *proxy = PHOSH_DBUS_SENSOR_PROXY (self->sensor_proxy_manager);
+ 
+-  if (claim == !!self->claimed)
++  /* Reconcile changed availability/preferences when the pending call finishes. */
++  if (self->claim_pending || self->release_pending || claim == !!self->claimed)
+     return;
+ 
+   g_debug ("Claiming sensor: %d", claim);
+   if (claim) {
++    self->claim_pending = TRUE;
+     phosh_dbus_sensor_proxy_call_claim_light (proxy, self->cancel, on_ambient_claimed, self);
+   } else {
++    self->release_pending = TRUE;
+     phosh_dbus_sensor_proxy_call_release_light (proxy, self->cancel, on_ambient_released, self);
+   }
+ }
+@@ -363,7 +374,7 @@
+ 
+   auto_brightness = g_settings_get_boolean (self->power_settings, KEY_AMBIENT_ENABLED);
+   auto_hc = g_settings_get_boolean (self->phosh_settings, KEY_AUTOMATIC_HC);
+-  claim = auto_hc || auto_brightness;
++  claim = self->has_sensor && !self->blanked && (auto_hc || auto_brightness);
+ 
+   g_debug ("Auto brightness enabled: %d, Auto HC enabled: %d, claim: %d",
+            auto_brightness, auto_hc, claim);
+@@ -417,19 +428,11 @@
+     g_object_notify_by_pspec (G_OBJECT (self), props[PROP_HAS_SENSOR]);
+   }
+ 
+-  if (has_sensor) {
+-    g_debug ("Ambient sensor appeared");
+-    maybe_claim (self);
+-    return;
+-  }
+-
+-  if (!self->claimed)
+-    return;
+-
+-  g_debug ("Ambient sensor disappeared, marking unclaimed");
+-  self->claimed--;
++  /* A successful ClaimLight alone does not imply that a sensor exists. */
+   update_auto_brightness_enabled (self);
+-  stop_high_contrast_sampling (self);
++  maybe_claim (self);
++  if (!has_sensor)
++    stop_high_contrast_sampling (self);
+ }
+ 
+ 
+diff --git a/tests/meson.build b/tests/meson.build
+--- a/tests/meson.build
++++ b/tests/meson.build
+@@ -181,6 +181,17 @@
+   test(test, t, env: test_env_unit, depends: compiled_schemas, suite: ['unit'])
+ endforeach
+ 
++# Ambient lifecycle tests use the actual implementation with a delayed D-Bus mock.
++t = executable(
++  'test-ambient',
++  ['test-ambient.c', generated_dbus_sources],
++  c_args: test_cflags,
++  pie: true,
++  dependencies: [phosh_static_lib_dep, testlib_dep],
++)
++test('ambient', t, env: test_env_unit, depends: compiled_schemas, suite: ['unit'])
++
++
+ foreach test : tests_searchd
+   t = executable(
+     'test-@0@'.format(test),
+diff --git a/tests/test-ambient.c b/tests/test-ambient.c
+new file mode 100644
+--- /dev/null
++++ b/tests/test-ambient.c
+@@ -0,0 +1,182 @@
++/* SPDX-License-Identifier: GPL-3.0-or-later
++ * Copyright (C) 2026 T531 Project
++ */
++
++/* Exercise the real ambient state machine with delayed successful D-Bus calls.
++ * SensorProxy can accept ClaimLight even when HasAmbientLight is false.
++ */
++#define phosh_dbus_sensor_proxy_call_claim_light mock_claim_light
++#define phosh_dbus_sensor_proxy_call_claim_light_finish mock_claim_light_finish
++#define phosh_dbus_sensor_proxy_call_release_light mock_release_light
++#define phosh_dbus_sensor_proxy_call_release_light_finish mock_release_light_finish
++#define phosh_dbus_sensor_proxy_call_release_light_sync mock_release_light_sync
++#include "../src/ambient.c"
++
++static GTask *pending_claim, *pending_release;
++static guint claims, releases;
++
++void
++mock_claim_light (PhoshDBusSensorProxy *proxy, GCancellable *cancel,
++                  GAsyncReadyCallback callback, gpointer data)
++{
++  g_assert_null (pending_claim);
++  claims++;
++  pending_claim = g_task_new (proxy, cancel, callback, data);
++}
++
++gboolean
++mock_claim_light_finish (PhoshDBusSensorProxy *proxy, GAsyncResult *res, GError **error)
++{
++  return g_task_propagate_boolean (G_TASK (res), error);
++}
++
++void
++mock_release_light (PhoshDBusSensorProxy *proxy, GCancellable *cancel,
++                    GAsyncReadyCallback callback, gpointer data)
++{
++  g_assert_null (pending_release);
++  releases++;
++  pending_release = g_task_new (proxy, cancel, callback, data);
++}
++
++gboolean
++mock_release_light_finish (PhoshDBusSensorProxy *proxy, GAsyncResult *res, GError **error)
++{
++  return g_task_propagate_boolean (G_TASK (res), error);
++}
++
++gboolean
++mock_release_light_sync (PhoshDBusSensorProxy *proxy, GCancellable *cancel, GError **error)
++{
++  return TRUE;
++}
++
++static void
++complete (GTask **pending)
++{
++  GTask *task = g_steal_pointer (pending);
++
++  g_assert_nonnull (task);
++  g_task_return_boolean (task, TRUE);
++  g_object_unref (task);
++  while (g_main_context_iteration (NULL, FALSE));
++}
++
++static PhoshAmbient *
++new_ambient (void)
++{
++  PhoshAmbient *self;
++  GDBusProxy *proxy;
++
++  /* Run instance initialization without constructing a complete desktop shell. */
++  self = (PhoshAmbient *) g_type_create_instance (PHOSH_TYPE_AMBIENT);
++  self->sensor_proxy_manager = g_object_new (PHOSH_TYPE_SENSOR_PROXY_MANAGER, NULL);
++  proxy = G_DBUS_PROXY (self->sensor_proxy_manager);
++  g_dbus_proxy_set_cached_property (proxy, "HasAmbientLight", g_variant_new_boolean (FALSE));
++  g_dbus_proxy_set_cached_property (proxy, "LightLevel", g_variant_new_double (0));
++  g_dbus_proxy_set_cached_property (proxy, "LightLevelUnit", g_variant_new_string ("lux"));
++  self->blanked = FALSE;
++  g_settings_set_boolean (self->power_settings, KEY_AMBIENT_ENABLED, TRUE);
++  g_settings_set_boolean (self->phosh_settings, KEY_AUTOMATIC_HC, FALSE);
++  claims = releases = 0;
++  return self;
++}
++
++static void
++set_sensor (PhoshAmbient *self, gboolean present)
++{
++  PhoshDBusSensorProxy *proxy = PHOSH_DBUS_SENSOR_PROXY (self->sensor_proxy_manager);
++
++  g_dbus_proxy_set_cached_property (G_DBUS_PROXY (proxy), "HasAmbientLight",
++                                     g_variant_new_boolean (present));
++  on_has_ambient_light_changed (self, NULL, proxy);
++}
++
++static void
++test_absent_sensor (void)
++{
++  g_autoptr (PhoshAmbient) self = new_ambient ();
++
++  set_sensor (self, FALSE);
++  maybe_claim (self);
++  maybe_claim (self);
++  g_assert_cmpuint (claims, ==, 0);
++  g_assert_cmpuint (releases, ==, 0);
++  g_assert_false (phosh_ambient_get_auto_brightness (self));
++  g_assert_cmpfloat (phosh_ambient_get_light_level (self), ==, -1.0);
++}
++
++static void
++test_sensor_lifecycle (void)
++{
++  g_autoptr (PhoshAmbient) self = new_ambient ();
++
++  set_sensor (self, TRUE);
++  maybe_claim (self);  /* A repeated event must not send a second async claim. */
++  g_assert_cmpuint (claims, ==, 1);
++  g_assert_false (phosh_ambient_get_auto_brightness (self));
++  complete (&pending_claim);
++  g_assert_true (phosh_ambient_get_auto_brightness (self));
++  g_assert_cmpfloat (phosh_ambient_get_light_level (self), ==, 0.0);
++
++  set_sensor (self, FALSE);
++  g_assert_false (phosh_ambient_get_auto_brightness (self));
++  g_assert_cmpuint (releases, ==, 1);
++  set_sensor (self, FALSE);
++  g_assert_cmpuint (releases, ==, 1);
++  complete (&pending_release);
++  g_assert_cmpint (self->claimed, ==, 0);
++
++  set_sensor (self, TRUE);
++  complete (&pending_claim);
++  g_assert_cmpuint (claims, ==, 2);
++  g_assert_true (phosh_ambient_get_auto_brightness (self));
++  set_sensor (self, FALSE);
++  complete (&pending_release);
++}
++
++static void
++test_vanish_while_claiming (void)
++{
++  g_autoptr (PhoshAmbient) self = new_ambient ();
++
++  set_sensor (self, TRUE);
++  set_sensor (self, FALSE);
++  g_assert_cmpuint (releases, ==, 0);
++  complete (&pending_claim);
++  g_assert_false (phosh_ambient_get_auto_brightness (self));
++  g_assert_cmpfloat (phosh_ambient_get_light_level (self), ==, -1.0);
++  g_assert_cmpuint (releases, ==, 1);
++  complete (&pending_release);
++  g_assert_cmpint (self->claimed, ==, 0);
++}
++
++static void
++test_reappear_while_releasing (void)
++{
++  g_autoptr (PhoshAmbient) self = new_ambient ();
++
++  set_sensor (self, TRUE);
++  complete (&pending_claim);
++  set_sensor (self, FALSE);
++  set_sensor (self, TRUE);
++  g_assert_cmpuint (claims, ==, 1);
++  complete (&pending_release);
++  g_assert_cmpuint (claims, ==, 2);
++  g_assert_false (phosh_ambient_get_auto_brightness (self));
++  complete (&pending_claim);
++  g_assert_true (phosh_ambient_get_auto_brightness (self));
++  set_sensor (self, FALSE);
++  complete (&pending_release);
++}
++
++int
++main (int argc, char **argv)
++{
++  g_test_init (&argc, &argv, NULL);
++  g_test_add_func ("/phosh/ambient/no-sensor", test_absent_sensor);
++  g_test_add_func ("/phosh/ambient/lifecycle", test_sensor_lifecycle);
++  g_test_add_func ("/phosh/ambient/vanish-while-claiming", test_vanish_while_claiming);
++  g_test_add_func ("/phosh/ambient/reappear-while-releasing", test_reappear_while_releasing);
++  return g_test_run ();
++}

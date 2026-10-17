@@ -1,0 +1,29 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Thu, 15 Oct 2026 02:00:00 +0700
+Subject: [PATCH] ARM: dts: qcom: keep Matisse firmware console until KMS takeover
+
+Retain the verified RGB888 firmware framebuffer for the early console in
+the native profile. Its clock and power-domain references keep the inherited
+display alive before late native driver activation. MSM KMS already calls
+aperture_remove_all_conflicting_devices() before initializing its display
+engine, so simplefb releases its mapping and references at native takeover.
+
+This does not enable simpledrm or route Plasma through firmware scanout.
+Native KWin continues to select the MDP5 device explicitly. Panel power and
+suspend validation remain incomplete; a seamless handoff is not claimed.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
+@@ -3,7 +3,8 @@
+ #include "qcom-msm8226-samsung-matisse3g.dts"
+ 
+ &framebuffer0 {
+-	status = "disabled";
++	/* Boot console only; msm_drm_kms_init removes the firmware aperture. */
++	status = "okay";
+ };
+ 
+ &mdp_smmu {

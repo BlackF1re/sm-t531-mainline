@@ -1,0 +1,80 @@
+From: Sam Day <me@samcday.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: invalidate TLB during context initialization
+
+A new TTBR does not discard cached translations for a reused ASID,
+including when booting through kexec. Invalidate that namespace while the
+context is disabled, then synchronize before programming it.
+
+Backport Sam Day's v1 context-initialization invalidation, adapted to the
+context helper and separate page-table ASID. The existing five-second
+bound is retained. Propagate failed synchronization without overwriting
+the context, release the halt and abort attach/resume safely.
+
+Fixes: 0ae349a0f33f ("iommu/qcom: Add qcom_iommu")
+Assisted-by: LLM
+Signed-off-by: Sam Day <me@samcday.com>
+Link: https://lore.kernel.org/r/20260928-qcom-iommu-clean-contexts-v1-1-c88fe2b4ff48@samcday.com
+[BlackF1re: context helper, page-table ASID, fail-safe error propagation]
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 553809db5..757e955ef 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -139,23 +139,27 @@ iommu_readq(struct qcom_iommu_ctx *ctx, unsigned reg)
+ 	return readq_relaxed(ctx->base + reg);
+ }
+ 
++static int qcom_iommu_ctx_tlb_sync(struct qcom_iommu_ctx *ctx)
++{
++	unsigned int val;
++	int ret;
++
++	iommu_writel(ctx, ARM_SMMU_CB_TLBSYNC, 0);
++	ret = readl_poll_timeout(ctx->base + ARM_SMMU_CB_TLBSTATUS, val,
++				(val & 0x1) == 0, 0, 5000000);
++	if (ret)
++		dev_err(ctx->dev, "timeout waiting for TLB SYNC\n");
++	return ret;
++}
++
+ static void qcom_iommu_tlb_sync(void *cookie)
+ {
+ 	struct qcom_iommu_domain *qcom_domain = cookie;
+ 	struct iommu_fwspec *fwspec = qcom_domain->fwspec;
+-	unsigned i;
+-
+-	for (i = 0; i < fwspec->num_ids; i++) {
+-		struct qcom_iommu_ctx *ctx = to_ctx(qcom_domain, fwspec->ids[i]);
+-		unsigned int val, ret;
+-
+-		iommu_writel(ctx, ARM_SMMU_CB_TLBSYNC, 0);
++	unsigned int i;
+ 
+-		ret = readl_poll_timeout(ctx->base + ARM_SMMU_CB_TLBSTATUS, val,
+-					 (val & 0x1) == 0, 0, 5000000);
+-		if (ret)
+-			dev_err(ctx->dev, "timeout waiting for TLB SYNC\n");
+-	}
++	for (i = 0; i < fwspec->num_ids; i++)
++		qcom_iommu_ctx_tlb_sync(to_ctx(qcom_domain, fwspec->ids[i]));
+ }
+ 
+ static void qcom_iommu_tlb_inv_context(void *cookie)
+@@ -308,6 +312,14 @@ static int qcom_iommu_program_ctx(struct qcom_iommu_dev *qcom_iommu,
+ 	if (qcom_iommu->short_desc)
+ 		iommu_writel(ctx, QCOM_IOMMU_CB_TLBIALL, 0);
+ 
++	/* Drop old entries for the incoming namespace before enabling it. */
++	iommu_writel(ctx, ARM_SMMU_CB_S1_TLBIASID, ctx->pt_asid);
++	ret = qcom_iommu_ctx_tlb_sync(ctx);
++	if (ret) {
++		qcom_iommu_unhalt(qcom_iommu);
++		return ret;
++	}
++
+ 	/* Clear context bank fault address fault status registers */
+ 	iommu_writel(ctx, ARM_SMMU_CB_FAR, 0);
+ 	iommu_writel(ctx, ARM_SMMU_CB_FSR, ARM_SMMU_CB_FSR_FAULT);

@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 14:40:00 +0000
+Subject: [PATCH] drm/msm/a3xx: read the fixed GPU busy power counter
+
+RBBM_PERFCTR_RBBM_1 is a selectable performance counter. Its default
+selector is RBBM_ALWAYS_ON, so using it as busy time reports almost 100%
+while clocks run and keeps devfreq at the maximum frequency regardless
+of actual rendering load.
+
+The existing RBBM_CTL enable and GPU_BUSY_MASKED setup initializes the
+fixed PWR counter 1. Read that counter, matching Samsung's A3xx KGSL
+busy_cycles implementation. The register descriptions distinguish PWR_1
+at 0x00ec from the selectable RBBM_1 at 0x0094.
+
+Source: LineageOS/android_kernel_samsung_msm8226 at
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, adreno_a3xx.c busy_cycles.
+Current upstream was checked 2026-10-13 and still uses RBBM_1.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/adreno/a3xx_gpu.c b/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
+index 6831106a5..2f6aedf4f 100644
+--- a/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
+@@ -492,7 +492,8 @@ static u64 a3xx_gpu_busy(struct msm_gpu *gpu, unsigned long *out_sample_rate)
+ {
+ 	u64 busy_cycles;
+ 
+-	busy_cycles = gpu_read64(gpu, REG_A3XX_RBBM_PERFCTR_RBBM_1_LO);
++	/* PWR counter 1 counts masked GPU busy cycles; RBBM counters are selectable. */
++	busy_cycles = gpu_read64(gpu, REG_A3XX_RBBM_PERFCTR_PWR_1_LO);
+ 	*out_sample_rate = clk_get_rate(gpu->core_clk);
+ 
+ 	return busy_cycles;
+-- 
+2.53.0

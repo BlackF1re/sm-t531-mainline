@@ -1,0 +1,56 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/msm: use standard ICC OPP votes when available
+
+Use standard OPP interconnect bandwidth transitions when DT supplies
+ICC paths. Keep the temporary direct AXI callback only for the tested
+no-ICC fallback, preventing independent GPU writes to the shared MMSS
+root once MDP/CPU/GPU bandwidth aggregation is active. Propagate failures
+from dev_pm_opp_set_rate to devfreq rather than reporting false success.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/adreno/adreno_gpu.c b/drivers/gpu/drm/msm/adreno/adreno_gpu.c
+index ef984d37a..57f0c5923 100644
+--- a/drivers/gpu/drm/msm/adreno/adreno_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/adreno_gpu.c
+@@ -1241,7 +1241,8 @@ int adreno_gpu_init(struct drm_device *drm, struct platform_device *pdev,
+ 		 * This can only be done before devm_pm_opp_of_add_table(), or
+ 		 * dev_pm_opp_set_config() will WARN_ON()
+ 		 */
+-		if (adreno_is_a305b(adreno_gpu)) {
++		if (adreno_is_a305b(adreno_gpu) &&
++		    !of_property_present(dev->of_node, "interconnects")) {
+ 			static const char * const names[] = { "core", NULL };
+ 			struct dev_pm_opp_config opp_config = {
+ 				.clk_names = names,
+diff --git a/drivers/gpu/drm/msm/msm_gpu_devfreq.c b/drivers/gpu/drm/msm/msm_gpu_devfreq.c
+index 0ef642be5..9377a3509 100644
+--- a/drivers/gpu/drm/msm/msm_gpu_devfreq.c
++++ b/drivers/gpu/drm/msm/msm_gpu_devfreq.c
+@@ -22,6 +22,7 @@ static int msm_devfreq_target(struct device *dev, unsigned long *freq,
+ 	struct msm_gpu *gpu = dev_to_gpu(dev);
+ 	struct msm_gpu_devfreq *df = &gpu->devfreq;
+ 	struct dev_pm_opp *opp;
++	int ret = 0;
+ 
+ 	/*
+ 	 * Note that devfreq_recommended_opp() can modify the freq
+@@ -40,7 +41,7 @@ static int msm_devfreq_target(struct device *dev, unsigned long *freq,
+ 	if (df->idle_freq) {
+ 		df->idle_freq = *freq;
+ 		dev_pm_opp_put(opp);
+-		return 0;
++		return ret;
+ 	}
+ 
+ 	if (gpu->funcs->gpu_set_freq) {
+@@ -48,7 +49,7 @@ static int msm_devfreq_target(struct device *dev, unsigned long *freq,
+ 		gpu->funcs->gpu_set_freq(gpu, opp, df->suspended);
+ 		mutex_unlock(&df->lock);
+ 	} else {
+-		dev_pm_opp_set_rate(dev, *freq);
++		ret = dev_pm_opp_set_rate(dev, *freq);
+ 	}
+ 
+ 	dev_pm_opp_put(opp);

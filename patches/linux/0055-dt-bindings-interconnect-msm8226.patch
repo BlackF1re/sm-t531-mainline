@@ -1,0 +1,109 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] dt-bindings: interconnect: add MSM8226 memory fabrics
+
+Describe the MSM8226 CPU/GPU/MDP memory fabrics using the exact vendor
+MSM8226 topology and RPM resource IDs, not an MSM8974 compatible.
+Use RPM BIMC/OCMEM clock votes and the HLOS MMSS AXI clock. Rate conversion
+for MMSS and virtual OCMEM follows downstream slave/fabric clock domains
+(16 bytes), while BIMC/DDR uses 8 bytes.
+
+Initial graphics bring-up only: preserve firmware QoS, especially the CPU
+BIMC limiter; do not write guessed QoS registers. The remaining SoC fabrics
+are not modeled. ENXIO handling follows the shared MSM8974 RPM framework
+policy, other RPM errors propagate. Hardware validation remains pending.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/Documentation/devicetree/bindings/interconnect/qcom,msm8226.yaml b/Documentation/devicetree/bindings/interconnect/qcom,msm8226.yaml
+new file mode 100644
+index 000000000..e839de12c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interconnect/qcom,msm8226.yaml
+@@ -0,0 +1,68 @@
++# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/interconnect/qcom,msm8226.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: Qualcomm MSM8226 graphics and CPU memory interconnects
++
++maintainers:
++  - BlackF1re <55582873+BlackF1re@users.noreply.github.com>
++
++description: |
++  The BIMC, MMSS NoC and virtual OCMEM fabric connect CPU, GPU and MDP
++  to external and on-chip memory. Other MSM8226 fabrics are not described
++  by this initial graphics bring-up binding.
++
++allOf:
++  - $ref: qcom,rpm-common.yaml#
++  - if:
++      properties:
++        compatible:
++          const: qcom,msm8226-mmssnoc
++    then:
++      required: [reg, clocks, clock-names]
++    else:
++      properties:
++        clocks: false
++        clock-names: false
++  - if:
++      properties:
++        compatible:
++          const: qcom,msm8226-bimc
++    then:
++      required: [reg]
++  - if:
++      properties:
++        compatible:
++          const: qcom,msm8226-ocmem-vnoc
++    then:
++      properties:
++        reg: false
++
++properties:
++  compatible:
++    enum:
++      - qcom,msm8226-bimc
++      - qcom,msm8226-mmssnoc
++      - qcom,msm8226-ocmem-vnoc
++  reg:
++    maxItems: 1
++  clocks:
++    maxItems: 1
++    description: HLOS MMSS AXI fabric clock
++  clock-names:
++    const: bus
++
++required:
++  - compatible
++
++unevaluatedProperties: false
++
++examples:
++  - |
++    interconnect@fc380000 {
++        compatible = "qcom,msm8226-bimc";
++        reg = <0xfc380000 0x6a000>;
++        #interconnect-cells = <1>;
++    };
+diff --git a/include/dt-bindings/interconnect/qcom,msm8226.h b/include/dt-bindings/interconnect/qcom,msm8226.h
+new file mode 100644
+index 000000000..7afcd0861
+--- /dev/null
++++ b/include/dt-bindings/interconnect/qcom,msm8226.h
+@@ -0,0 +1,12 @@
++/* SPDX-License-Identifier: GPL-2.0-only OR BSD-2-Clause */
++#ifndef __DT_BINDINGS_INTERCONNECT_QCOM_MSM8226_H
++#define __DT_BINDINGS_INTERCONNECT_QCOM_MSM8226_H
++#define BIMC_MAS_CPU 0
++#define BIMC_MAS_MMSS 1
++#define BIMC_SLV_EBI 2
++#define MMSS_MAS_GFX 0
++#define MMSS_MAS_MDP 1
++#define MMSS_SLV_BIMC 2
++#define OCMEM_MAS_GFX 0
++#define OCMEM_SLV_OCMEM 1
++#endif

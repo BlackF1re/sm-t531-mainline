@@ -11,7 +11,11 @@ tag=v7.2.9
 cross=${CROSS_COMPILE:-arm-linux-gnueabihf-}
 profile=${1:-main}
 case "$profile" in
-    main) defconfig=multi_v7_defconfig; prefix=; required=config/kernel.fragment;;
+    main)
+        defconfig=multi_v7_defconfig; prefix=; required=config/kernel.fragment
+        export NATIVE_KMS=${NATIVE_KMS:-1}
+        export NATIVE_ICC=${NATIVE_ICC:-$NATIVE_KMS}
+        ;;
     bootstrap) defconfig=qcom_defconfig; prefix=bootstrap-; required=config/bootstrap.fragment;;
     *) echo 'Usage: build.sh [main|bootstrap]'; exit 1;;
 esac
@@ -55,14 +59,40 @@ km=(make -C "$linux" O="$out" ARCH=arm CROSS_COMPILE="$cross")
 if [ "$profile" = bootstrap ]; then
     "$linux/scripts/kconfig/merge_config.sh" -m -O "$out" "$out/.config" "$project/config/bootstrap.fragment"
 fi
+if [ "${NATIVE_KMS:-0}" = 1 ]; then
+    "$linux/scripts/kconfig/merge_config.sh" -m -O "$out" "$out/.config" "$project/config/native-kms.fragment"
+fi
+if [ "${NATIVE_ICC:-0}" = 1 ]; then
+    "$linux/scripts/kconfig/merge_config.sh" -m -O "$out" "$out/.config" "$project/config/native-icc.fragment"
+fi
+if [ "${GRAPHICS_TRACE:-0}" = 1 ]; then
+    "$linux/scripts/kconfig/merge_config.sh" -m -O "$out" "$out/.config" "$project/config/graphics-trace.fragment"
+fi
 "${km[@]}" olddefconfig
-python3 - "$out/.config" "$project/$required" <<'PY'
+required_fragments=("$project/$required")
+# Profile fragments override earlier settings, as merge_config.sh does.
+if [ "${NATIVE_KMS:-0}" = 1 ]; then
+    required_fragments+=("$project/config/native-kms.fragment")
+fi
+if [ "${NATIVE_ICC:-0}" = 1 ]; then
+    required_fragments+=("$project/config/native-icc.fragment")
+fi
+if [ "${GRAPHICS_TRACE:-0}" = 1 ]; then
+    required_fragments+=("$project/config/graphics-trace.fragment")
+fi
+python3 - "$out/.config" "${required_fragments[@]}" <<'PY'
 import sys
 cfg=set(open(sys.argv[1]).read().splitlines())
-required=[s.strip() for s in open(sys.argv[2])
-          if s.startswith('CONFIG_') or (s.startswith('# CONFIG_') and s.rstrip().endswith(' is not set'))]
+required={}
+for path in sys.argv[2:]:
+    for line in open(path):
+        setting=line.strip()
+        if setting.startswith('CONFIG_'):
+            required[setting.split('=', 1)[0]]=setting
+        elif setting.startswith('# CONFIG_') and setting.endswith(' is not set'):
+            required[setting.split()[1]]=setting
 missing=[]
-for setting in required:
+for setting in required.values():
     if setting.startswith('CONFIG_'):
         if setting not in cfg: missing.append(setting)
     else:
@@ -72,14 +102,31 @@ for setting in required:
             missing.append(setting)
 if missing: raise SystemExit('Unresolved required config: '+', '.join(missing))
 PY
-targets=(zImage qcom/qcom-msm8226-samsung-matisse3g.dtb)
+dtb=qcom-msm8226-samsung-matisse3g.dtb
+if [ "${NATIVE_ICC:-0}" = 1 ] && [ "${NATIVE_KMS:-0}" != 1 ]; then
+    echo 'NATIVE_ICC requires NATIVE_KMS=1'; exit 1
+fi
+if [ "${NATIVE_KMS:-0}" = 1 ]; then
+    [ "$profile" = main ] || { echo 'Native KMS requires main profile'; exit 1; }
+    dtb=qcom-msm8226-samsung-matisse3g-native.dtb
+    if [ "${NATIVE_ICC:-0}" = 1 ]; then
+        dtb=qcom-msm8226-samsung-matisse3g-native-icc.dtb
+    fi
+fi
+targets=(zImage "qcom/$dtb")
 [ "$profile" = bootstrap ] || targets+=(modules)
 "${km[@]}" -j"${JOBS:-8}" "${targets[@]}"
+python3 "$project/tools/check-boot-layout.py" "$out/System.map" "$out/.config" \
+    "$out/arch/arm/boot/zImage" \
+    "$out/arch/arm/boot/dts/qcom/$dtb"
 if [ "$profile" = main ]; then
     "${km[@]}" INSTALL_MOD_PATH="$artifacts/modules" INSTALL_MOD_STRIP=1 modules_install
+    (cd "$artifacts/modules";
+        find lib/modules -type f -print0 | LC_ALL=C sort -z |
+            xargs -0 sha256sum > modules.files.sha256)
 fi
 cp "$out/arch/arm/boot/zImage" "$artifacts/${prefix}zImage"
-cp "$out/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dtb" "$artifacts/"
+cp "$out/arch/arm/boot/dts/qcom/$dtb" "$artifacts/qcom-msm8226-samsung-matisse3g.dtb"
 cp "$out/.config" "$artifacts/${prefix}kernel.config"
 cp "$project/boot/extlinux.conf.in" "$artifacts/extlinux.conf"
 "$project/scripts/build-initramfs.sh" "$profile"

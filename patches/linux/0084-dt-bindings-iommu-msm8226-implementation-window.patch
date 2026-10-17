@@ -1,0 +1,49 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] dt-bindings: iommu: describe MSM8226 implementation window
+
+Document the named implementation-only resource used by MSM8226 MDP.
+Require it for that compatible and reject it on the legacy MSM8916 path.
+The context-bank ranges still originate at fd928000.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/Documentation/devicetree/bindings/iommu/qcom,iommu.yaml b/Documentation/devicetree/bindings/iommu/qcom,iommu.yaml
+index 3582def5e..5c9016dfe 100644
+--- a/Documentation/devicetree/bindings/iommu/qcom,iommu.yaml
++++ b/Documentation/devicetree/bindings/iommu/qcom,iommu.yaml
+@@ -52,6 +52,13 @@ properties:
+   reg:
+     maxItems: 1
+ 
++  reg-names:
++    items:
++      - const: impl
++    description:
++      MSM8226 MDP HLOS-owned implementation register window. Secure global
++      registers remain managed by TrustZone and are not mapped by the OS.
++
+   ranges: true
+ 
+   qcom,iommu-secure-id:
+@@ -105,6 +112,20 @@ required:
+   - '#size-cells'
+   - '#iommu-cells'
+ 
++allOf:
++  - if:
++      properties:
++        compatible:
++          contains:
++            const: qcom,msm8226-iommu
++    then:
++      required:
++        - reg
++        - reg-names
++    else:
++      properties:
++        reg-names: false
++
+ additionalProperties: false
+ 
+ examples:

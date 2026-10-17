@@ -1,0 +1,31 @@
+Subject: [PATCH] drm/msm/mdp5: allow the last mixer stage in atomic check
+
+Mixer stage IDs start at one (STAGE_BASE), with zero meaning unused.
+The last assigned stage is cnt + start - 1. Reject it only when it exceeds
+the configured stage count, not when it equals that count. The cursor path
+already assigns nb_stages itself, and STAGE_MAX includes stage ID eight.
+
+On MSM8226 nb_stages is two. The old comparison rejects a fullscreen base
+plus a foreground on STAGE0, as well as a single non-fullscreen plane
+which needs border color on the base stage. Both fail TEST_ONLY with
+EINVAL before any hardware programming. Do not change the hardware stage
+count or permit a third stage on this SoC.
+
+Device validation and limitations: docs/GRAPHICS-BOTTLENECK.md.
+
+diff --git a/drivers/gpu/drm/msm/disp/mdp5/mdp5_crtc.c b/drivers/gpu/drm/msm/disp/mdp5/mdp5_crtc.c
+--- a/drivers/gpu/drm/msm/disp/mdp5/mdp5_crtc.c
++++ b/drivers/gpu/drm/msm/disp/mdp5/mdp5_crtc.c
+@@ -765,9 +765,10 @@ static int mdp5_crtc_atomic_check(struct drm_crtc *crtc,
+ 	start = get_start_stage(crtc, crtc_state, &pstates[0].state->base);
+ 
+ 	/* verify that there are not too many planes attached to crtc
+-	 * and that we don't have conflicting mixer stages:
++	 * and that we don't have conflicting mixer stages. Stage IDs start
++	 * at STAGE_BASE (1), so nb_stages itself is a valid last stage.
+ 	 */
+-	if ((cnt + start - 1) >= hw_cfg->lm.nb_stages) {
++	if ((cnt + start - 1) > hw_cfg->lm.nb_stages) {
+ 		DRM_DEV_ERROR(dev->dev, "too many planes! cnt=%d, start stage=%d\n",
+ 			cnt, start);
+ 		return -EINVAL;

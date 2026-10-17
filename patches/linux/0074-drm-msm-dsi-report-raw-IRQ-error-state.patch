@@ -1,0 +1,32 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm/msm/dsi: report raw status during error work
+
+The native Matisse modeset repeatedly queues DSI error work, while the
+existing synthesized FIFO state also includes normal FIFO_EMPTY bits.
+Report raw error registers under the existing print rate limit to
+identify the hardware source. Do not change interrupt masks, status
+acknowledgements or recovery behavior during this diagnostic.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/dsi_host.c b/drivers/gpu/drm/msm/dsi/dsi_host.c
+index a8c8e89ac..0451c3cf2 100644
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -1607,7 +1607,14 @@ static void dsi_err_worker(struct work_struct *work)
+ 		container_of(work, struct msm_dsi_host, err_work);
+ 	u32 status = msm_host->err_work_state;
+ 
+-	pr_err_ratelimited("%s: status=%x\n", __func__, status);
++	pr_err_ratelimited("%s: status=%x fifo=%08x ack=%08x timeout=%08x phy=%08x clk=%08x irq=%08x\n",
++			  __func__, status,
++			  dsi_read(msm_host, REG_DSI_FIFO_STATUS),
++			  dsi_read(msm_host, REG_DSI_ACK_ERR_STATUS),
++			  dsi_read(msm_host, REG_DSI_TIMEOUT_STATUS),
++			  dsi_read(msm_host, REG_DSI_DLN0_PHY_ERR),
++			  dsi_read(msm_host, REG_DSI_CLK_STATUS),
++			  dsi_read(msm_host, REG_DSI_INTR_CTRL));
+ 	if (status & DSI_ERR_STATE_MDP_FIFO_UNDERFLOW)
+ 		dsi_sw_reset(msm_host);
+ 

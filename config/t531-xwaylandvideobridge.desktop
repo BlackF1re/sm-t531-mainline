@@ -1,0 +1,11 @@
+# Phoc 0.46 / stock wlroots 0.18 cannot hide the bridge's opacity-zero window.
+[Desktop Entry]
+Type=Application
+Name=Xwayland Video Bridge
+Exec=/usr/bin/xwaylandvideobridge
+TryExec=/usr/bin/xwaylandvideobridge
+NoDisplay=true
+NotShowIn=Phosh;
+X-KDE-StartupNotify=false
+X-KDE-autostart-phase=2
+X-GNOME-Autostart-enabled=true

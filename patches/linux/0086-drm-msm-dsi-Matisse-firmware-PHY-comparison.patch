@@ -1,0 +1,91 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] drm: msm: dsi: add opt-in Matisse firmware PHY comparison
+
+Expose an opt-in, board-restricted PHY comparison profile. Default0
+keeps the existing configuration. Bit0 selects the12 timing values read
+from the physically working bootloader display, which match the Samsung
+panel DT. Bit1 selects its captured internal regulator controls instead
+of the differing vendor DT controls added by patch0070.
+
+This enables separate timing and regulator tests, without guessing PMIC
+voltages, changing external supplies or modifying other boards. It is a
+temporary diagnostic, not a validated production PHY configuration.
+Captured clocks and waveform differences require further investigation.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
+index 88aece4ec..f0c706af8 100644
+--- a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
++++ b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_28nm.c
+@@ -6,6 +6,8 @@
+ #include <dt-bindings/clock/qcom,dsi-phy-28nm.h>
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/module.h>
++#include <linux/of.h>
+ 
+ #include "dsi_phy.h"
+ #include "dsi.xml.h"
+@@ -40,6 +42,20 @@
+ #define DSI_PHY_28NM_QUIRK_PHY_LP	BIT(0)
+ #define DSI_PHY_28NM_QUIRK_PHY_8226	BIT(1)
+ 
++/* Temporary Matisse profile: bit0 timing, bit1 internal regulator controls. */
++static unsigned int matisse_phy_profile;
++module_param(matisse_phy_profile, uint, 0600);
++MODULE_PARM_DESC(matisse_phy_profile,
++		 "Matisse diagnostic: 1 firmware timing, 2 regulator, 3 both");
++
++static unsigned int dsi_28nm_matisse_profile(struct msm_dsi_phy *phy)
++{
++	if (!(phy->cfg->quirks & DSI_PHY_28NM_QUIRK_PHY_8226) ||
++	    !of_machine_is_compatible("samsung,matisse3g"))
++		return 0;
++	return matisse_phy_profile & 3;
++}
++
+ #define LPFR_LUT_SIZE			10
+ struct lpfr_cfg {
+ 	unsigned long vco_rate;
+@@ -751,7 +767,8 @@ static void dsi_28nm_dphy_set_timing(struct msm_dsi_phy *phy,
+ static void dsi_28nm_phy_regulator_enable_dcdc(struct msm_dsi_phy *phy)
+ {
+ 	void __iomem *base = phy->reg_base;
+-	bool msm8226 = phy->cfg->quirks & DSI_PHY_28NM_QUIRK_PHY_8226;
++	bool msm8226 = (phy->cfg->quirks & DSI_PHY_28NM_QUIRK_PHY_8226) &&
++		       !(dsi_28nm_matisse_profile(phy) & 2);
+ 
+ 	writel(0x0, base + REG_DSI_28nm_PHY_REGULATOR_CTRL_0);
+ 	writel(1, base + REG_DSI_28nm_PHY_REGULATOR_CAL_PWR_CFG);
+@@ -802,6 +819,7 @@ static int dsi_28nm_phy_enable(struct msm_dsi_phy *phy,
+ 	int i;
+ 	void __iomem *base = phy->base;
+ 	u32 val;
++	unsigned int profile = dsi_28nm_matisse_profile(phy);
+ 
+ 	DBG("");
+ 
+@@ -812,6 +830,21 @@ static int dsi_28nm_phy_enable(struct msm_dsi_phy *phy,
+ 		return -EINVAL;
+ 	}
+ 
++	if (profile & 1) {
++		/* Captured working firmware, identical to Samsung's panel timings. */
++		timing->clk_zero = 0x74;
++		timing->clk_trail = 0x1c;
++		timing->clk_prepare = 0x1c;
++		timing->hs_exit = 0x36;
++		timing->hs_zero = 0x36;
++		timing->hs_prepare = 0x1d;
++		timing->hs_trail = 0x1d;
++		timing->hs_rqst = 0x20;
++	}
++	if (profile)
++		dev_warn(&phy->pdev->dev, "DIAGNOSTIC: Matisse PHY profile %u\n",
++			 profile);
++
+ 	writel(0xff, base + REG_DSI_28nm_PHY_STRENGTH_0);
+ 
+ 	dsi_28nm_phy_regulator_ctrl(phy, true);

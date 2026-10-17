@@ -1,0 +1,15 @@
+[Unit]
+Description=SM-T531 diagnostic native MDP5/DSI graphics activation
+ConditionKernelCommandLine=t531.native_kms=1
+After=systemd-udev-trigger.service ssh.service t531-ssh-wifi.service
+Before=sddm.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/t531-start-native-graphics
+ExecStartPost=/usr/bin/systemctl --no-block start sddm.service
+RemainAfterExit=yes
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

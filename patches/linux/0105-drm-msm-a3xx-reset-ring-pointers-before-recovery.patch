@@ -1,0 +1,48 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Thu, 15 Oct 2026 21:40:00 +0700
+Subject: [PATCH] drm/msm/a3xx: reset software ring pointers before recovery suspend
+
+The A3xx recovery callback resets CP before adreno_recover() invokes the
+GPU-specific suspend callback. The hardware read/write pointers are then
+zero, but a3xx_idle() compares RPTR with the old software ring write
+pointer.
+On SM-T531 a GPU hang is followed by a 0/0x24 ring-drain timeout, causing
+suspend to return -EBUSY instead of reaching the normal power-cycle path.
+
+Synchronize the software ring cursors with the reset hardware before the
+suspend/idle check. Fence state and pending submission lists are unchanged;
+recover_worker() remains responsible for replay after hardware reinit.
+This addresses the secondary recovery failure, not the original GPU hang.
+
+Normal runtime/system suspend still drains the live ring and VBIF. No
+clock, voltage or power-management policy is changed.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/adreno/a3xx_gpu.c b/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
+--- a/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
+@@ -361,6 +361,7 @@
+ 
+ static void a3xx_recover(struct msm_gpu *gpu)
+ {
++	struct msm_ringbuffer *ring = gpu->rb[0];
+ 	int i;
+ 
+ 	adreno_dump_info(gpu);
+@@ -377,6 +378,15 @@
+ 	gpu_write(gpu, REG_A3XX_RBBM_SW_RESET_CMD, 1);
+ 	gpu_read(gpu, REG_A3XX_RBBM_SW_RESET_CMD);
+ 	gpu_write(gpu, REG_A3XX_RBBM_SW_RESET_CMD, 0);
++
++	/*
++	 * Reset discards the ring and clears the hardware pointers. Match the
++	 * software write pointer before adreno_recover() calls pm_suspend(),
++	 * whose idle check would otherwise wait for the discarded commands.
++	 * recover_worker() replays the remaining submissions after reinit.
++	 */
++	ring->cur = ring->next = ring->start;
++
+ 	adreno_recover(gpu);
+ }
+ 

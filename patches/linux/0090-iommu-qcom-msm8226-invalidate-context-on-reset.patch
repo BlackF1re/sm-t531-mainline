@@ -1,0 +1,42 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: invalidate MSM8226 context TLB on reset
+
+MSM8226 BSP __reset_context() invalidates the context TLB before
+installing new TTBRs. The current helper omits this operation. In a kexec
+boot this can retain entries/table-walk state from the preceding display.
+
+Match the exact BSP context-local TLBIALL while the bank is disabled and
+the instance front-end halted. The unhalt barrier completes these writes
+before client requests resume. Do not touch secure global invalidation
+registers or change the existing long-descriptor instances.
+
+Related upstream fix by Sam Day, checked2026-10-14 (v1, not in this base):
+Link: https://lore.kernel.org/r/20260928-qcom-iommu-clean-contexts-v1-1-c88fe2b4ff48@samcday.com
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu-v1.c
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index 203c0a925..f2632f43a 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -36,6 +36,7 @@
+ #define SMMU_INTR_SEL_NS     0x2000
+ #define MICRO_MMU_CTRL_HALT_REQ BIT(2)
+ #define MICRO_MMU_CTRL_IDLE BIT(3)
++#define QCOM_IOMMU_CB_TLBIALL 0x618
+ 
+ enum qcom_iommu_clk {
+ 	CLK_IFACE,
+@@ -302,6 +303,10 @@ static int qcom_iommu_program_ctx(struct qcom_iommu_dev *qcom_iommu,
+ 	/* Disable context bank before programming */
+ 	iommu_writel(ctx, ARM_SMMU_CB_SCTLR, 0);
+ 
++	/* Match the MSM8226 BSP reset: discard stale firmware translations. */
++	if (qcom_iommu->short_desc)
++		iommu_writel(ctx, QCOM_IOMMU_CB_TLBIALL, 0);
++
+ 	/* Clear context bank fault address fault status registers */
+ 	iommu_writel(ctx, ARM_SMMU_CB_FAR, 0);
+ 	iommu_writel(ctx, ARM_SMMU_CB_FSR, ARM_SMMU_CB_FSR_FAULT);

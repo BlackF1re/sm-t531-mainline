@@ -1,0 +1,58 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] ARM: dts: qcom: describe MSM8226 display SMMU
+
+The first native boot bound MDP and DSI but KMS stopped with ENODEV
+from msm_kms_init_vm because no display IOMMU was described. Add the
+MSM8226 display SMMUv1 at fd928000 using vendor IRQ73 and context IRQ47,
+and map the non-secure MDP stream0. Keep disabled in the common DT until
+a board opts into native display. Reuse the existing MSM8226 context-bank
+offset and SCTLR quirks.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
+index b7b7adcfb..08da49bf4 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
+@@ -6,6 +6,14 @@ &framebuffer0 {
+ 	status = "disabled";
+ };
+ 
++&mdp_smmu {
++	status = "okay";
++};
++
++&mdss_mdp {
++	iommus = <&mdp_smmu 0>;
++};
++
+ &mdss {
+ 	status = "okay";
+ };
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi b/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
+index bcf14a3b1..61bb37145 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
+@@ -1150,6 +1150,21 @@ mmcc: clock-controller@fd8c0000 {
+ 				      "dsi0pllbyte";
+ 		};
+ 
++		mdp_smmu: iommu@fd928000 {
++			compatible = "qcom,msm8226-smmu", "arm,smmu-v1";
++			reg = <0xfd928000 0x10000>;
++			#iommu-cells = <1>;
++			#global-interrupts = <1>;
++			interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&mmcc MDSS_AHB_CLK>, <&mmcc MDSS_AXI_CLK>;
++			clock-names = "iface", "bus";
++			power-domains = <&mmcc MDSS_GDSC>;
++			status = "disabled";
++		};
++
+ 		mdss: display-subsystem@fd900000 {
+ 			compatible = "qcom,mdss";
+ 			reg = <0xfd900000 0x100>, <0xfd924000 0x1000>;

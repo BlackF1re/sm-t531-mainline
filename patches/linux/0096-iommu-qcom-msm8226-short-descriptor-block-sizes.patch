@@ -1,0 +1,40 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: expose MSM8226 short-descriptor block sizes
+
+Expose the 64KB large-page and 1MB section sizes already implemented
+by ARM_V7S and used by the exact MSM8226 BSP. Keep other contexts
+restricted to their existing 4KB pages.
+
+This enables a controlled section-mapping diagnostic through the normal
+IOMMU API. Hardware ATOS has repeatedly timed out at page level2 with
+valid CPU-visible L1/L2 tables; a section mapping can test the level1
+walk without editing live page tables or replacing the scanout buffer.
+No framebuffer address, GPU configuration or PLL setting is changed.
+
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/iommu/msm_iommu_pagetable.c
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index b0feed7f0..37a319bef 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -461,6 +461,7 @@ static int qcom_iommu_init_domain(struct iommu_domain *domain,
+ static struct iommu_domain *qcom_iommu_domain_alloc_paging(struct device *dev)
+ {
+ 	struct qcom_iommu_domain *qcom_domain;
++	struct qcom_iommu_dev *qcom_iommu = dev_iommu_priv_get(dev);
+ 
+ 	/*
+ 	 * Allocate the domain and initialise some of its data structures.
+@@ -474,6 +475,9 @@ static struct iommu_domain *qcom_iommu_domain_alloc_paging(struct device *dev)
+ 	mutex_init(&qcom_domain->init_mutex);
+ 	spin_lock_init(&qcom_domain->pgtbl_lock);
+ 	qcom_domain->domain.pgsize_bitmap = SZ_4K;
++	/* MSM8226 BSP supports short-descriptor large pages and sections. */
++	if (qcom_iommu && qcom_iommu->short_desc)
++		qcom_domain->domain.pgsize_bitmap |= SZ_64K | SZ_1M;
+ 
+ 	return &qcom_domain->domain;
+ }

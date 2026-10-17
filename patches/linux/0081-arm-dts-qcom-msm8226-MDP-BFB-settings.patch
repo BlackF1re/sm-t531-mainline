@@ -1,0 +1,62 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 12:00:00 +0700
+Subject: [PATCH] iommu: qcom: restore MSM8226 MDP implementation settings
+
+The native MDP IOMMU restores its context but omits HLOS-owned BFB
+settings. Device readback found 0x514/0x540/0x20c/0x394/0x414 zero and
+0x15c different from the Samsung table. Native LCD is still black.
+
+Use the exact MSM8226 MDP table from Samsung/Lineage matisse3g BSP
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256, msm8226-iommu.dtsi.
+Vendor msm_iommu_sec.c explicitly programs these registers from HLOS
+after the secure configuration call. Only expose the implementation
+window at fd92a000; protected global IDR0 remains inaccessible.
+
+Link: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226-iommu.dtsi
+This addresses a proven initialization mismatch, not verified LCD output.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi b/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
+index 311d8dc0a..f8a456660 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226.dtsi
+@@ -1152,7 +1152,9 @@ mmcc: clock-controller@fd8c0000 {
+ 
+ 		mdp_smmu: iommu@fd928000 {
+ 			compatible = "qcom,msm8226-iommu", "qcom,msm-iommu-v1";
+-			/* Global registers are secure; expose only non-secure CB0. */
++			/* Only HLOS implementation registers and non-secure CB0. */
++			reg = <0xfd92a000 0x1000>;
++			reg-names = "impl";
+ 			ranges = <0 0xfd928000 0x10000>;
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
+diff --git a/drivers/iommu/arm/arm-smmu/qcom_iommu.c b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+index f45ec1183..1c1571501 100644
+--- a/drivers/iommu/arm/arm-smmu/qcom_iommu.c
++++ b/drivers/iommu/arm/arm-smmu/qcom_iommu.c
+@@ -1017,7 +1017,23 @@ static const struct dev_pm_ops qcom_iommu_pm_ops = {
+ 				pm_runtime_force_resume)
+ };
+ 
++/* MSM8226 MDP instance, from the Samsung matisse3g BSP IOMMU table. */
++static const struct qcom_iommu_bfb_reg msm8226_mdp_bfb[] = {
++	{ 0x04c, 0xffffffff }, { 0x050, 0 },
++	{ 0x514, 4 }, { 0x540, 0x10 }, { 0x56c, 0 },
++	{ 0x0ac, 0 }, { 0x15c, 0x13 }, { 0x20c, 0x17 },
++	{ 0x314, 0 }, { 0x394, 0x13 }, { 0x414, 0x23 },
++	{ 0x008, 0 }, { 0x00c, 0 }, { 0x010, 0 },
++	{ 0x014, 0 }, { 0x018, 0 }, { 0x01c, 0 }, { 0x020, 0 },
++};
++
++static const struct qcom_iommu_cfg msm8226_mdp_cfg = {
++	.bfb = msm8226_mdp_bfb,
++	.num_bfb = ARRAY_SIZE(msm8226_mdp_bfb),
++};
++
+ static const struct of_device_id qcom_iommu_of_match[] = {
++	{ .compatible = "qcom,msm8226-iommu", .data = &msm8226_mdp_cfg },
+ 	{ .compatible = "qcom,msm-iommu-v1" },
+ 	{ .compatible = "qcom,msm-iommu-v2" },
+ 	{ /* sentinel */ }
