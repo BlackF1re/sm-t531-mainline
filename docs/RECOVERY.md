@@ -25,26 +25,33 @@ The existing internal bootstrap is **frozen**. During its approximately **three-
 | `mount-internal-boot` | Mount only the ext2 bootstrap payload read-only, after checks |
 | `save-logs` | Save pstore/bootstrap evidence to SD rootfs `/var/log/t531-rescue` |
 
+`mount-sd` does not remount an already mounted partition. To switch from read-only to writable access, run `umount-sd` before `mount-sd rw`. `save-logs` performs that writable mount/unmount itself. Automatic `boot-sd` also preserves previous pstore records under `/var/log/t531-pstore` before kexec.
+
 Build a recovery initramfs **without rebuilding or replacing the frozen kernel**:
 
 ```bash
 make rescue-initramfs
 ```
 
+This needs an existing kernel build providing `.work/out/usr/gen_init_cpio`; the script exits if that tool is missing. It produces `bootstrap-initramfs.cpio.gz` and does not install it or change internal BOOT.
+
 The actual device has verified bootstrap recovery and USB ACM diagnostic exchange; **USB Ethernet is not validated**.
 
 ## Graphics fallback
 
-Consult [Native KMS](NATIVE-KMS.md) and [Graphics stability](GRAPHICS-STABILITY.md) for tested scenarios and exact module/image pairing.
+The latest installed `#8` profile uses `/usr/local/libexec/t531-kernel-trial-restore` and the verified snapshot in `/var/lib/t531/kernel-trial-backup`. The helper and snapshot were present and their saved checksums passed a read-only check on **2026-10-19**. Consult [Graphics stability](GRAPHICS-STABILITY.md) and [battery deployment](BATTERY.md#installed-device-result) for the image/module history.
 
 ```bash
-# Run on the tablet, only where the documented rollback setup is present:
-sudo /usr/local/sbin/t531-graphics-rollback
-# Alternative documented native rollback:
-# sudo /usr/local/sbin/t531-graphics-rollback native
+# Run on the tablet only with the verified current snapshot present:
+sudo /usr/local/libexec/t531-kernel-trial-restore --rollback &&
+  sudo systemctl reboot
 ```
 
-A rollback may require a **reboot**. Do not mix kernel, DRM modules, and Mesa configurations from different trials.
+The helper restores the saved SD kernel, MSM module and available module metadata for the **next boot** and runs `depmod`; it does not switch the running kernel or unload MSM. Keep the entire snapshot intact. It requires the installed initramfs and kernel command line to match the saved snapshot. It does not revert Phosh packages or all userspace settings. The saved pre-battery image also predates battery support, so rolling back can remove battery telemetry.
+
+The automatic trial service is **disabled after promotion**. During an armed trial it restores the previous image on disk after rootfs reaches its service; it cannot recover an early boot failure or a wedged kernel by itself. No validated watchdog recovery is claimed.
+
+`/usr/local/sbin/t531-graphics-rollback [original|native]` belongs to older bring-up snapshots. Do not use it as the current default rollback: those profiles can restore older framebuffer/native images and graphics configurations. Never unload/reload MSM as a recovery shortcut, or read the full `clk_summary` / a powered-off DSI PLL; those operations caused recorded aborts or system hangs. Do not mix kernel, DRM modules, and Mesa configurations from different trials.
 
 ## Diagnostic access
 
@@ -53,8 +60,7 @@ A rollback may require a **reboot**. Do not mix kernel, DRM modules, and Mesa co
 sudo picocom --baud 115200 --flow n /dev/ttyACM0
 
 # lk2nd logs where available:
-fastboot oem log
-fastboot get_staged
+fastboot oem log && fastboot get_staged lk2nd.log
 ```
 
 Only **one terminal reader** may hold an ACM port at a time. Boot messages alone do not establish that display/touch/graphics recovered.
@@ -80,8 +86,9 @@ The source README previously recorded the verified BOOT layout and backups:
 ```bash
 # Illustration of the backed-up Android restoration sequence.
 # Set BACKUP_DIR only after locating and verifying YOUR private backups.
-(cd "$BACKUP_DIR" && sha256sum -c SHA256SUMS)
-heimdall flash --BOOT "$BACKUP_DIR/BOOT.img"
+: "${BACKUP_DIR:?Set the verified private backup directory first}"
+(cd "$BACKUP_DIR" && sha256sum -c SHA256SUMS) &&
+  heimdall flash --BOOT "$BACKUP_DIR/BOOT.img"
 ```
 
 A saved `BOOT-lk2nd.img` represents the alternative **pre-bootstrap lk2nd** state. After `download-pit --no-reboot`, the next Heimdall operation **in the same Download Mode session** needs `--resume`; a fresh session does not.

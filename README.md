@@ -23,16 +23,19 @@
 | 🟢 **Boot & Debian** | Internal bootstrap → SD kexec → Debian; USB ACM and Wi-Fi SSH | Cold-boot / endurance tests |
 | 🟢 **CPU** | Seven stock frequency steps; all four cores; CPU hotplug; WFI and standalone collapse | Sustained thermal tests, deeper cluster idle |
 | 🟢 **Storage & input** | microSD ext4 readback; touchscreen | SD hotplug and extended stress |
-| 🟡 **Display** | Native MDP5 / DSI / TC358764 output; touch and backlight | Intermittent black/frozen GUI; complete lifecycle acceptance |
+| 🟡 **Display** | Native MDP5 / DSI / TC358764 output; earlier physical image/touch acceptance | Historical black/frozen GUI reports; repeat physical and endurance acceptance of the current build |
+| 🟢 **Backlight** | Phosh absent-sensor bug fixed; actual GUI/register range reaches 255 instead of 37 | Optical brightness acceptance and full panel power sequencing |
 | 🟡 **GPU & shell** | Freedreno / Adreno acceleration; Plasma Mobile and native Phosh | Composition performance, fault recovery |
-| 🟡 **Suspend** | s2idle / standby / standalone CPU-L2 collapse; tested wake and desktop recovery | Whole-SoC deep power savings, display-off, power draw |
+| 🟡 **Suspend** | Earlier profiles passed s2idle / standby / standalone CPU-L2 collapse and physical wake/desktop checks | Repeat acceptance on the current native profile; whole-SoC savings, display power sequencing and power draw |
 | 🟡 **Battery** | PM8226 BMS voltage/current/temperature/coulombs and modeled SOC | Capacity / aging / full-cycle accuracy |
 | 🟡 **Wi-Fi** | WCNSS association, networking, SSH | Firmware scan-offload fallback; stress testing |
 | ⚪ **Bluetooth / audio** | Hardware identified, limited bring-up | Untested / deferred |
-| ⚪ **Modem / cameras** | — | Outside current scope |
+| ⚪ **Modem / cameras** | — | Not brought up / untested |
 
 > [!NOTE]
 > **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](docs/GRAPHICS-STABILITY.md), [battery evidence](docs/BATTERY.md), and [patch review](docs/PATCH-REVIEW.md).
+
+Evidence spans several kernel and display profiles. **Latest installed profile**, rechecked read-only on **2026-10-19**: kernel `7.2.9-dirty #8`, native split GPU/KMS, Mesa **25.0.7**, Phoc **0.46.0**, Phosh **0.58.0-1~t5313**, Debian **13.7**. This check confirmed processes, DRM ownership, module hash and battery interfaces; it adds no new physical display, FPS or suspend acceptance. Firmware bridge power, `FD_MESA_DEBUG=inorder` and a device-local GPU runtime hold remain in use.
 
 ## Boot flow
 
@@ -58,6 +61,8 @@ ROOTFS_PROFILE=mobile make rootfs
 
 Detailed prerequisites, mount layout, deployment options and recovery-safe commands: **[Build & deploy →](docs/BUILD-DEPLOY.md)**
 
+`ROOTFS_PROFILE=mobile` prepares **Plasma Mobile**. The installed **Phosh** profile requires its separate [build/install and session-selection steps](docs/PHOSH.md); these two commands alone do not reproduce the current tablet setup.
+
 <details>
 <summary><strong>📌 Pinned inputs and provenance</strong></summary>
 
@@ -69,7 +74,7 @@ Detailed prerequisites, mount layout, deployment options and recovery-safe comma
 | [Samsung downstream kernel](https://github.com/LineageOS/android_kernel_samsung_msm8226/tree/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256) | Hardware research **only**; not imported wholesale |
 | [matisse3g device config](https://github.com/matissewifi/android_device_samsung_matisse3g/tree/cf5a3b04f9598d6756113b79df64e91aa53868d9) | Hardware reference |
 
-Linux patch files live in [`patches/linux/`](patches/linux); board and build configuration in [`config/`](config). Original licensing and authorship are retained. Pinned inputs were checked **2026-10-13**.
+Linux patch files live in [`patches/linux/`](patches/linux); board and build configuration in [`config/`](config). The port currently applies **120 local kernel patches** to the pinned upstream base, including bring-up diagnostics and unmerged changes. Original licensing and authorship are retained. Original source pins were recorded on **2026-10-13**; later device results and upstream checks carry their own dates.
 
 </details>
 

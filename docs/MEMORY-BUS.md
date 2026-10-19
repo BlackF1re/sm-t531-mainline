@@ -3,6 +3,11 @@
 Evidence captured2026-10-15, MSM8226/Adreno305b, native split GPU/KMS,
 Mesa25.0.7 Debian, Phoc0.46/Phosh0.58. No DDR or GPU overclock.
 
+The IRQ investigation below is historical. Patch0115 subsequently removed
+the measured blanking-only DSI IRQ storm; patch0116 fixed the reproduced
+mode-enable underrun in tested cycles. See [Graphics stability](GRAPHICS-STABILITY.md).
+Neither fix establishes 60 FPS composition or validates all memory power states.
+
 ## Physical rates, not only software requests
 
 `tools/measure-msm8226-bus.c` measures hardware debug-clock counter ticks

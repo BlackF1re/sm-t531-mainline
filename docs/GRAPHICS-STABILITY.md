@@ -2,6 +2,15 @@
 
 ## Acceptance status
 
+**Latest installed snapshot:** kernel `#8` through patches 0118–0121,
+with the unchanged 0116 MSM module. Image SHA256 is
+`9d76269c14fb76cc9e171044532c417df3d78f43301a3fc57c1aba3ea00e7d92`.
+Read-only checks on 2026-10-19 confirmed this kernel version, native Phoc
+DRM ownership, the MSM module hash, Phosh 0.58.0-1~t5313 and battery export.
+They are not new physical display, FPS or suspend tests. The latest retained
+rollback pair is the pre-battery 0114 kernel with MSM 0116; the automatic
+trial service is disabled. See [current recovery guidance](RECOVERY.md#graphics-fallback).
+
 PARTIAL: native MDP5/DSI scanout and accelerated Adreno rendering work, but
 the graphics stack is not yet reliable. Owner reports of frozen or missing
 GUI are failures regardless of successful benchmarks. Performance experiments
@@ -250,7 +259,7 @@ The timer cannot recover a wedged kernel or a vanished session bus.
 0116 MSM SHA256:
 `8f6a70bd3350add8a427263706952dc0fb04820e5f88fe5a54ec596c6351fa6f`.
 After the trial it is installed persistently, with the unchanged0114 SD
-kernel. The current kernel-trial-backup retains MSM0115 and that same kernel
+kernel. At that 0116 promotion, kernel-trial-backup retained MSM0115 and that same kernel
 for rollback; older snapshots remain in kernel-trial-0115-backup and
 kernel-trial-0114-backup.
 

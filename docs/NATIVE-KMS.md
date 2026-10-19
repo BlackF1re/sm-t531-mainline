@@ -1,5 +1,10 @@
 # SM-T531 native display bring-up
 
+> [!NOTE]
+> **Historical bring-up log.** The opening summary below describes the patch0101-era Plasma profile. For the installed `#8` / MSM0116 / Phosh profile, use [Graphics stability](GRAPHICS-STABILITY.md#acceptance-status) and [Recovery & safety](RECOVERY.md#graphics-fallback). Native KMS and ICC are now the default build; the later fixes removed the measured blanking IRQ storm and the reproduced mode-enable underrun in the tested scenarios. [Memory bus measurements](MEMORY-BUS.md) include active DDR clock verification. Full lifecycle, physical repeat acceptance and all power states remain incomplete.
+
+## Earlier patch0101 summary
+
 State: PARTIAL. The owner has physically confirmed a native colour pattern
 without live register reconciliation on patch0101, then normal accelerated
 Plasma desktop, tray, touch, colours and brightness with native ICC enabled.

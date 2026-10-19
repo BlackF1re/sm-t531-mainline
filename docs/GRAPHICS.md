@@ -1,5 +1,8 @@
 # SM-T531 graphics investigation (2026-10-13–14)
 
+> [!NOTE]
+> These are **historical Plasma and framebuffer measurements**. The installed native Phosh profile and later IOMMU/DSI/MDP fixes are described in [Graphics stability](GRAPHICS-STABILITY.md). Its latest drawer regression is about 33 presentations/s; the older figures below are not a new benchmark of the installed build.
+
 This investigation targets output latency and frame pacing with Debian 13,
 KWin/Plasma Mobile 6.3.6, Mesa 25.0.7 and Linux v7.2.9 plus project patches.
 Native MDP5/DSI/TC358764 scanout now works with accelerated KWin and separate
@@ -8,7 +11,7 @@ and brightness. This remains PARTIAL bring-up, with DSI error interrupts and
 unverified suspend/shutdown lifecycle; see [NATIVE-KMS.md](NATIVE-KMS.md).
 A software frame-completion count is not an optical scanout measurement.
 
-## Current native measurements
+## Native Plasma measurements, 2026-10-14
 
 The warmed complete desktop with the proper `msm-kms` Mesa entry gives
 42.86 FPS (median 16.674 ms, p95 33.345 ms), aggregate four-core CPU 12.18%,

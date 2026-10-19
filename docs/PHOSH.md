@@ -1,8 +1,11 @@
 # Native Phosh on SM-T531
 
+> [!NOTE]
+> **Installed package:** Phosh `0.58.0-1~t5313`, Phoc `0.46.0-1`, Mesa `25.0.7-2+deb13u1`, rechecked read-only on 2026-10-19. The t5313 package fixes the absent-light-sensor brightness regression; see [Backlight](BACKLIGHT.md). The t5311/t5312 discussion below is historical. Kernel/device acceptance is tracked in [Graphics stability](GRAPHICS-STABILITY.md).
+
 ## Sources and packaging (2026-10-15)
 
-VERIFIED_UPSTREAM: Phosh 0.58.0 is the latest stable release in the
+VERIFIED_UPSTREAM, as checked 2026-10-15: Phosh 0.58.0 was the latest stable release in the
 [official release directory](https://sources.phosh.mobi/releases/phosh/),
 published 2026-10-04. Debian 13's pinned repository provides 0.46.0.
 `scripts/build-phosh.sh` rebuilds the upstream tarball with Debian's
