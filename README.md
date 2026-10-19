@@ -11,7 +11,7 @@
 
 # Galaxy Tab 4 SM-T531 · Mainline Linux
 
-**Native ARMv7 Linux** on the Samsung Galaxy Tab 4 10.1 **SM-T531** (\`matisse3g\`): Qualcomm **MSM8226**, four Cortex-A7 cores, and **Adreno 305B**. Debian armhf runs from **microSD**, independently of Android userspace.
+**Native ARMv7 Linux** on the Samsung Galaxy Tab 4 10.1 **SM-T531** (`matisse3g`): Qualcomm **MSM8226**, four Cortex-A7 cores, and **Adreno 305B**. Debian armhf runs from **microSD**, independently of Android userspace.
 
 > [!IMPORTANT]
 > **Experimental port — not a daily-driver image.** Real hardware works, but graphics stability, power management, and long-duration reliability are not fully accepted. **Do not flash a different Galaxy Tab 4 variant.**
@@ -36,7 +36,7 @@
 
 ## Boot flow
 
-\`\`\`mermaid
+```mermaid
 flowchart LR
     A["Samsung bootloader"] --> B["lk2nd 23.1"]
     B --> C["Internal bootstrap"]
@@ -44,17 +44,17 @@ flowchart LR
     D --> E["Debian armhf"]
     E --> F["Plasma Mobile / Phosh"]
     C -. recovery shell .-> R["USB ACM"]
-\`\`\`
+```
 
 > [!WARNING]
 > The **internal BOOT / lk2nd chain is deliberately frozen**. Ordinary kernel updates target the SD card, **not internal partitions**. Verify your device identity, card mount points and backups before deployment. Read [Recovery & safety](docs/RECOVERY.md).
 
 ## Build
 
-\`\`\`bash
+```bash
 make build
 ROOTFS_PROFILE=mobile make rootfs
-\`\`\`
+```
 
 Detailed prerequisites, mount layout, deployment options and recovery-safe commands: **[Build & deploy →](docs/BUILD-DEPLOY.md)**
 
@@ -63,13 +63,13 @@ Detailed prerequisites, mount layout, deployment options and recovery-safe comma
 
 | Input | Pinned version / role |
 |---|---|
-| [Linux stable](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tag/?h=v7.2.9) | \`v7.2.9\` · \`5fce161649b4\` |
-| [lk2nd](https://github.com/msm8916-mainline/lk2nd/releases/tag/23.1) | \`23.1\`, **unmodified** |
+| [Linux stable](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tag/?h=v7.2.9) | `v7.2.9` · `5fce161649b4` |
+| [lk2nd](https://github.com/msm8916-mainline/lk2nd/releases/tag/23.1) | `23.1`, **unmodified** |
 | [Debian snapshot](https://snapshot.debian.org/archive/debian/20261003T000000Z/) | Debian **13.7 / trixie / armhf**, 2026-10-03 |
 | [Samsung downstream kernel](https://github.com/LineageOS/android_kernel_samsung_msm8226/tree/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256) | Hardware research **only**; not imported wholesale |
 | [matisse3g device config](https://github.com/matissewifi/android_device_samsung_matisse3g/tree/cf5a3b04f9598d6756113b79df64e91aa53868d9) | Hardware reference |
 
-Linux patch files live in [\`patches/linux/\`](patches/linux); board and build configuration in [\`config/\`](config). Original licensing and authorship are retained. Pinned inputs were checked **2026-10-13**.
+Linux patch files live in [`patches/linux/`](patches/linux); board and build configuration in [`config/`](config). Original licensing and authorship are retained. Pinned inputs were checked **2026-10-13**.
 
 </details>
 
