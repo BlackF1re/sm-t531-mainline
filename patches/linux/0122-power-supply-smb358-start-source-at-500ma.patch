@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Mon, 19 Oct 2026 16:30:00 +0700
+Subject: [PATCH] power: supply: smb358: start source changes at 500 mA
+
+Keep source attachment and temperature recovery at the conservative 500 mA
+baseline. The previous DCP path jumped directly to the DT ceiling before
+the userspace one-second input-current ramp could observe the new source.
+Let that policy increase the standard input_current_limit only after valid
+feedback. Keep hardware AICL, battery charge current, float voltage,
+termination and temperature inhibition unchanged.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/power/supply/smb347-charger.c b/drivers/power/supply/smb347-charger.c
+--- a/drivers/power/supply/smb347-charger.c
++++ b/drivers/power/supply/smb347-charger.c
+@@ -214,7 +214,6 @@
+ 	struct notifier_block extcon_nb;
+ 	struct work_struct source_work;
+ 	struct mutex input_lock;
+-	unsigned int dcp_current_limit;
+ 
+ 	struct device		*dev;
+ 	struct regmap		*regmap;
+@@ -790,14 +789,10 @@
+ {
+ 	struct smb347_charger *smb = container_of(work, struct smb347_charger,
+ 						 source_work);
+-	unsigned int ua = 500000;
+ 	int ret;
+ 
+-	if (extcon_get_state(smb->extcon, EXTCON_CHG_USB_DCP) > 0 &&
+-	    (!smb->temperature_channel || smb->temperature_allowed))
+-		ua = smb->dcp_current_limit;
+-
+-	ret = smb358_set_input_limit(smb, ua);
++	/* Userspace may ramp up after observing the source; never jump on attach. */
++	ret = smb358_set_input_limit(smb, 500000);
+ 	if (ret) {
+ 		dev_err(smb->dev, "failed to set source current limit: %d\n", ret);
+ 		return;
+@@ -1812,7 +1807,6 @@
+ 		if (IS_ERR(smb->extcon))
+ 			return dev_err_probe(dev, PTR_ERR(smb->extcon),
+ 					     "failed to get source detector\n");
+-		smb->dcp_current_limit = smb->usb_hc_current_limit;
+ 		smb->usb_hc_current_limit = 500000;
+ 	}
+ 	if (!smb->use_mains && !smb->use_usb)
