@@ -66,6 +66,8 @@ LABEL=T531_ROOT / ext4 defaults,noatime 0 1
 FSTAB
 echo t531 | sudo tee "$root/etc/hostname" >/dev/null
 sudo mkdir -p "$root/etc/systemd/network" "$root/etc/ssh/sshd_config.d"
+sudo install -Dm644 config/wcn36xx-networkmanager.conf \
+    "$root/etc/NetworkManager/conf.d/35-wcn36xx.conf"
 sudo tee "$root/etc/systemd/network/usb.network" >/dev/null <<'NETWORK'
 [Match]
 Name=usb*

@@ -1,0 +1,26 @@
+Subject: [PATCH] wifi: wcn36xx: supply a valid PHY address without DT MAC data
+
+A zero PHY address makes newly created monitor netdevs unusable. Preserve
+valid board-supplied addresses; otherwise provide a local unicast fallback.
+The board-specific userspace .link still applies the saved station address.
+
+
+---
+diff --git a/drivers/net/wireless/ath/wcn36xx/main.c b/drivers/net/wireless/ath/wcn36xx/main.c
+--- a/drivers/net/wireless/ath/wcn36xx/main.c
++++ b/drivers/net/wireless/ath/wcn36xx/main.c
+@@ -1637,6 +1637,14 @@
+ 		SET_IEEE80211_PERM_ADDR(wcn->hw, addr);
+ 	}
+ 
++	if (!is_valid_ether_addr(wcn->hw->wiphy->perm_addr)) {
++		u8 fallback[ETH_ALEN];
++
++		eth_random_addr(fallback);
++		SET_IEEE80211_PERM_ADDR(wcn->hw, fallback);
++		wcn36xx_warn("No valid DT MAC address, using a local random address\n");
++	}
++
+ 	ret = wcn36xx_platform_get_resources(wcn, pdev);
+ 	if (ret)
+ 		goto out_destroy_ept;

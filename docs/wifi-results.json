@@ -1,0 +1,161 @@
+{
+  "device": "Samsung Galaxy Tab 4 SM-T531 (matisse3g), WCN3660",
+  "date_local": "2026-10-21",
+  "timezone": "Asia/Tomsk",
+  "firmware": {
+    "api": "1.5.1.2",
+    "crm": "12035159",
+    "mdt_sha256": "aa09c377bfb663aafebf0b5d0bb43bfcb296fb15997a3725b25a756ba7352480"
+  },
+  "installed_kernel": "7.2.9-dirty #10",
+  "production_patches": [
+    123,
+    124,
+    125
+  ],
+  "sd_image_sha256": "6602817e4293e3c9ecf06de9c05545f8ad265dace1255dac46b44a51e2a40ea1",
+  "previous_image_sha256": "81730fb3bfc9baf34dd827fa3171dc5e25884ffe961e11362b1eab6d8e51506c",
+  "msm_module_sha256": "8f6a70bd3350add8a427263706952dc0fb04820e5f88fe5a54ec596c6351fa6f",
+  "kernel_configuration_changed": false,
+  "internal_partitions_changed": false,
+  "tests": [
+    {
+      "name": "managed_open_ap",
+      "state": "VERIFIED_DEVICE",
+      "kernel": 10,
+      "dhcp": true,
+      "gateway_ping_sent": 4,
+      "gateway_ping_received": 4
+    },
+    {
+      "name": "managed_original_network",
+      "state": "VERIFIED_DEVICE",
+      "kernel": 10,
+      "dhcp": true,
+      "ssh": true,
+      "factory_mac_preserved": true
+    },
+    {
+      "name": "ap_open",
+      "state": "VERIFIED_DEVICE",
+      "kernel": 9,
+      "driver": "trial",
+      "peer": "independent MT7921 / Windows",
+      "association": true,
+      "dhcp": true,
+      "http_status": 200,
+      "negotiated_mbps": 72.2,
+      "throughput_measured": false
+    },
+    {
+      "name": "ap_wpa2_ccmp",
+      "state": "VERIFIED_DEVICE",
+      "kernel": 10,
+      "peer": "independent MT7921 / Windows",
+      "four_way_handshake": true,
+      "dhcp": true,
+      "http_status": 200,
+      "pmf_profile": 0,
+      "pmf_effective": "disabled by driver-specific NM default",
+      "gateway_ping_sent": 4,
+      "gateway_ping_received": 4
+    },
+    {
+      "name": "probe_injection_associated",
+      "state": "VERIFIED_DEVICE",
+      "kernel": 10,
+      "tx_requests": 3,
+      "rx_probe_responses": 3,
+      "tx_echo_counted_as_rx": false,
+      "source": "registered station address"
+    },
+    {
+      "name": "probe_injection_standalone",
+      "state": "VERIFIED_DEVICE",
+      "kernel": 9,
+      "driver": "candidate0126",
+      "tx_requests": 3,
+      "rx_probe_responses": 3,
+      "source": "registered radio address"
+    },
+    {
+      "name": "standalone_management_capture",
+      "state": "VERIFIED_DEVICE",
+      "kernel": 9,
+      "driver": "trial legacy PROMISC + START_SCAN",
+      "duration_s": 12,
+      "pcap_records": 747,
+      "rx_beacons": 738,
+      "rx_probe_responses": 3,
+      "local_tx_echoes": 6,
+      "kernel_capture_drops": 0
+    },
+    {
+      "name": "standalone_channel_change",
+      "state": "VERIFIED_DEVICE",
+      "kernel": 9,
+      "driver": "clean candidate0126",
+      "duration_s_each": 5,
+      "channels": [
+        1,
+        6,
+        36
+      ],
+      "pcap_records": [
+        393,
+        129,
+        78
+      ],
+      "kernel_capture_drops": 0,
+      "tx_on_channel36": false,
+      "managed_return": true
+    },
+    {
+      "name": "arbitrary_source_injection",
+      "state": "UNKNOWN",
+      "local_send_accepted": true,
+      "rx_response_received": false,
+      "over_air_confirmation": false
+    },
+    {
+      "name": "data_and_control_monitor_rx",
+      "state": "UNKNOWN",
+      "controlled_external_data_test_completed": false,
+      "full_monitor_acceptance": false
+    },
+    {
+      "name": "vendor_monitor_command302",
+      "state": "VERIFIED_DEVICE",
+      "implementation": "BLOCKED_FOR_TESTED_COMMAND",
+      "result": "no firmware reply in two 10-second attempts"
+    },
+    {
+      "name": "hot_wlan_rebind",
+      "state": "VERIFIED_DEVICE",
+      "implementation": "PARTIAL",
+      "irq_mapping_enxio_fixed": true,
+      "firmware_nv55_timeout_observed": true,
+      "smd_send_fifo_wait_observed": true,
+      "remoteproc_recovery": true,
+      "new_pstore_entries": false
+    }
+  ],
+  "cleanup": {
+    "test_network_profiles_removed": true,
+    "windows_test_profiles_removed": true,
+    "test_ap_stopped": true,
+    "trial_driver_autostart": false
+  },
+  "overall": "PARTIAL: managed/AP and directed probe injection verified; unrestricted monitor and hot firmware restart acceptance incomplete",
+  "software_validation": {
+    "production_patch_count": 124,
+    "temporary_index_matches_built_source": true,
+    "kernel_native_icc_dtb_modules_build": "pass",
+    "wifi_checkpatch_errors": 0,
+    "wifi_checkpatch_warnings": 0,
+    "diagnostic_module_build": "pass",
+    "irq_helper_build": "pass",
+    "shell_syntax": "pass",
+    "python_compile": "pass"
+  }
+}

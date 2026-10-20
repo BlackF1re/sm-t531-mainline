@@ -28,14 +28,16 @@
 | 🟡 **GPU & shell** | Freedreno / Adreno acceleration; Plasma Mobile and native Phosh | Composition performance, fault recovery |
 | 🟡 **Suspend** | Earlier profiles passed s2idle / standby / standalone CPU-L2 collapse and physical wake/desktop checks | Repeat acceptance on the current native profile; whole-SoC savings, display power sequencing and power draw |
 | 🟡 **Battery** | PM8226 BMS voltage/current/temperature/coulombs and modeled SOC | Capacity / aging / full-cycle accuracy |
-| 🟡 **Wi-Fi** | WCNSS association, networking, SSH | Firmware scan-offload fallback; stress testing |
+| 🟡 **Wi-Fi** | Managed networking, WPA2 AP + external DHCP/HTTP, probe injection | [Monitor is partial](docs/WIFI.md); firmware scan/restart limitations |
 | ⚪ **Bluetooth / audio** | Hardware identified, limited bring-up | Untested / deferred |
 | ⚪ **Modem / cameras** | — | Not brought up / untested |
 
 > [!NOTE]
 > **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](docs/GRAPHICS-STABILITY.md), [battery evidence](docs/BATTERY.md), and [patch review](docs/PATCH-REVIEW.md).
 
-Evidence spans several kernel and display profiles. **Latest installed profile**, rechecked read-only on **2026-10-19**: kernel `7.2.9-dirty #8`, native split GPU/KMS, Mesa **25.0.7**, Phoc **0.46.0**, Phosh **0.58.0-1~t5313**, Debian **13.7**. This check confirmed processes, DRM ownership, module hash and battery interfaces; it adds no new physical display, FPS or suspend acceptance. Firmware bridge power, `FD_MESA_DEBUG=inorder` and a device-local GPU runtime hold remain in use.
+Evidence spans several kernel and display profiles. **Latest installed profile**, rechecked on **2026-10-21**: kernel `7.2.9-dirty #10`, native split GPU/KMS, Mesa **25.0.7**, Phoc **0.46.0**, Phosh **0.58.0-1~t5313**, Debian **13.7**. This check confirmed processes, DRM ownership, module hash and battery interfaces; it adds no new physical display, FPS or suspend acceptance. Firmware bridge power, `FD_MESA_DEBUG=inorder` and a device-local GPU runtime hold remain in use.
+
+On **2026-10-21**, kernel #10 adds three [Wi-Fi fixes](docs/WIFI.md) with the same configuration and MSM module as #9; managed, WPA2 AP and directed probe injection were rechecked. Full monitor capture is still unverified.
 
 ## Boot flow
 
@@ -74,7 +76,7 @@ Detailed prerequisites, mount layout, deployment options and recovery-safe comma
 | [Samsung downstream kernel](https://github.com/LineageOS/android_kernel_samsung_msm8226/tree/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256) | Hardware research **only**; not imported wholesale |
 | [matisse3g device config](https://github.com/matissewifi/android_device_samsung_matisse3g/tree/cf5a3b04f9598d6756113b79df64e91aa53868d9) | Hardware reference |
 
-Linux patch files live in [`patches/linux/`](patches/linux); board and build configuration in [`config/`](config). The port currently applies **120 local kernel patches** to the pinned upstream base, including bring-up diagnostics and unmerged changes. Original licensing and authorship are retained. Original source pins were recorded on **2026-10-13**; later device results and upstream checks carry their own dates.
+Linux patch files live in [`patches/linux/`](patches/linux); board and build configuration in [`config/`](config). The port currently applies **124 local kernel patches** to the pinned upstream base, including bring-up diagnostics and unmerged changes. Original licensing and authorship are retained. Original source pins were recorded on **2026-10-13**; later device results and upstream checks carry their own dates.
 
 </details>
 

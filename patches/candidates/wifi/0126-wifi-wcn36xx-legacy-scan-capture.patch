@@ -1,0 +1,217 @@
+Subject: [RFC PATCH] wifi: wcn36xx: provide standalone legacy scan capture
+
+Diagnostic candidate, not part of the production series. On the
+SM-T531 firmware API 1.5.1.2 this receives beacons and probe responses
+and permits raw probe-request transmission. Arbitrary data/control
+capture is unverified; do not describe this as unrestricted monitor
+support. HAL request 302 does not reply on this firmware, so use the
+observed legacy scan protocol.
+
+Pair INIT/START with END/FINISH on channel changes and removal, and
+unwind INIT when START fails. Give the mac80211 virtual monitor a
+valid firmware self context. Preserve raw RX flags instead of claiming
+decryption.
+
+---
+diff --git a/drivers/net/wireless/ath/wcn36xx/main.c b/drivers/net/wireless/ath/wcn36xx/main.c
+--- a/drivers/net/wireless/ath/wcn36xx/main.c
++++ b/drivers/net/wireless/ath/wcn36xx/main.c
+@@ -320,7 +320,53 @@
+ 	}
+ }
+ 
+-static void wcn36xx_change_opchannel(struct wcn36xx *wcn, int ch)
++/* The installed WCN3660 firmware implements the legacy scan PROMISC mode. */
++static int wcn36xx_monitor_stop(struct wcn36xx *wcn,
++				struct ieee80211_vif *vif)
++{
++	int ret, end_ret;
++
++	if (!wcn->monitor_enabled)
++		return 0;
++
++	end_ret = wcn36xx_smd_end_scan(wcn, wcn->monitor_channel);
++	ret = wcn36xx_smd_finish_scan(wcn, HAL_SYS_MODE_PROMISC, vif);
++	if (!ret)
++		WRITE_ONCE(wcn->monitor_enabled, false);
++
++	return ret ? (ret < 0 ? ret : -EIO) :
++		     (end_ret < 0 ? end_ret : end_ret ? -EIO : 0);
++}
++
++static int wcn36xx_monitor_channel(struct wcn36xx *wcn,
++				   struct ieee80211_vif *vif, int ch)
++{
++	int ret;
++
++	if (wcn->monitor_enabled && wcn->monitor_channel == ch)
++		return 0;
++
++	ret = wcn36xx_monitor_stop(wcn, vif);
++	if (ret)
++		return ret;
++
++	ret = wcn36xx_smd_init_scan(wcn, HAL_SYS_MODE_PROMISC, vif);
++	if (ret)
++		return ret < 0 ? ret : -EIO;
++
++	ret = wcn36xx_smd_start_scan(wcn, ch);
++	if (ret) {
++		/* INIT_SCAN succeeded; unwind even when START_SCAN failed. */
++		wcn36xx_smd_finish_scan(wcn, HAL_SYS_MODE_PROMISC, vif);
++		return ret < 0 ? ret : -EIO;
++	}
++
++	wcn->monitor_channel = ch;
++	WRITE_ONCE(wcn->monitor_enabled, true);
++	return 0;
++}
++
++static int wcn36xx_change_opchannel(struct wcn36xx *wcn, int ch)
+ {
+ 	struct ieee80211_vif *vif = NULL;
+ 	struct wcn36xx_vif *tmp;
+@@ -345,7 +391,7 @@
+ 
+ 	if (!channel) {
+ 		wcn36xx_err("Cannot tune to channel %d\n", ch);
+-		return;
++		return -EINVAL;
+ 	}
+ 
+ 	spin_lock_irqsave(&wcn->survey_lock, flags);
+@@ -355,10 +401,12 @@
+ 
+ 	list_for_each_entry(tmp, &wcn->vif_list, list) {
+ 		vif = wcn36xx_priv_to_vif(tmp);
++		if (vif->type == NL80211_IFTYPE_MONITOR)
++			return wcn36xx_monitor_channel(wcn, vif, ch);
+ 		wcn36xx_smd_switch_channel(wcn, vif, ch);
+ 	}
+ 
+-	return;
++	return 0;
+ }
+ 
+ static int wcn36xx_config(struct ieee80211_hw *hw, int radio_idx, u32 changed)
+@@ -406,7 +454,11 @@
+ 			}
+ 			wcn36xx_smd_start_scan(wcn, ch);
+ 		} else {
+-			wcn36xx_change_opchannel(wcn, ch);
++			ret = wcn36xx_change_opchannel(wcn, ch);
++			if (ret) {
++				mutex_unlock(&wcn->conf_mutex);
++				return ret;
++			}
+ 		}
+ 	}
+ 
+@@ -438,7 +490,8 @@
+ 
+ 	mutex_lock(&wcn->conf_mutex);
+ 
+-	*total &= FIF_ALLMULTI;
++	*total &= FIF_ALLMULTI | (wcn->monitor_enabled ?
++		  FIF_BCN_PRBRESP_PROMISC : 0);
+ 
+ 	fp = (void *)(unsigned long)multicast;
+ 	list_for_each_entry(tmp, &wcn->vif_list, list) {
+@@ -1003,6 +1056,9 @@
+ 
+ 	mutex_lock(&wcn->conf_mutex);
+ 
++	if (vif->type == NL80211_IFTYPE_MONITOR &&
++	    wcn36xx_monitor_stop(wcn, vif))
++		wcn36xx_warn("Failed to stop monitor scan session\n");
+ 	list_del(&vif_priv->list);
+ 	wcn36xx_smd_delete_sta_self(wcn, vif->addr);
+ 
+@@ -1015,13 +1071,16 @@
+ 	struct wcn36xx *wcn = hw->priv;
+ 	struct wcn36xx_vif *vif_priv = wcn36xx_vif_to_priv(vif);
+ 
++	int ret;
++
+ 	wcn36xx_dbg(WCN36XX_DBG_MAC, "mac add interface vif %p type %d\n",
+ 		    vif, vif->type);
+ 
+-	if (!(NL80211_IFTYPE_STATION == vif->type ||
+-	      NL80211_IFTYPE_AP == vif->type ||
+-	      NL80211_IFTYPE_ADHOC == vif->type ||
+-	      NL80211_IFTYPE_MESH_POINT == vif->type)) {
++	if (!(vif->type == NL80211_IFTYPE_STATION ||
++	      vif->type == NL80211_IFTYPE_AP ||
++	      vif->type == NL80211_IFTYPE_ADHOC ||
++	      vif->type == NL80211_IFTYPE_MESH_POINT ||
++	      vif->type == NL80211_IFTYPE_MONITOR)) {
+ 		wcn36xx_warn("Unsupported interface type requested: %d\n",
+ 			     vif->type);
+ 		return -EOPNOTSUPP;
+@@ -1029,14 +1088,19 @@
+ 
+ 	mutex_lock(&wcn->conf_mutex);
+ 
++	/* The mac80211 virtual monitor has no netdev address. */
++	if (vif->type == NL80211_IFTYPE_MONITOR && is_zero_ether_addr(vif->addr))
++		ether_addr_copy(vif->addr, wcn->hw->wiphy->perm_addr);
+ 	vif_priv->bss_index = WCN36XX_HAL_BSS_INVALID_IDX;
+ 	INIT_LIST_HEAD(&vif_priv->sta_list);
+ 	list_add(&vif_priv->list, &wcn->vif_list);
+-	wcn36xx_smd_add_sta_self(wcn, vif);
++	ret = wcn36xx_smd_add_sta_self(wcn, vif);
++	if (ret)
++		list_del(&vif_priv->list);
+ 
+ 	mutex_unlock(&wcn->conf_mutex);
+ 
+-	return 0;
++	return ret > 0 ? -EIO : ret;
+ }
+ 
+ static int wcn36xx_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
+@@ -1440,6 +1504,7 @@
+ 		WLAN_CIPHER_SUITE_CCMP,
+ 	};
+ 
++	ieee80211_hw_set(wcn->hw, WANT_MONITOR_VIF);
+ 	ieee80211_hw_set(wcn->hw, TIMING_BEACON_ONLY);
+ 	ieee80211_hw_set(wcn->hw, AMPDU_AGGREGATION);
+ 	ieee80211_hw_set(wcn->hw, SUPPORTS_PS);
+diff --git a/drivers/net/wireless/ath/wcn36xx/wcn36xx.h b/drivers/net/wireless/ath/wcn36xx/wcn36xx.h
+--- a/drivers/net/wireless/ath/wcn36xx/wcn36xx.h
++++ b/drivers/net/wireless/ath/wcn36xx/wcn36xx.h
+@@ -258,6 +258,8 @@
+ 	struct list_head	hal_ind_queue;
+ 
+ 	struct cfg80211_scan_request *scan_req;
++	bool			monitor_enabled;
++	u8			monitor_channel;
+ 	bool			sw_scan;
+ 	u8			sw_scan_opchannel;
+ 	bool			sw_scan_init;
+diff --git a/drivers/net/wireless/ath/wcn36xx/txrx.c b/drivers/net/wireless/ath/wcn36xx/txrx.c
+--- a/drivers/net/wireless/ath/wcn36xx/txrx.c
++++ b/drivers/net/wireless/ath/wcn36xx/txrx.c
+@@ -348,16 +348,17 @@
+ 
+ 	hdr = (struct ieee80211_hdr *) skb->data;
+ 	fc = __le16_to_cpu(hdr->frame_control);
+-	sn = IEEE80211_SEQ_TO_SN(__le16_to_cpu(hdr->seq_ctrl));
++	sn = skb->len >= 24 ? IEEE80211_SEQ_TO_SN(le16_to_cpu(hdr->seq_ctrl)) : 0;
+ 
+ 	status.mactime = 10;
+ 	status.signal = -get_rssi0(bd);
+ 	status.antenna = 1;
+ 	status.flag = 0;
+ 	status.rx_flags = 0;
+-	status.flag |= RX_FLAG_IV_STRIPPED |
+-		       RX_FLAG_MMIC_STRIPPED |
+-		       RX_FLAG_DECRYPTED;
++	if (!READ_ONCE(wcn->monitor_enabled))
++		status.flag |= RX_FLAG_IV_STRIPPED |
++			       RX_FLAG_MMIC_STRIPPED |
++			       RX_FLAG_DECRYPTED;
+ 
+ 	wcn36xx_dbg(WCN36XX_DBG_RX, "status.flags=%x\n", status.flag);
+ 

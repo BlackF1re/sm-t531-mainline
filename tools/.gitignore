@@ -1,0 +1,9 @@
+# Out-of-tree kernel diagnostic build products.
+*.o
+*.ko
+*.mod
+*.mod.c
+.*.cmd
+Module.symvers
+modules.order
+__pycache__/

@@ -39,3 +39,14 @@ and untested full discharge/recharge prevent a gauge-accuracy claim.
 
 See GRAPHICS-STABILITY.md, BACKLIGHT.md and BATTERY.md for exact tests,
 artifact hashes and the rollback path. Internal boot/lk2nd are unchanged.
+
+
+Wi-Fi follow-up, 2026-10-21: patches0123–0125 validate TX context/header
+lengths and injection flags, describe the actual level-high DXE IRQs, and
+supply a valid local PHY address when DT lacks one. They were built as #10
+with unchanged configuration/MSM module, and passed managed, WPA2 AP and
+3/3 directed probe-injection acceptance. See [Wi-Fi evidence](WIFI.md) for
+the corrected DT packaging, firmware hot-rebind failure/recovery and exact
+limits. Candidate0126 remains outside the series: scan-based management
+capture is not unrestricted RFMON. No claim of complete monitor/injection
+support or reliable firmware restart is made.
