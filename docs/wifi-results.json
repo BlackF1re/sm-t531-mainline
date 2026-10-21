@@ -1,6 +1,6 @@
 {
   "device": "Samsung Galaxy Tab 4 SM-T531 (matisse3g), WCN3660",
-  "date_local": "2026-10-21",
+  "date_local": "2026-10-22",
   "timezone": "Asia/Tomsk",
   "firmware": {
     "api": "1.5.1.2",
@@ -8,19 +8,15 @@
     "mdt_sha256": "aa09c377bfb663aafebf0b5d0bb43bfcb296fb15997a3725b25a756ba7352480",
     "b06_sha256": "a57d7a162f15a9d281ec66f24c0e0f7b4f37d81e891ebd64356403bdfb9fd96e"
   },
-  "installed_kernel": "7.2.9-dirty #12",
+  "installed_kernel": "7.2.9-dirty #16",
   "production_patches": [
-    123,
-    124,
-    125,
-    126,
-    127
+    123
   ],
-  "sd_image_sha256": "f0b29e7f1a8badf1c21c406ca3093a6ee763d2086508d2e9ae388074847afa57",
-  "previous_image_sha256": "6602817e4293e3c9ecf06de9c05545f8ad265dace1255dac46b44a51e2a40ea1",
+  "sd_image_sha256": "fb0948a3c72366d3bd5dea6810116fd40bdb3016270129f63ec1d0ae2e2e642b",
+  "previous_image_sha256": "f0b29e7f1a8badf1c21c406ca3093a6ee763d2086508d2e9ae388074847afa57",
   "msm_module_sha256": "8f6a70bd3350add8a427263706952dc0fb04820e5f88fe5a54ec596c6351fa6f",
   "kernel_configuration_changed": false,
-  "dtb_changed_from_kernel10": false,
+  "dtb_changed_from_kernel10": true,
   "internal_partitions_changed": false,
   "monitor": {
     "state": "VERIFIED_DEVICE",
@@ -150,7 +146,8 @@
       }
     ],
     "kernel_capture_drops_each": 0,
-    "capture_note": "TX radiotap echoes excluded from RX; extended-IV checks structural, not cryptographic/FCS validation"
+    "capture_note": "TX radiotap echoes excluded from RX; extended-IV checks structural, not cryptographic/FCS validation",
+    "historical_capture_kernel": 12
   },
   "tests": [
     {
@@ -250,7 +247,7 @@
     }
   ],
   "remaining_limits": [
-    "firmware channel-list request208 timeout and scan failures; software fallback remains",
+    "legacy firmware scan offload unsupported; this image selects mac80211 software scanning without HAL208 timeout",
     "unreliable hot WCNSS_CTRL/NV restart",
     "no simultaneous unrestricted managed/AP + monitor",
     "stock firmware TX rate control",
@@ -267,7 +264,7 @@
     "temporary_sleep_inhibitor_stopped": true
   },
   "software_validation": {
-    "production_patch_count": 126,
+    "production_patch_count": 118,
     "temporary_index_matches_built_source": true,
     "kernel_native_icc_dtb_modules_build": "pass",
     "new_wifi_checkpatch_errors": 0,
@@ -281,12 +278,12 @@
   "overall": "Managed/WPA2 AP and exclusive raw monitor/injection pass the listed physical tests; remaining firmware and RF-control limits are explicit.",
   "deployment": {
     "persistent_sd_image_verified": true,
-    "persistent_kernel12_reboot_passed": true,
     "networkmanager_greetd_native_graphics_active": true,
     "pstore_files": 0,
-    "rollback_kernel": 10,
+    "rollback_kernel": 12,
     "backup_hashes_verified": true,
-    "trial_restore_service_enabled": false
+    "trial_restore_service_enabled": false,
+    "kernel16_candidate_boot_passed": true
   },
   "hcxdumptool_acceptance": {
     "date_local": "2026-10-22",
@@ -333,6 +330,230 @@
       "temporary_sleep_inhibitor_stopped": true,
       "greetd_native_graphics_active": true,
       "pstore_files": 0
+    }
+  },
+  "production_wifi_patch": "patches/linux/0123-wifi-wcn3660-matisse3g-support.patch",
+  "superseded_wifi_patches": [
+    "0013",
+    "0014",
+    "0015 WCNSS portion",
+    "0031",
+    "0032",
+    "0123",
+    "0124",
+    "0125",
+    "0126",
+    "0127"
+  ],
+  "dtb_changes_from_kernel12": [
+    "standard ieee80211-freq-limit excludes unsupported channel144"
+  ],
+  "consolidated_kernel_acceptance": {
+    "kernel": 16,
+    "state": "VERIFIED_DEVICE",
+    "endurance_test_run": false,
+    "boot": {
+      "networkmanager_greetd_native_graphics_active": true,
+      "managed_dhcp_ssh": true,
+      "factory_mac_retained": true,
+      "hal208_timeout_observed": false,
+      "legacy_scan_errors_observed_in_final_check": false,
+      "pstore_files": 0
+    },
+    "channel_capabilities": {
+      "accepted_channels": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        36,
+        40,
+        44,
+        48,
+        52,
+        56,
+        60,
+        64,
+        100,
+        104,
+        108,
+        112,
+        116,
+        120,
+        124,
+        128,
+        132,
+        136,
+        140,
+        149,
+        153,
+        157,
+        161,
+        165
+      ],
+      "channel144_disabled": true,
+      "channel144_rejected_by_nl80211": true,
+      "firmware_channel_switch_errors_observed": false,
+      "rx_validated_channels": [
+        1,
+        6,
+        36
+      ],
+      "accepting_tune_does_not_prove_air_rx_on_every_channel": true
+    },
+    "monitor_captures": [
+      {
+        "file": "ch1.pcap",
+        "sha256": "46e922112a9b0312c6d05751d081f1d4e8d4afa34a6dd1c7dbe6dcffc7099012",
+        "duration_s": 4.941724,
+        "counts": {
+          "payload_data_rx": 9,
+          "protected_extended_iv_present": 9,
+          "protected_payload_rx": 9,
+          "protected_unicast_rx": 3,
+          "records": 567,
+          "rx_records": 567,
+          "snaplen_truncated": 0
+        },
+        "rx_type_subtype": {
+          "0:5": 5,
+          "0:8": 283,
+          "1:11": 6,
+          "1:12": 141,
+          "1:13": 49,
+          "1:14": 66,
+          "1:9": 1,
+          "2:0": 6,
+          "2:4": 7,
+          "2:8": 3
+        }
+      },
+      {
+        "file": "ch6.pcap",
+        "sha256": "f567662c99c1de7fb49e1adedb4e7a6e335f8e22fa0c5455c05402c462897ab8",
+        "duration_s": 4.927899,
+        "counts": {
+          "payload_data_rx": 2,
+          "protected_extended_iv_present": 2,
+          "protected_payload_rx": 2,
+          "protected_unicast_rx": 1,
+          "records": 391,
+          "rx_records": 391,
+          "snaplen_truncated": 0
+        },
+        "rx_type_subtype": {
+          "0:4": 4,
+          "0:5": 5,
+          "0:8": 306,
+          "1:12": 13,
+          "1:13": 50,
+          "2:0": 1,
+          "2:12": 4,
+          "2:4": 7,
+          "2:8": 1
+        }
+      },
+      {
+        "file": "ch36.pcap",
+        "sha256": "9df459620ed7ea044fe72469944f5ae6776e2e0965a7d638fce9cfe8adf3aaef",
+        "duration_s": 4.843759,
+        "counts": {
+          "payload_data_rx": 4,
+          "protected_extended_iv_present": 4,
+          "protected_payload_rx": 4,
+          "protected_unicast_rx": 3,
+          "records": 119,
+          "rx_records": 119,
+          "snaplen_truncated": 0
+        },
+        "rx_type_subtype": {
+          "0:8": 96,
+          "1:11": 1,
+          "1:12": 1,
+          "1:13": 6,
+          "1:9": 4,
+          "2:0": 1,
+          "2:4": 7,
+          "2:8": 3
+        }
+      },
+      {
+        "file": "after-hop.pcap",
+        "sha256": "9f248b2b73857545a923e65782aee5c632db726271b3211f9c1944e1f81dad6b",
+        "duration_s": 4.919175,
+        "counts": {
+          "payload_data_rx": 2,
+          "protected_extended_iv_present": 2,
+          "protected_payload_rx": 2,
+          "protected_unicast_rx": 0,
+          "records": 126,
+          "rx_records": 126,
+          "snaplen_truncated": 0
+        },
+        "rx_type_subtype": {
+          "0:8": 98,
+          "1:11": 4,
+          "1:12": 4,
+          "1:13": 4,
+          "1:9": 8,
+          "2:0": 2,
+          "2:4": 6
+        }
+      }
+    ],
+    "capture_duration_s_each": 6,
+    "kernel_capture_drops_each": 0,
+    "ap_wpa2_ccmp": {
+      "peer": "independent MT7921 / Windows",
+      "dhcp": true,
+      "ping_sent": 4,
+      "ping_received": 4,
+      "http_status": 200,
+      "marker_matches": true,
+      "pmf_profile": 0
+    },
+    "hcxdumptool": {
+      "version": "6.3.5-1",
+      "mode": "passive controlled capture",
+      "channel": 36,
+      "pcapng_records": 11,
+      "eapol_messages": 4,
+      "M1": 1,
+      "M2": 1,
+      "M3": 1,
+      "M4": 1,
+      "eapol_pairs_total": 2,
+      "eapol_pairs_best": 1,
+      "authorized_m2_m3_pairs": 1,
+      "tool_exit": 0,
+      "wrapper_exit": 0,
+      "sha256": "80f5ea37ab4b252c8ab5a3b484f70198aee71686b1ded2e5f88994ab6d68edb0",
+      "password_cracking_run": false
+    },
+    "raw_injection": {
+      "state": "VERIFIED_DEVICE",
+      "duration_s": 8,
+      "tx_probe_requests": 3,
+      "tx_raw_arp_requests": 3,
+      "pcap_records": 1228,
+      "rx_records": 1216,
+      "local_tx_echoes": 12,
+      "kernel_capture_drops": 0,
+      "owner_probe_response_records_including_retries": 223,
+      "owner_deauth_reason7_records_including_retries": 236,
+      "deauth_transmitted_by_test": false,
+      "over_air_responses_not_local_echoes": true,
+      "sha256": "b33c19858e25890615aa6f8cad40043ee26f0b645524295ba7f161421bc7cd7c"
     }
   }
 }

@@ -28,16 +28,16 @@
 | 🟡 **GPU & shell** | Freedreno / Adreno acceleration; Plasma Mobile and native Phosh | Composition performance, fault recovery |
 | 🟡 **Suspend** | Earlier profiles passed s2idle / standby / standalone CPU-L2 collapse and physical wake/desktop checks | Repeat acceptance on the current native profile; whole-SoC savings, display power sequencing and power draw |
 | 🟡 **Battery** | PM8226 BMS voltage/current/temperature/coulombs and modeled SOC | Capacity / aging / full-cycle accuracy |
-| 🟡 **Wi-Fi** | Managed, WPA2 AP, raw standalone monitor + probe/data injection | [Tested scope](docs/WIFI.md); firmware scan/restart and RF-control limitations |
+| 🟡 **Wi-Fi** | Managed, WPA2 AP, raw standalone monitor + probe/data injection | [Tested scope](docs/WIFI.md); firmware restart, PMF and RF-control limitations |
 | ⚪ **Bluetooth / audio** | Hardware identified, limited bring-up | Untested / deferred |
 | ⚪ **Modem / cameras** | — | Not brought up / untested |
 
 > [!NOTE]
 > **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](docs/GRAPHICS-STABILITY.md), [battery evidence](docs/BATTERY.md), and [patch review](docs/PATCH-REVIEW.md).
 
-Evidence spans several kernel and display profiles. **Latest installed profile**, rechecked on **2026-10-21**: kernel `7.2.9-dirty #12`, native split GPU/KMS, Mesa **25.0.7**, Phoc **0.46.0**, Phosh **0.58.0-1~t5313**, Debian **13.7**. This check confirmed processes, DRM ownership, module hash and battery interfaces; it adds no new physical display, FPS or suspend acceptance. Firmware bridge power, `FD_MESA_DEBUG=inorder` and a device-local GPU runtime hold remain in use.
+Evidence spans several kernel and display profiles. **Latest installed profile**, rechecked on **2026-10-22**: kernel `7.2.9-dirty #16`, native split GPU/KMS, Mesa **25.0.7**, Phoc **0.46.0**, Phosh **0.58.0-1~t5313**, Debian **13.7**. This check confirmed processes, DRM ownership, module hash and battery interfaces; it adds no new physical display, FPS or suspend acceptance. Firmware bridge power, `FD_MESA_DEBUG=inorder` and a device-local GPU runtime hold remain in use.
 
-On **2026-10-21**, kernel #12 adds [raw WCN3660 monitor reception](docs/WIFI.md), including encrypted Data/QoS Data with IV, with unchanged configuration, native-ICC DTB and MSM module from #10. Probe/data injection, channel changes, return to managed and external WPA2 AP traffic passed. Monitor is exclusive; bad-FCS capture and arbitrary TX controls remain unvalidated.
+On **2026-10-22**, kernel #16 consolidates [WCN3660 support](docs/WIFI.md) into one kernel patch, selects software scanning without the known HAL208 timeout, clears stale scan state and excludes the unsupported channel 144 through standard OF limits. Managed, WPA2 AP, raw monitor, probe/data injection and hcxdumptool handshake capture passed short tests. Configuration/MSM module are unchanged; DTB adds only the frequency limit. Monitor is exclusive; firmware hot restart, PMF and advanced RF controls remain incomplete or unvalidated.
 
 ## Boot flow
 

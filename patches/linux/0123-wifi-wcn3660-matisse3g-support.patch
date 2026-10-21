@@ -1,0 +1,975 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] wifi: support the SM-T531 WCN3660 radio and native monitor
+
+Consolidate the board WCNSS power domains/regulators, SMP2P/SMD wiring,
+level-high DXE IRQs, valid PHY address, scan fallback and bounded transport
+with native monitor RX/TX support. Keep all prior power and calibration
+constraints; do not replace firmware or include device-specific secrets.
+
+The stock API 1.5.1.2 / CRM12035159 image advertises scan offload but never
+replies to channel-list request208. Select mac80211 software scan up front
+for this exact RF/platform/image and retain generic fallback for others.
+Clear stale software-scan state across stop/start and completion, and
+propagate channel/scan errors instead of publishing a successful tune.
+
+In exclusive monitor, use the tested stock HAL register ABI to bypass RXP
+address/type filters and route unknown-key DPU frames to host RX. Keep
+original register state for the monitor lifetime, verify writes and
+restore it before normal operation. Preserve ciphertext/IV metadata and
+validate raw TX headers/context. Reapply the filter after a successful
+channel change without disabling RX on a rejected channel.
+
+This patch contains the previously deployed Wi-Fi changes from patches
+0013/0014/0015(WCNSS portion)/0031/0032/0123-0127 plus the lifecycle fixes.
+See docs/WIFI.md for physical acceptance and firmware limitations. This
+is not a claim of PMF/WPA3, arbitrary TX-rate controls or bad-FCS support.
+
+Honor per-radio OF frequency limits with private band/channel copies. The
+stock NV2 layout omits channel144 (vos_nvitem.c FEATURE_WLAN_CH144); the
+installed firmware rejects it with status6. Describe that limit in the
+board DT, without changing regulatory permissions on other channels.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+index 620f28b9a..e68432471 100644
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -175,6 +175,106 @@ charger: charger@6a {
+ 	};
+ };
+ 
++/ {
++	smp2p-wcnss {
++		compatible = "qcom,smp2p";
++		qcom,smem = <451>, <431>;
++		interrupt-parent = <&intc>;
++		interrupts = <GIC_SPI 143 IRQ_TYPE_EDGE_RISING>;
++		mboxes = <&apcs 18>;
++		qcom,local-pid = <0>;
++		qcom,remote-pid = <4>;
++
++		wcnss_smp2p_out: master-kernel {
++			qcom,entry-name = "master-kernel";
++			#qcom,smem-state-cells = <1>;
++		};
++
++		wcnss_smp2p_in: slave-kernel {
++			qcom,entry-name = "slave-kernel";
++			interrupt-controller;
++			#interrupt-cells = <2>;
++		};
++	};
++};
++
++&soc {
++	pronto: remoteproc@fb204000 {
++		compatible = "qcom,pronto-v1-pil", "qcom,pronto";
++		reg = <0xfb204000 0x2000>, <0xfb202000 0x1000>, <0xfb21b000 0x3000>;
++		reg-names = "ccu", "dxe", "pmu";
++		memory-region = <&{/reserved-memory/wcnss@d200000}>;
++		firmware-name = "qcom/matisse3g/wcnss.mdt";
++
++		interrupts-extended = <&intc GIC_SPI 149 IRQ_TYPE_EDGE_RISING>,
++				      <&wcnss_smp2p_in 0 IRQ_TYPE_EDGE_RISING>,
++				      <&wcnss_smp2p_in 1 IRQ_TYPE_EDGE_RISING>,
++				      <&wcnss_smp2p_in 2 IRQ_TYPE_EDGE_RISING>;
++		interrupt-names = "wdog", "fatal", "ready", "handover";
++		power-domains = <&rpmpd MSM8226_VDDCX>;
++		power-domain-names = "cx";
++		vddmx-supply = <&pm8226_l3>;
++		vddpx-supply = <&pm8226_l6>;
++		qcom,smem-states = <&wcnss_smp2p_out 0>;
++		qcom,smem-state-names = "stop";
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&wlan_default_state>;
++
++		iris {
++			compatible = "qcom,wcn3660";
++			clocks = <&rpmcc RPM_SMD_CXO_A2>;
++			clock-names = "xo";
++			vddxo-supply = <&pm8226_l10>;
++			vddrfa-supply = <&pm8226_l24>;
++			vddpa-supply = <&pm8226_l16>;
++			vdddig-supply = <&pm8226_l24>;
++		};
++
++		smd-edge {
++			interrupts = <GIC_SPI 142 IRQ_TYPE_EDGE_RISING>;
++			mboxes = <&apcs 17>;
++			qcom,smd-edge = <6>;
++
++			wcnss {
++				compatible = "qcom,wcnss";
++				qcom,smd-channels = "WCNSS_CTRL";
++				qcom,mmio = <&pronto>;
++				firmware-name = "qcom/matisse3g/WCNSS_qcom_wlan_nv.bin";
++
++				wifi {
++					compatible = "qcom,wcnss-wlan";
++					/* Stock NV2 firmware has no channel 144 entry. */
++					ieee80211-freq-limit = <2402000 5710000>,
++							       <5735000 5835000>;
++					interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
++						     <GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>;
++					interrupt-names = "tx", "rx";
++					qcom,smem-states = <&apps_smsm 10>, <&apps_smsm 9>;
++					qcom,smem-state-names = "tx-enable", "tx-rings-empty";
++				};
++			};
++		};
++	};
++};
++
++&tlmm {
++	wlan_default_state: wlan-default-state {
++		pins = "gpio40", "gpio41", "gpio42", "gpio43", "gpio44";
++		function = "wlan";
++		drive-strength = <6>;
++		bias-pull-down;
++	};
++};
++
++&pm8226_l16 {
++	regulator-allow-set-load;
++};
++
++&pm8226_l24 {
++	regulator-allow-set-load;
++};
++
+ / {
+ 	battery: battery-cell {
+ 		compatible = "simple-battery";
+diff --git a/drivers/net/wireless/ath/wcn36xx/main.c b/drivers/net/wireless/ath/wcn36xx/main.c
+index ad8a4bd91..3c01d9d90 100644
+--- a/drivers/net/wireless/ath/wcn36xx/main.c
++++ b/drivers/net/wireless/ath/wcn36xx/main.c
+@@ -251,6 +251,12 @@ static int wcn36xx_start(struct ieee80211_hw *hw)
+ 			wcn36xx_feat_caps_info(wcn);
+ 	}
+ 
++	/* This image advertises offload but never replies to channel-list 208. */
++	if (wcn36xx_is_legacy_wcn3660(wcn)) {
++		wcn36xx_firmware_clear_feat_caps(wcn->fw_feat_caps, SCAN_OFFLOAD);
++		wcn->scan_offload_failed = true;
++	}
++
+ 	/* DMA channel initialization */
+ 	ret = wcn36xx_dxe_init(wcn);
+ 	if (ret) {
+@@ -260,6 +266,13 @@ static int wcn36xx_start(struct ieee80211_hw *hw)
+ 
+ 	wcn36xx_debugfs_init(wcn);
+ 
++	WRITE_ONCE(wcn->monitor_enabled, false);
++	wcn->monitor_filter_saved = false;
++	wcn->sw_scan = false;
++	wcn->sw_scan_init = false;
++	wcn->sw_scan_channel = 0;
++	wcn->sw_scan_opchannel = 0;
++	wcn->sw_scan_vif = NULL;
+ 	INIT_LIST_HEAD(&wcn->vif_list);
+ 	spin_lock_init(&wcn->dxe_lock);
+ 	spin_lock_init(&wcn->survey_lock);
+@@ -320,7 +333,36 @@ static void wcn36xx_change_ps(struct wcn36xx *wcn, bool enable)
+ 	}
+ }
+ 
+-static void wcn36xx_change_opchannel(struct wcn36xx *wcn, int ch)
++/* A virtual monitor owns the radio only while no managed/AP vif is active. */
++static int wcn36xx_monitor_stop(struct wcn36xx *wcn)
++{
++	int ret;
++
++	if (!wcn->monitor_filter_saved)
++		return 0;
++	ret = wcn36xx_smd_monitor_filter(wcn, false);
++	if (!ret)
++		WRITE_ONCE(wcn->monitor_enabled, false);
++	return ret;
++}
++
++static int wcn36xx_monitor_channel(struct wcn36xx *wcn,
++				   struct ieee80211_vif *vif, int ch)
++{
++	int ret;
++
++	ret = wcn36xx_smd_switch_channel(wcn, vif, ch);
++	if (ret)
++		return ret < 0 ? ret : -EIO;
++	/* RX can start as soon as the hardware filter is opened. */
++	WRITE_ONCE(wcn->monitor_enabled, true);
++	ret = wcn36xx_smd_monitor_filter(wcn, true);
++	if (ret && !wcn->monitor_filter_saved)
++		WRITE_ONCE(wcn->monitor_enabled, false);
++	return ret;
++}
++
++static int wcn36xx_change_opchannel(struct wcn36xx *wcn, int ch)
+ {
+ 	struct ieee80211_vif *vif = NULL;
+ 	struct wcn36xx_vif *tmp;
+@@ -345,7 +387,19 @@ static void wcn36xx_change_opchannel(struct wcn36xx *wcn, int ch)
+ 
+ 	if (!channel) {
+ 		wcn36xx_err("Cannot tune to channel %d\n", ch);
+-		return;
++		return -EINVAL;
++	}
++
++	list_for_each_entry(tmp, &wcn->vif_list, list) {
++		int ret;
++
++		vif = wcn36xx_priv_to_vif(tmp);
++		if (vif->type == NL80211_IFTYPE_MONITOR)
++			ret = wcn36xx_monitor_channel(wcn, vif, ch);
++		else
++			ret = wcn36xx_smd_switch_channel(wcn, vif, ch);
++		if (ret)
++			return ret < 0 ? ret : -EIO;
+ 	}
+ 
+ 	spin_lock_irqsave(&wcn->survey_lock, flags);
+@@ -353,12 +407,7 @@ static void wcn36xx_change_opchannel(struct wcn36xx *wcn, int ch)
+ 	wcn->channel = channel;
+ 	spin_unlock_irqrestore(&wcn->survey_lock, flags);
+ 
+-	list_for_each_entry(tmp, &wcn->vif_list, list) {
+-		vif = wcn36xx_priv_to_vif(tmp);
+-		wcn36xx_smd_switch_channel(wcn, vif, ch);
+-	}
+-
+-	return;
++	return 0;
+ }
+ 
+ static int wcn36xx_config(struct ieee80211_hw *hw, int radio_idx, u32 changed)
+@@ -404,9 +453,17 @@ static int wcn36xx_config(struct ieee80211_hw *hw, int radio_idx, u32 changed)
+ 					return -EIO;
+ 				}
+ 			}
+-			wcn36xx_smd_start_scan(wcn, ch);
++			ret = wcn36xx_smd_start_scan(wcn, ch);
++			if (ret) {
++				mutex_unlock(&wcn->conf_mutex);
++				return ret < 0 ? ret : -EIO;
++			}
+ 		} else {
+-			wcn36xx_change_opchannel(wcn, ch);
++			ret = wcn36xx_change_opchannel(wcn, ch);
++			if (ret) {
++				mutex_unlock(&wcn->conf_mutex);
++				return ret;
++			}
+ 		}
+ 	}
+ 
+@@ -438,7 +495,8 @@ static void wcn36xx_configure_filter(struct ieee80211_hw *hw,
+ 
+ 	mutex_lock(&wcn->conf_mutex);
+ 
+-	*total &= FIF_ALLMULTI;
++	*total &= FIF_ALLMULTI | (wcn->monitor_enabled ?
++		  FIF_BCN_PRBRESP_PROMISC | FIF_CONTROL | FIF_OTHER_BSS : 0);
+ 
+ 	fp = (void *)(unsigned long)multicast;
+ 	list_for_each_entry(tmp, &wcn->vif_list, list) {
+@@ -631,6 +689,11 @@ static int wcn36xx_hw_scan(struct ieee80211_hw *hw,
+ 			   struct ieee80211_scan_request *hw_req)
+ {
+ 	struct wcn36xx *wcn = hw->priv;
++	int ret;
++
++	/* A firmware capability exchange on resume must not undo the fallback. */
++	if (wcn->scan_offload_failed)
++		wcn36xx_firmware_clear_feat_caps(wcn->fw_feat_caps, SCAN_OFFLOAD);
+ 
+ 	if (!wcn36xx_firmware_get_feat_caps(wcn->fw_feat_caps, SCAN_OFFLOAD)) {
+ 		/* fallback to mac80211 software scan */
+@@ -657,8 +720,19 @@ static int wcn36xx_hw_scan(struct ieee80211_hw *hw,
+ 
+ 	mutex_unlock(&wcn->scan_lock);
+ 
+-	wcn36xx_smd_update_channel_list(wcn, &hw_req->req);
+-	return wcn36xx_smd_start_hw_scan(wcn, vif, &hw_req->req);
++	ret = wcn36xx_smd_update_channel_list(wcn, &hw_req->req);
++	if (!ret)
++		ret = wcn36xx_smd_start_hw_scan(wcn, vif, &hw_req->req);
++	if (!ret)
++		return 0;
++
++	mutex_lock(&wcn->scan_lock);
++	wcn->scan_req = NULL;
++	mutex_unlock(&wcn->scan_lock);
++	wcn36xx_firmware_clear_feat_caps(wcn->fw_feat_caps, SCAN_OFFLOAD);
++	wcn->scan_offload_failed = true;
++	wcn36xx_warn("Firmware scan unavailable (%d), using software scan\n", ret);
++	return 1;
+ }
+ 
+ static void wcn36xx_cancel_hw_scan(struct ieee80211_hw *hw,
+@@ -710,7 +784,10 @@ static void wcn36xx_sw_scan_complete(struct ieee80211_hw *hw,
+ 					wcn->sw_scan_vif);
+ 	}
+ 	wcn->sw_scan = false;
++	wcn->sw_scan_init = false;
++	wcn->sw_scan_channel = 0;
+ 	wcn->sw_scan_opchannel = 0;
++	wcn->sw_scan_vif = NULL;
+ }
+ 
+ static void wcn36xx_update_allowed_rates(struct ieee80211_sta *sta,
+@@ -987,6 +1064,9 @@ static void wcn36xx_remove_interface(struct ieee80211_hw *hw,
+ 
+ 	mutex_lock(&wcn->conf_mutex);
+ 
++	if (vif->type == NL80211_IFTYPE_MONITOR &&
++	    wcn36xx_monitor_stop(wcn))
++		wcn36xx_warn("Failed to restore monitor receive path\n");
+ 	list_del(&vif_priv->list);
+ 	wcn36xx_smd_delete_sta_self(wcn, vif->addr);
+ 
+@@ -999,13 +1079,17 @@ static int wcn36xx_add_interface(struct ieee80211_hw *hw,
+ 	struct wcn36xx *wcn = hw->priv;
+ 	struct wcn36xx_vif *vif_priv = wcn36xx_vif_to_priv(vif);
+ 
++	struct wcn36xx_vif *other;
++	int ret;
++
+ 	wcn36xx_dbg(WCN36XX_DBG_MAC, "mac add interface vif %p type %d\n",
+ 		    vif, vif->type);
+ 
+-	if (!(NL80211_IFTYPE_STATION == vif->type ||
+-	      NL80211_IFTYPE_AP == vif->type ||
+-	      NL80211_IFTYPE_ADHOC == vif->type ||
+-	      NL80211_IFTYPE_MESH_POINT == vif->type)) {
++	if (!(vif->type == NL80211_IFTYPE_STATION ||
++	      vif->type == NL80211_IFTYPE_AP ||
++	      vif->type == NL80211_IFTYPE_ADHOC ||
++	      vif->type == NL80211_IFTYPE_MESH_POINT ||
++	      vif->type == NL80211_IFTYPE_MONITOR)) {
+ 		wcn36xx_warn("Unsupported interface type requested: %d\n",
+ 			     vif->type);
+ 		return -EOPNOTSUPP;
+@@ -1013,14 +1097,41 @@ static int wcn36xx_add_interface(struct ieee80211_hw *hw,
+ 
+ 	mutex_lock(&wcn->conf_mutex);
+ 
++	/* Active mixed monitor/managed operation is not implemented. */
++	if (vif->type == NL80211_IFTYPE_MONITOR && !list_empty(&wcn->vif_list)) {
++		ret = -EBUSY;
++		goto out_unlock;
++	}
++	list_for_each_entry(other, &wcn->vif_list, list) {
++		if (wcn36xx_priv_to_vif(other)->type == NL80211_IFTYPE_MONITOR) {
++			ret = -EBUSY;
++			goto out_unlock;
++		}
++	}
++	if (wcn->monitor_filter_saved) {
++		ret = wcn36xx_monitor_stop(wcn);
++		if (ret)
++			goto out_unlock;
++	}
++	/* The mac80211 virtual monitor has no netdev address. */
++	if (vif->type == NL80211_IFTYPE_MONITOR && is_zero_ether_addr(vif->addr))
++		ether_addr_copy(vif->addr, wcn->hw->wiphy->perm_addr);
+ 	vif_priv->bss_index = WCN36XX_HAL_BSS_INVALID_IDX;
+ 	INIT_LIST_HEAD(&vif_priv->sta_list);
+ 	list_add(&vif_priv->list, &wcn->vif_list);
+-	wcn36xx_smd_add_sta_self(wcn, vif);
++	ret = wcn36xx_smd_add_sta_self(wcn, vif);
++	if (!ret && vif->type == NL80211_IFTYPE_MONITOR) {
++		ret = wcn36xx_monitor_channel(wcn, vif, WCN36XX_HW_CHANNEL(wcn));
++		if (ret)
++			wcn36xx_smd_delete_sta_self(wcn, vif->addr);
++	}
++	if (ret)
++		list_del(&vif_priv->list);
+ 
++out_unlock:
+ 	mutex_unlock(&wcn->conf_mutex);
+ 
+-	return 0;
++	return ret > 0 ? -EIO : ret;
+ }
+ 
+ static int wcn36xx_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
+@@ -1415,6 +1526,33 @@ wcn36xx_set_ieee80211_vht_caps(struct ieee80211_sta_vht_cap *vht_cap)
+ 	vht_cap->vht_mcs.tx_mcs_map = vht_cap->vht_mcs.rx_mcs_map;
+ }
+ 
++/* OF limits are per radio; do not modify the shared channel templates. */
++static int wcn36xx_of_freq_limits(struct wcn36xx *wcn)
++{
++	struct ieee80211_supported_band *band, *copy;
++	enum nl80211_band idx;
++	size_t size;
++
++	if (!of_property_present(wcn->dev->of_node, "ieee80211-freq-limit"))
++		return 0;
++
++	for (idx = 0; idx < NUM_NL80211_BANDS; idx++) {
++		band = wcn->hw->wiphy->bands[idx];
++		if (!band)
++			continue;
++		copy = devm_kmemdup(wcn->dev, band, sizeof(*band), GFP_KERNEL);
++		if (!copy)
++			return -ENOMEM;
++		size = array_size(band->n_channels, sizeof(*band->channels));
++		copy->channels = devm_kmemdup(wcn->dev, band->channels, size, GFP_KERNEL);
++		if (!copy->channels)
++			return -ENOMEM;
++		wcn->hw->wiphy->bands[idx] = copy;
++	}
++	wiphy_read_of_freq_limits(wcn->hw->wiphy);
++	return 0;
++}
++
+ static int wcn36xx_init_ieee80211(struct wcn36xx *wcn)
+ {
+ 	static const u32 cipher_suites[] = {
+@@ -1424,6 +1562,9 @@ static int wcn36xx_init_ieee80211(struct wcn36xx *wcn)
+ 		WLAN_CIPHER_SUITE_CCMP,
+ 	};
+ 
++	if (wcn->is_pronto && !wcn->is_pronto_v3 &&
++	    wcn->rf_id == RF_IRIS_WCN3660)
++		ieee80211_hw_set(wcn->hw, WANT_MONITOR_VIF);
+ 	ieee80211_hw_set(wcn->hw, TIMING_BEACON_ONLY);
+ 	ieee80211_hw_set(wcn->hw, AMPDU_AGGREGATION);
+ 	ieee80211_hw_set(wcn->hw, SUPPORTS_PS);
+@@ -1466,7 +1607,7 @@ static int wcn36xx_init_ieee80211(struct wcn36xx *wcn)
+ 	wiphy_ext_feature_set(wcn->hw->wiphy,
+ 			      NL80211_EXT_FEATURE_CQM_RSSI_LIST);
+ 
+-	return 0;
++	return wcn36xx_of_freq_limits(wcn);
+ }
+ 
+ static int wcn36xx_platform_get_resources(struct wcn36xx *wcn,
+@@ -1621,11 +1762,21 @@ static int wcn36xx_probe(struct platform_device *pdev)
+ 		SET_IEEE80211_PERM_ADDR(wcn->hw, addr);
+ 	}
+ 
++	if (!is_valid_ether_addr(wcn->hw->wiphy->perm_addr)) {
++		u8 fallback[ETH_ALEN];
++
++		eth_random_addr(fallback);
++		SET_IEEE80211_PERM_ADDR(wcn->hw, fallback);
++		wcn36xx_warn("No valid DT MAC address, using a local random address\n");
++	}
++
+ 	ret = wcn36xx_platform_get_resources(wcn, pdev);
+ 	if (ret)
+ 		goto out_destroy_ept;
+ 
+-	wcn36xx_init_ieee80211(wcn);
++	ret = wcn36xx_init_ieee80211(wcn);
++	if (ret)
++		goto out_unmap;
+ 	ret = ieee80211_register_hw(wcn->hw);
+ 	if (ret)
+ 		goto out_unmap;
+diff --git a/drivers/net/wireless/ath/wcn36xx/smd.c b/drivers/net/wireless/ath/wcn36xx/smd.c
+index c0b477345..0a11e8c4b 100644
+--- a/drivers/net/wireless/ath/wcn36xx/smd.c
++++ b/drivers/net/wireless/ath/wcn36xx/smd.c
+@@ -431,7 +431,16 @@ static int wcn36xx_smd_send_and_wait(struct wcn36xx *wcn, size_t len)
+ 
+ 	init_completion(&wcn->hal_rsp_compl);
+ 	start = jiffies;
+-	ret = rpmsg_send(wcn->smd_channel, wcn->hal_buf, len);
++	do {
++		ret = rpmsg_trysend(wcn->smd_channel, wcn->hal_buf, len);
++		if (ret != -EAGAIN)
++			break;
++		if (time_after_eq(jiffies, start + msecs_to_jiffies(HAL_MSG_TIMEOUT))) {
++			ret = -ETIMEDOUT;
++			break;
++		}
++		usleep_range(1000, 2000);
++	} while (1);
+ 	if (ret) {
+ 		wcn36xx_err("HAL TX failed for req %d\n", req_type);
+ 		goto out;
+@@ -1041,6 +1050,12 @@ int wcn36xx_smd_switch_channel(struct wcn36xx *wcn,
+ 	INIT_HAL_MSG(msg_body, WCN36XX_HAL_CH_SWITCH_REQ);
+ 
+ 	msg_body.channel_number = (u8)ch;
++	if (conf_is_ht40_minus(&wcn->hw->conf))
++		msg_body.secondary_channel_offset = PHY_DOUBLE_CHANNEL_HIGH_PRIMARY;
++	else if (conf_is_ht40_plus(&wcn->hw->conf))
++		msg_body.secondary_channel_offset = PHY_DOUBLE_CHANNEL_LOW_PRIMARY;
++	else
++		msg_body.secondary_channel_offset = PHY_SINGLE_CHANNEL_CENTERED;
+ 	msg_body.tx_mgmt_power = 0xbf;
+ 	msg_body.max_tx_power = 0xbf;
+ 	memcpy(msg_body.self_sta_mac_addr, vif->addr, ETH_ALEN);
+@@ -1054,7 +1069,7 @@ int wcn36xx_smd_switch_channel(struct wcn36xx *wcn,
+ 	}
+ 	ret = wcn36xx_smd_switch_channel_rsp(wcn->hal_buf, wcn->hal_rsp_len);
+ 	if (ret) {
+-		wcn36xx_err("hal_switch_channel response failed err=%d\n", ret);
++		wcn36xx_err("Channel %d switch failed: %d\n", ch, ret);
+ 		goto out;
+ 	}
+ out:
+@@ -2372,6 +2387,139 @@ int wcn36xx_smd_dump_cmd_req(struct wcn36xx *wcn, u32 arg1, u32 arg2,
+ 	return ret;
+ }
+ 
++#define WCN36XX_MON_RXP_CFG	0xfb080800
++#define WCN36XX_MON_RXP_TYPES_LO	0xfb0808f0
++#define WCN36XX_MON_RXP_TYPES_HI	0xfb0808f4
++#define WCN36XX_MON_DPU_ERROR_WQ	0xfb081874
++#define WCN36XX_MON_DPU_ERROR_IRQ	0xfb081820
++
++/* Commands 7/8 in the tested WCN3660 firmware's HAL dump table. */
++static int wcn36xx_smd_rxp_reg(struct wcn36xx *wcn, u32 addr, u32 *value,
++			       bool write)
++{
++	struct wcn36xx_hal_dump_cmd_req_msg req;
++	struct wcn36xx_hal_dump_cmd_rsp_msg *rsp;
++	int ret;
++
++	if (addr != WCN36XX_MON_RXP_CFG && addr != WCN36XX_MON_RXP_TYPES_LO &&
++	    addr != WCN36XX_MON_RXP_TYPES_HI && addr != WCN36XX_MON_DPU_ERROR_WQ &&
++	    addr != WCN36XX_MON_DPU_ERROR_IRQ)
++		return -EINVAL;
++	mutex_lock(&wcn->hal_mutex);
++	INIT_HAL_MSG(req, WCN36XX_HAL_DUMP_COMMAND_REQ);
++	req.arg1 = write ? 8 : 7;
++	req.arg2 = addr;
++	req.arg3 = write ? *value : 0;
++	req.arg4 = 0;
++	req.arg5 = 0;
++	PREPARE_HAL_BUF(wcn->hal_buf, req);
++	ret = wcn36xx_smd_send_and_wait(wcn, req.header.len);
++	if (ret)
++		goto out;
++	rsp = (void *)wcn->hal_buf;
++	if (wcn->hal_rsp_len < offsetof(typeof(*rsp), rsp_buffer) ||
++	    rsp->header.msg_type != WCN36XX_HAL_DUMP_COMMAND_RSP || rsp->status) {
++		ret = -EPROTO;
++		goto out;
++	}
++	if (!write) {
++		if (rsp->rsp_length != sizeof(*value) ||
++		    wcn->hal_rsp_len < offsetof(typeof(*rsp), rsp_buffer) + sizeof(*value)) {
++			ret = -EPROTO;
++			goto out;
++		}
++		memcpy(value, rsp->rsp_buffer, sizeof(*value));
++	}
++out:
++	mutex_unlock(&wcn->hal_mutex);
++	return ret;
++}
++
++static int wcn36xx_smd_rxp_write(struct wcn36xx *wcn, u32 addr, u32 value)
++{
++	u32 actual;
++	int ret;
++
++	ret = wcn36xx_smd_rxp_reg(wcn, addr, &value, true);
++	if (!ret)
++		ret = wcn36xx_smd_rxp_reg(wcn, addr, &actual, false);
++	if (ret)
++		return ret;
++	return actual == value ? 0 : -EIO;
++}
++
++int wcn36xx_smd_monitor_filter(struct wcn36xx *wcn, bool enable)
++{
++	u32 error_wq;
++	int ret, err;
++
++	/* Register layout/commands are proven only on this stock firmware. */
++	if (!wcn36xx_is_legacy_wcn3660(wcn))
++		return -EOPNOTSUPP;
++	if (!enable) {
++		if (!wcn->monitor_filter_saved)
++			return 0;
++		ret = wcn36xx_smd_rxp_write(wcn, WCN36XX_MON_RXP_CFG, wcn->monitor_rxp_cfg);
++		err = wcn36xx_smd_rxp_write(wcn, WCN36XX_MON_RXP_TYPES_LO, wcn->monitor_rxp_lo);
++		if (!ret)
++			ret = err;
++		err = wcn36xx_smd_rxp_write(wcn, WCN36XX_MON_RXP_TYPES_HI, wcn->monitor_rxp_hi);
++		if (!ret)
++			ret = err;
++		err = wcn36xx_smd_rxp_write(wcn, WCN36XX_MON_DPU_ERROR_WQ,
++					    wcn->monitor_dpu_error_wq);
++		if (!ret)
++			ret = err;
++		err = wcn36xx_smd_rxp_write(wcn, WCN36XX_MON_DPU_ERROR_IRQ,
++					    wcn->monitor_dpu_error_irq);
++		if (!ret)
++			ret = err;
++		if (!ret)
++			wcn->monitor_filter_saved = false;
++		return ret;
++	}
++	if (!wcn->monitor_filter_saved) {
++		ret = wcn36xx_smd_rxp_reg(wcn, WCN36XX_MON_RXP_CFG, &wcn->monitor_rxp_cfg, false);
++		if (!ret)
++			ret = wcn36xx_smd_rxp_reg(wcn, WCN36XX_MON_RXP_TYPES_LO,
++						  &wcn->monitor_rxp_lo, false);
++		if (!ret)
++			ret = wcn36xx_smd_rxp_reg(wcn, WCN36XX_MON_RXP_TYPES_HI,
++						  &wcn->monitor_rxp_hi, false);
++		if (!ret)
++			ret = wcn36xx_smd_rxp_reg(wcn, WCN36XX_MON_DPU_ERROR_WQ,
++						  &wcn->monitor_dpu_error_wq, false);
++		if (!ret)
++			ret = wcn36xx_smd_rxp_reg(wcn, WCN36XX_MON_DPU_ERROR_IRQ,
++						  &wcn->monitor_dpu_error_irq, false);
++		if (ret)
++			return ret;
++		wcn->monitor_filter_saved = true;
++	}
++	/* Unknown-key frames otherwise go to firmware's DPU error queue (8).
++	 * In standalone monitor, DMA their original ciphertext to host RX (11).
++	 * Mask packet-error IRQs so firmware cannot race the host for those BDs;
++	 * retain fatal/MIC IRQs and all existing DPU packet-filter settings.
++	 */
++	ret = wcn36xx_smd_rxp_write(wcn, WCN36XX_MON_DPU_ERROR_IRQ,
++				    wcn->monitor_dpu_error_irq & ~GENMASK(20, 0));
++	error_wq = (wcn->monitor_dpu_error_wq & ~0xff) | WCN36XX_DXE_WQ_RX_L;
++	if (!ret)
++		ret = wcn36xx_smd_rxp_write(wcn, WCN36XX_MON_DPU_ERROR_WQ, error_wq);
++	if (ret)
++		goto restore;
++	/* Keep RX enabled; bypass address lookup, unmask valid frame types. */
++	ret = wcn36xx_smd_rxp_write(wcn, WCN36XX_MON_RXP_CFG, wcn->monitor_rxp_cfg & ~BIT(2));
++	if (!ret)
++		ret = wcn36xx_smd_rxp_write(wcn, WCN36XX_MON_RXP_TYPES_LO, 0xffff0000);
++	if (!ret)
++		ret = wcn36xx_smd_rxp_write(wcn, WCN36XX_MON_RXP_TYPES_HI, 0);
++restore:
++	if (ret)
++		wcn36xx_smd_monitor_filter(wcn, false);
++	return ret;
++}
++
+ int wcn36xx_smd_feature_caps_exchange(struct wcn36xx *wcn)
+ {
+ 	struct wcn36xx_hal_feat_caps_msg msg_body, *rsp;
+diff --git a/drivers/net/wireless/ath/wcn36xx/smd.h b/drivers/net/wireless/ath/wcn36xx/smd.h
+index 4e39df558..f1ef0a057 100644
+--- a/drivers/net/wireless/ath/wcn36xx/smd.h
++++ b/drivers/net/wireless/ath/wcn36xx/smd.h
+@@ -66,6 +66,8 @@ int wcn36xx_smd_finish_scan(struct wcn36xx *wcn, enum wcn36xx_hal_sys_mode mode,
+ int wcn36xx_smd_init_scan(struct wcn36xx *wcn, enum wcn36xx_hal_sys_mode mode,
+ 			  struct ieee80211_vif *vif);
+ 
++int wcn36xx_smd_monitor_filter(struct wcn36xx *wcn, bool enable);
++
+ int wcn36xx_smd_start_hw_scan(struct wcn36xx *wcn, struct ieee80211_vif *vif,
+ 			      struct cfg80211_scan_request *req);
+ int wcn36xx_smd_stop_hw_scan(struct wcn36xx *wcn);
+diff --git a/drivers/net/wireless/ath/wcn36xx/txrx.c b/drivers/net/wireless/ath/wcn36xx/txrx.c
+index 882699879..e4e7fb0c4 100644
+--- a/drivers/net/wireless/ath/wcn36xx/txrx.c
++++ b/drivers/net/wireless/ath/wcn36xx/txrx.c
+@@ -348,16 +348,19 @@ int wcn36xx_rx_skb(struct wcn36xx *wcn, struct sk_buff *skb)
+ 
+ 	hdr = (struct ieee80211_hdr *) skb->data;
+ 	fc = __le16_to_cpu(hdr->frame_control);
+-	sn = IEEE80211_SEQ_TO_SN(__le16_to_cpu(hdr->seq_ctrl));
++	sn = skb->len >= 24 ? IEEE80211_SEQ_TO_SN(le16_to_cpu(hdr->seq_ctrl)) : 0;
+ 
+ 	status.mactime = 10;
+ 	status.signal = -get_rssi0(bd);
+ 	status.antenna = 1;
+ 	status.flag = 0;
+ 	status.rx_flags = 0;
+-	status.flag |= RX_FLAG_IV_STRIPPED |
+-		       RX_FLAG_MMIC_STRIPPED |
+-		       RX_FLAG_DECRYPTED;
++	if (READ_ONCE(wcn->monitor_enabled))
++		status.flag |= RX_FLAG_ONLY_MONITOR;
++	else
++		status.flag |= RX_FLAG_IV_STRIPPED |
++			       RX_FLAG_MMIC_STRIPPED |
++			       RX_FLAG_DECRYPTED;
+ 
+ 	wcn36xx_dbg(WCN36XX_DBG_RX, "status.flags=%x\n", status.flag);
+ 
+@@ -468,17 +471,28 @@ static void wcn36xx_set_tx_pdu(struct wcn36xx_tx_bd *bd,
+ 	bd->pdu.tid = tid;
+ }
+ 
+-static inline struct wcn36xx_vif *get_vif_by_addr(struct wcn36xx *wcn,
+-						  u8 *addr)
++static struct wcn36xx_vif *wcn36xx_tx_vif(struct wcn36xx *wcn,
++					  struct sk_buff *skb)
+ {
+-	struct wcn36xx_vif *vif_priv = NULL;
+-	struct ieee80211_vif *vif = NULL;
++	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
++	struct ieee80211_hdr *hdr = (void *)skb->data;
++	struct wcn36xx_vif *vif_priv;
++
+ 	list_for_each_entry(vif_priv, &wcn->vif_list, list) {
+-			vif = wcn36xx_priv_to_vif(vif_priv);
+-			if (memcmp(vif->addr, addr, ETH_ALEN) == 0)
+-				return vif_priv;
++		struct ieee80211_vif *vif = wcn36xx_priv_to_vif(vif_priv);
++
++		if (vif == info->control.vif ||
++		    (skb->len >= 16 && ether_addr_equal(vif->addr, hdr->addr2)))
++			return vif_priv;
+ 	}
+-	wcn36xx_warn("vif %pM not found\n", addr);
++
++	/*
++	 * A raw monitor frame need not use a registered source address.
++	 * Use a firmware TX context, never an uninitialised monitor drv_priv.
++	 */
++	if (info->flags & IEEE80211_TX_CTL_INJECTED)
++		return list_first_entry_or_null(&wcn->vif_list,
++					       struct wcn36xx_vif, list);
+ 	return NULL;
+ }
+ 
+@@ -517,7 +531,7 @@ static void wcn36xx_tx_start_ampdu(struct wcn36xx *wcn,
+ 	spin_unlock(&sta_priv->ampdu_lock);
+ }
+ 
+-static void wcn36xx_set_tx_data(struct wcn36xx_tx_bd *bd,
++static bool wcn36xx_set_tx_data(struct wcn36xx_tx_bd *bd,
+ 				struct wcn36xx *wcn,
+ 				struct wcn36xx_vif **vif_priv,
+ 				struct wcn36xx_sta *sta_priv,
+@@ -552,7 +566,9 @@ static void wcn36xx_set_tx_data(struct wcn36xx_tx_bd *bd,
+ 			bd->dpu_desc_idx = sta_priv->dpu_desc_index;
+ 		}
+ 	} else {
+-		__vif_priv = get_vif_by_addr(wcn, hdr->addr2);
++		__vif_priv = wcn36xx_tx_vif(wcn, skb);
++		if (!__vif_priv)
++			return false;
+ 		bd->sta_index = __vif_priv->self_sta_index;
+ 		bd->dpu_desc_idx = __vif_priv->self_dpu_desc_index;
+ 		bd->dpu_sign = __vif_priv->self_ucast_dpu_sign;
+@@ -587,16 +603,15 @@ static void wcn36xx_set_tx_data(struct wcn36xx_tx_bd *bd,
+ 	*vif_priv = __vif_priv;
+ 
+ 	wcn36xx_set_tx_pdu(bd,
+-			   is_data_qos ?
+-			   sizeof(struct ieee80211_qos_hdr) :
+-			   sizeof(struct ieee80211_hdr_3addr),
++			   ieee80211_hdrlen(hdr->frame_control),
+ 			   skb->len, tid);
+ 
+ 	if (sta_priv && is_data_qos)
+ 		wcn36xx_tx_start_ampdu(wcn, sta_priv, skb);
++	return true;
+ }
+ 
+-static void wcn36xx_set_tx_mgmt(struct wcn36xx_tx_bd *bd,
++static bool wcn36xx_set_tx_mgmt(struct wcn36xx_tx_bd *bd,
+ 				struct wcn36xx *wcn,
+ 				struct wcn36xx_vif **vif_priv,
+ 				struct sk_buff *skb,
+@@ -604,13 +619,17 @@ static void wcn36xx_set_tx_mgmt(struct wcn36xx_tx_bd *bd,
+ {
+ 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
+ 	struct wcn36xx_vif *__vif_priv =
+-		get_vif_by_addr(wcn, hdr->addr2);
++		wcn36xx_tx_vif(wcn, skb);
++
++	if (!__vif_priv)
++		return false;
+ 	bd->sta_index = __vif_priv->self_sta_index;
+ 	bd->dpu_desc_idx = __vif_priv->self_dpu_desc_index;
+ 	bd->dpu_ne = 1;
+ 
+ 	/* default rate for unicast */
+-	if (ieee80211_is_mgmt(hdr->frame_control))
++	if (ieee80211_is_mgmt(hdr->frame_control) ||
++	    ieee80211_is_data(hdr->frame_control))
+ 		bd->bd_rate = (WCN36XX_BAND(wcn) == NL80211_BAND_5GHZ) ?
+ 			WCN36XX_BD_RATE_CTRL :
+ 			WCN36XX_BD_RATE_MGMT;
+@@ -640,10 +659,9 @@ static void wcn36xx_set_tx_mgmt(struct wcn36xx_tx_bd *bd,
+ 	bd->pdu.bd_ssn = WCN36XX_TXBD_SSN_FILL_DPU_NON_QOS;
+ 
+ 	wcn36xx_set_tx_pdu(bd,
+-			   ieee80211_is_data_qos(hdr->frame_control) ?
+-			   sizeof(struct ieee80211_qos_hdr) :
+-			   sizeof(struct ieee80211_hdr_3addr),
++			   ieee80211_hdrlen(hdr->frame_control),
+ 			   skb->len, WCN36XX_TID);
++	return true;
+ }
+ 
+ int wcn36xx_start_tx(struct wcn36xx *wcn,
+@@ -653,45 +671,50 @@ int wcn36xx_start_tx(struct wcn36xx *wcn,
+ 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
+ 	struct wcn36xx_vif *vif_priv = NULL;
+ 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
+-	bool is_low = ieee80211_is_data(hdr->frame_control);
+-	bool bcast = is_broadcast_ether_addr(hdr->addr1) ||
+-		is_multicast_ether_addr(hdr->addr1);
++	bool is_low, bcast;
+ 	bool ack_ind = (info->flags & IEEE80211_TX_CTL_REQ_TX_STATUS) &&
+ 					!(info->flags & IEEE80211_TX_CTL_NO_ACK);
+ 	struct wcn36xx_tx_bd bd;
+ 	int ret;
+ 
++	if (unlikely(skb->len < 10 ||
++		     skb->len < ieee80211_hdrlen(hdr->frame_control)))
++		return -EINVAL;
++
++	is_low = ieee80211_is_data(hdr->frame_control) &&
++		 !(info->flags & IEEE80211_TX_CTL_INJECTED);
++	bcast = is_multicast_ether_addr(hdr->addr1);
+ 	memset(&bd, 0, sizeof(bd));
+ 
+ 	wcn36xx_dbg(WCN36XX_DBG_TX,
+ 		    "tx skb %p len %d fc %04x sn %d %s %s\n",
+ 		    skb, skb->len, __le16_to_cpu(hdr->frame_control),
+-		    IEEE80211_SEQ_TO_SN(__le16_to_cpu(hdr->seq_ctrl)),
++		    skb->len >= 24 ?
++			IEEE80211_SEQ_TO_SN(le16_to_cpu(hdr->seq_ctrl)) : 0,
+ 		    is_low ? "low" : "high", bcast ? "bcast" : "ucast");
+ 
+ 	wcn36xx_dbg_dump(WCN36XX_DBG_TX_DUMP, "", skb->data, skb->len);
+ 
+ 	bd.dpu_rf = WCN36XX_BMU_WQ_TX;
+ 
+-	if (unlikely(ack_ind)) {
+-		wcn36xx_dbg(WCN36XX_DBG_DXE, "TX_ACK status requested\n");
++	/* Prepare the descriptor before stopping queues for ACK reporting. */
++	if (is_low) {
++		if (!wcn36xx_set_tx_data(&bd, wcn, &vif_priv, sta_priv, skb, bcast))
++			return -ENOTCONN;
++	} else if (!wcn36xx_set_tx_mgmt(&bd, wcn, &vif_priv, skb, bcast)) {
++		return -ENOTCONN;
++	}
+ 
+-		/* Only one at a time is supported by fw. Stop the TX queues
+-		 * until the ack status gets back.
+-		 */
+-		ieee80211_stop_queues(wcn->hw);
++	if (info->flags & IEEE80211_TX_CTL_NO_ACK)
++		bd.ack_policy = 1;
++	if (info->control.flags & IEEE80211_TX_CTRL_NO_SEQNO)
++		bd.pdu.bd_ssn = WCN36XX_TXBD_SSN_FILL_HOST;
+ 
+-		/* Request ack indication from the firmware */
++	if (unlikely(ack_ind)) {
++		ieee80211_stop_queues(wcn->hw);
+ 		bd.tx_comp = 1;
+ 	}
+ 
+-	/* Data frames served first*/
+-	if (is_low)
+-		wcn36xx_set_tx_data(&bd, wcn, &vif_priv, sta_priv, skb, bcast);
+-	else
+-		/* MGMT and CTRL frames are handeld here*/
+-		wcn36xx_set_tx_mgmt(&bd, wcn, &vif_priv, skb, bcast);
+-
+ 	buff_to_be(&bd, sizeof(bd)/sizeof(u32));
+ 	bd.tx_bd_sign = 0xbdbdbdbd;
+ 
+diff --git a/drivers/net/wireless/ath/wcn36xx/wcn36xx.h b/drivers/net/wireless/ath/wcn36xx/wcn36xx.h
+index 8c43f67bd..01dc26b0e 100644
+--- a/drivers/net/wireless/ath/wcn36xx/wcn36xx.h
++++ b/drivers/net/wireless/ath/wcn36xx/wcn36xx.h
+@@ -258,6 +258,13 @@ struct wcn36xx {
+ 	struct list_head	hal_ind_queue;
+ 
+ 	struct cfg80211_scan_request *scan_req;
++	bool			monitor_enabled;
++	bool			monitor_filter_saved;
++	u32			monitor_rxp_cfg;
++	u32			monitor_rxp_lo;
++	u32			monitor_rxp_hi;
++	u32			monitor_dpu_error_wq;
++	u32			monitor_dpu_error_irq;
+ 	bool			sw_scan;
+ 	u8			sw_scan_opchannel;
+ 	bool			sw_scan_init;
+@@ -265,6 +272,7 @@ struct wcn36xx {
+ 	struct ieee80211_vif	*sw_scan_vif;
+ 	struct mutex		scan_lock;
+ 	bool			scan_aborted;
++	bool			scan_offload_failed;
+ 
+ 	/* DXE channels */
+ 	struct wcn36xx_dxe_ch	dxe_tx_l_ch;	/* TX low */
+@@ -312,6 +320,16 @@ static inline bool wcn36xx_is_fw_version(struct wcn36xx *wcn,
+ 		wcn->fw_version == version &&
+ 		wcn->fw_revision == revision);
+ }
++
++/* Register ABI and scan-offload quirk verified on the SM-T531 stock image. */
++static inline bool wcn36xx_is_legacy_wcn3660(struct wcn36xx *wcn)
++{
++	return wcn->is_pronto && !wcn->is_pronto_v3 &&
++		wcn->rf_id == RF_IRIS_WCN3660 &&
++		wcn36xx_is_fw_version(wcn, 1, 5, 1, 2) &&
++		!strcmp(wcn->crm_version, "12035159");
++}
++
+ void wcn36xx_set_default_rates(struct wcn36xx_hal_supported_rates *rates);
+ void wcn36xx_set_default_rates_v1(struct wcn36xx_hal_supported_rates_v1 *rates);
+ 
+diff --git a/drivers/remoteproc/qcom_wcnss.c b/drivers/remoteproc/qcom_wcnss.c
+index 5e4a623b8..37aa6c073 100644
+--- a/drivers/remoteproc/qcom_wcnss.c
++++ b/drivers/remoteproc/qcom_wcnss.c
+@@ -445,19 +445,15 @@ static int wcnss_init_regulators(struct qcom_wcnss *wcnss,
+ {
+ 	const struct wcnss_vreg_info *info = data->vregs;
+ 	struct regulator_bulk_data *bulk;
+-	size_t i, possible_pds = 0, num_vregs = data->num_vregs;
++	size_t i, num_vregs = data->num_vregs;
+ 	int ret;
+ 
+-	for (i = 0; i < WCNSS_MAX_PDS; i++)
+-		if (data->pd_names[i])
+-			possible_pds++;
+-
+ 	/*
+ 	 * If attaching the power domains suceeded we can skip requesting
+ 	 * the regulators for the power domains. For old device trees we need to
+ 	 * reserve extra space to manage them through the regulator interface.
+ 	 */
+-	if (possible_pds >= num_vregs) {
++	if (!data->num_pd_vregs) {
+ 		/* Do nothing if vregs do not include PD regulators (pronto-v3) */
+ 	} else if (wcnss->num_pds) {
+ 		info += wcnss->num_pds;
+@@ -482,10 +478,21 @@ static int wcnss_init_regulators(struct qcom_wcnss *wcnss,
+ 		return ret;
+ 
+ 	for (i = 0; i < num_vregs; i++) {
+-		if (info[i].max_voltage)
+-			regulator_set_voltage(bulk[i].consumer,
+-					      info[i].min_voltage,
+-					      info[i].max_voltage);
++		if (info[i].max_voltage) {
++			int max_voltage = info[i].max_voltage;
++
++			/* MSM8226 shares MX with the CPU corner-ceiling vote. */
++			if (data == &pronto_v1_data &&
++			    of_machine_is_compatible("qcom,msm8226") &&
++			    !strcmp(info[i].name, "vddmx"))
++				max_voltage = 1337500;
++
++			ret = regulator_set_voltage(bulk[i].consumer,
++						    info[i].min_voltage, max_voltage);
++			if (ret)
++				return dev_err_probe(wcnss->dev, ret,
++						     "Failed to vote %s voltage\n", info[i].name);
++		}
+ 
+ 		if (info[i].load_uA)
+ 			regulator_set_load(bulk[i].consumer, info[i].load_uA);

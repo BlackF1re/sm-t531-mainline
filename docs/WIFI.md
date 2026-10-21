@@ -8,7 +8,11 @@ Managed networking and WPA2 AP were tested again after monitor operation.
 This is native wcn36xx/mac80211 support with the original firmware, not an
 Android userspace dependency or a replacement firmware image.
 
-Kernel `7.2.9-dirty #12` contains production patches 0123–0127. The tested
+Current support is consolidated in a single kernel patch:
+[`0123-wifi-wcn3660-matisse3g-support.patch`](../patches/linux/0123-wifi-wcn3660-matisse3g-support.patch).
+It includes WCNSS power/regulators, board DTS/IRQs, scanning, transport and
+raw monitor/injection. The former mixed DT patch now contains charging only.
+The tested
 firmware is API **1.5.1.2**, CRM **12035159**, Pronto v2 / WCN3660. Capture is
 exclusive: managed/AP service stops while the radio monitors a chosen channel.
 Simultaneous unrestricted managed/AP + monitor is not implemented.
@@ -53,13 +57,13 @@ limits were identified by source inspection, stock firmware disassembly,
 readback and packet captures:
 
 1. The PHY had no valid permanent MAC; default monitor creation failed with
-   EADDRNOTAVAIL. Patch0125 supplies a local unicast fallback without replacing
+   EADDRNOTAVAIL. The consolidated patch supplies a local unicast fallback without replacing
    the factory station MAC.
 2. RXP address and type/subtype filters rejected non-self/control traffic.
 3. DPU unknown-key/error frames went to firmware BMU queue 8, bypassing Linux.
    Opening RXP alone therefore still missed encrypted payload.
 
-Patch0127 uses the stock HAL dump ABI (commands 7/8) to read/write only these
+The consolidated patch uses the stock HAL dump ABI (commands 7/8) to read/write only these
 five whitelisted registers, with saved originals and write-readback checks:
 
 | Register | Monitor operation |
@@ -85,10 +89,10 @@ managed/AP decryption handling is retained.
 
 Vendor monitor request 302 did not reply in two 10-second trials. A legacy
 PROMISC scan candidate captured management only; it remains historical research
-under `patches/candidates/wifi/`, excluded from production. The final path uses
+in Git history; it is removed from the current patch tree. The final path uses
 normal channel-switch requests, not either failed monitor/scan workaround.
 
-Patch0126 separately bounds SMD TX FIFO waits: retry `rpmsg_trysend()` only on
+The same patch bounds SMD TX FIFO waits: retry `rpmsg_trysend()` only on
 EAGAIN with a 10-second deadline, instead of an unbounded `rpmsg_send()`. Other
 transport errors and the separate response timeout are retained. Normal commands
 passed; FIFO exhaustion has not been fault-injected. This does not establish
@@ -119,7 +123,7 @@ monitor elicited268 AP deauthentication responses (reason7: class3 from a
 non-associated station), including retransmissions. These responses establish
 probe and data-frame transmission beyond successful send()/local echo. The
 monitor did not transmit deauthentication frames. An earlier associated test
-received21 matching ARP replies after three raw requests. These tests do not
+received 21 matching ARP replies after three raw requests. These tests do not
 establish every injection subtype/rate/sequence/FCS option.
 
 After monitor removal, WPA2-PSK/CCMP AP passed an independent MT7921/Windows
@@ -182,29 +186,32 @@ mandatory PMF are not established.
 
 ## Deployment, recovery and limits
 
-The final #12 SD image SHA256 is
-`f0b29e7f1a8badf1c21c406ca3093a6ee763d2086508d2e9ae388074847afa57`.
-Configuration, native-ICC DTB, initramfs and cmdline are unchanged from #10.
-The MSM module is unchanged, SHA256
+The final consolidated-support kernel is `7.2.9-dirty #16`, SD image SHA256
+`fb0948a3c72366d3bd5dea6810116fd40bdb3016270129f63ec1d0ae2e2e642b`.
+Configuration, initramfs and cmdline are unchanged from #12. The only DTB
+change is the standard `ieee80211-freq-limit` property excluding channel 144.
+MSM module SHA256 remains
 `8f6a70bd3350add8a427263706952dc0fb04820e5f88fe5a54ec596c6351fa6f`.
-Only the whitelisted T531_BOOT SD kernel image/checksum were replaced after a
-one-boot trial. Internal BOOT/lk2nd, calibration and firmware were untouched.
+Only the whitelisted SD boot files are deployed; internal BOOT/lk2nd,
+calibration and firmware are untouched.
 
-The verified #10 backup is `/var/lib/t531/kernel-trial-backup`, image SHA256
-`6602817e4293e3c9ecf06de9c05545f8ad265dace1255dac46b44a51e2a40ea1`.
-The existing `t531-kernel-trial-restore --rollback` procedure restores it to
-SD. The older #9 backup remains in `kernel-trial-before-wifi-0127`; #8 is in
-`kernel-trial-before-wifi-0125`. USB recovery and the internal bootstrap remain
-available. WLAN IRQ patch0124 describes level-high triggers already used by
-the driver; historical edge-rearming diagnostics must not be reused with it.
+The #12 rollback image, SHA256
+`f0b29e7f1a8badf1c21c406ca3093a6ee763d2086508d2e9ae388074847afa57`, is retained
+in `/var/lib/t531/kernel-trial-backup`. The older #10 backup is in
+`kernel-trial-before-wifi-unified`; #9 remains in
+`kernel-trial-before-wifi-0127`. The existing
+`t531-kernel-trial-restore --rollback` procedure restores the verified backup.
+Do not reuse historical edge-IRQ rearming diagnostics with the level-high DT.
 
 Remaining limits:
 
 - Stock firmware controls TX rates. Bad-FCS capture, FCS retention, arbitrary
   PHY/radiotap TX controls, every frame subtype and sustained-rate loss are
   not validated. This is not acceptance of every possible RFMON feature.
-- Firmware channel-list request208 still times out; scan failures and the
-  software-scan fallback remain.
+- This exact legacy firmware uses mac80211 software scanning directly. The
+  unsupported channel-list208 command is no longer probed on each cold boot.
+  Generic fallback remains for other images; legacy START_SCAN errors still
+  require separate investigation when observed.
 - Hot WCNSS restart/NV upload is still unreliable. A restart failed to reopen
   WCNSS_CTRL before watchdog recovery; explicit CTRL reprobe later restored
   service. Do not hot-unbind WLAN as a normal mode-switch procedure.
@@ -212,13 +219,52 @@ Remaining limits:
   `PM: suspend entry (s2idle)`; pstore was empty after restart. A crash was not
   established. A temporary sleep inhibitor was used for diagnostics only.
 
-All 126 production patch files applied to a temporary index of the pinned base
-with zero differences from the built kernel source. Both new patches passed
+All 118 production patch files applied to a temporary index of the pinned base
+with zero differences from the built kernel source. The consolidated patch passed
 checkpatch without errors/warnings/checks. Kernel, matching modules and the
 standalone driver build passed; shell/Python/JSON and real-capture parsing were
 checked. These build checks add no hardware acceptance beyond the tests above.
 `tools/build-wifi-trial.sh` now builds the patched production driver separately
 without installing/binding it; it does not apply historical scan candidates.
+
+## Consolidation and capability correction, 2026-10-22
+
+The single production patch replaces historical patches 0013/0014, the WCNSS
+part of 0015, 0031/0032 and 0123–0127. Their authorship remains in Git history;
+charging stays in its own patch. This is a packaging change plus these fixes:
+
+- Select the proven software-scan path before the exact legacy firmware's
+  nonresponsive offload command. Reset software-scan state across start and
+  completion so an old channel/session/vif cannot leak into a later mode.
+- Keep the saved register baseline for the full monitor lifetime and reapply
+  filters after successful tuning. A rejected channel no longer disables
+  monitor RX or publishes a false channel; errors identify the requested channel.
+- Honor standard OF frequency limits with private per-radio band/channel
+  copies. Vendor NV2 explicitly lacks channel 144; a short on-device sweep
+  confirmed status6 only there. The DT excludes that channel without widening
+  regulatory permissions or modifying other radios' static channel templates.
+
+The pre-limit #15 sweep accepted38 of39 channels; channel 144 was rejected.
+Six-second monitor captures on 1/6/36 contained 943/395/167 records, followed by
+172 records after the sweep; each reported0 kernel capture drops. An independent
+WPA2 client passed DHCP, four of four pings and HTTP200 after monitor removal.
+Final #16 acceptance: all 38 supported channels accepted tuning, while144
+was rejected by nl80211 before a firmware command. Six-second captures on
+1/6/36 contained 567/391/119 RX records;126 more were received after the sweep.
+All 17 protected payload records retained an extended IV, with 0 kernel capture
+drops. WPA2 AP again passed external DHCP, ping4/4 and HTTP200. hcxdumptool
+captured M1/M2/M3/M4 and hcxpcapngtool identified an authorized M2+M3 pair.
+An 8s raw-TX test then captured223 owner probe-response records after three
+probes and 236 owner reason7 responses after three raw ToDS ARP requests
+(retries included), beyond12 local TX echoes. No deauthentication was sent.
+Managed DHCP/SSH, factory MAC and native graphics services returned; pstore
+was empty. The final journal check contained no channel 208 timeout, channel
+switch failure or legacy START_SCAN error. The #16 image is installed on SD;
+#12 is retained for rollback. Exact counts/hashes are in
+[wifi-results.json](wifi-results.json).
+No endurance test was run. Consolidation does not implement the remaining
+firmware/RF features listed above and must not be described as universal or
+fully verified support for every WCN3660 function.
 
 ## Sources and evidence
 
@@ -242,3 +288,8 @@ without installing/binding it; it does not apply historical scan candidates.
   Firmware binaries and experimental register tools are not committed.
 - **VERIFIED_UPSTREAM:** [NetworkManager configuration reference](https://networkmanager.dev/docs/api/latest/NetworkManager.conf.html),
   driver matching and PMF defaults. Runtime default selection was checked.
+
+Vendor channel evidence: [vos_nvitem.c](https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/staging/prima/CORE/VOSS/src/vos_nvitem.c),
+pinned revision as above, retrieved 2026-10-22; NV2 lacks channel 144 and the
+entry is conditional on FEATURE_WLAN_CH144. This source evidence is combined
+with the actual firmware rejection, not inferred from another chipset.

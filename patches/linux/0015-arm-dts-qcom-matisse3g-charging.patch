@@ -1,0 +1,112 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] ARM: dts: qcom: matisse3g: describe charging
+
+Keep the SMB358/SM5502, battery and ADC/thermal wiring from the captured
+SM-T531 Rev02 vendor DT. WCNSS wiring is in the consolidated Wi-Fi patch.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -149,3 +149,99 @@
+ 	status = "okay";
+ 	iommus = <&gpu_smmu 0>;
+ };
++
++/ {
++	i2c-charger {
++		compatible = "i2c-gpio";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		sda-gpios = <&tlmm 10 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
++		scl-gpios = <&tlmm 11 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
++		i2c-gpio,delay-us = <5>;
++
++		charger: charger@6a {
++			compatible = "summit,smb358";
++			reg = <0x6a>;
++			summit,enable-usb-charging;
++			monitored-battery = <&battery>;
++			io-channels = <&battery_therm>;
++			io-channel-names = "battery-temperature";
++			summit,usb-current-limit-microamp = <1800000>;
++			extcon = <&muic>;
++		};
++	};
++};
++
++/ {
++	battery: battery-cell {
++		compatible = "simple-battery";
++		constant-charge-voltage-max-microvolt = <4340000>;
++		constant-charge-current-max-microamp = <1800000>;
++		operating-range-celsius = <(-5) 60>;
++		alert-celsius = <0 45>;
++	};
++
++	battery_therm: battery-thermal-sensor {
++		compatible = "generic-adc-thermal";
++		#io-channel-cells = <0>;
++		#thermal-sensor-cells = <0>;
++		io-channels = <&pm8226_vadc VADC_LR_MUX1_BAT_THERM>;
++		io-channel-names = "sensor-channel";
++		temperature-lookup-table = <
++			(-20000) 41619
++			(-15000) 41123
++			(-10000) 40523
++			(-5000) 39822
++			(-4000) 39687
++			(-3000) 39540
++			(-1000) 39229
++			0 38989
++			1000 38795
++			2000 38626
++			3000 38448
++			4000 38219
++			5000 38025
++			10000 37054
++			15000 36049
++			20000 34950
++			25000 33858
++			30000 32823
++			35000 31807
++			40000 30912
++			45000 30101
++			50000 29342
++			55000 28724
++			60000 28178
++			65000 27669
++			70000 27281>;
++	};
++
++	thermal-zones {
++		battery-temp {
++			polling-delay-passive = <1000>;
++			polling-delay = <5000>;
++			thermal-sensors = <&battery_therm>;
++		};
++	};
++};
++
++&pm8226_vadc {
++	channel@0 {
++		reg = <VADC_USBIN>;
++		qcom,pre-scaling = <1 10>;
++		label = "usb_in";
++	};
++
++	channel@6 {
++		reg = <VADC_VBAT_SNS>;
++		qcom,pre-scaling = <1 3>;
++		label = "vbat_sns";
++	};
++
++	channel@30 {
++		reg = <VADC_LR_MUX1_BAT_THERM>;
++		qcom,ratiometric;
++		qcom,hw-settle-time = <200>;
++		label = "batt_therm";
++	};
++};

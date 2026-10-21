@@ -63,3 +63,22 @@ DTB and MSM module are unchanged from #10. Full monitor requires exclusive
 radio ownership; bad-FCS/FCS retention, arbitrary TX controls and reliable
 firmware hot restart remain unvalidated or unresolved. See [Wi-Fi](WIFI.md)
 and [aggregate results](wifi-results.json) for exact acceptance.
+
+
+Wi-Fi consolidation, 2026-10-22: the single production patch
+[0123-wifi-wcn3660-matisse3g-support.patch](../patches/linux/0123-wifi-wcn3660-matisse3g-support.patch)
+replaces 0013/0014, the WCNSS portion of 0015, 0031/0032 and 0123–0127.
+Charging remains separate. It adds exact-image scan-offload avoidance, scan
+state cleanup, safe monitor channel errors and standard per-radio OF frequency
+limits for the stock NV2 image's unsupported channel 144. The obsolete legacy
+scan candidate was removed; history preserves its evidence.
+
+All 118 production patches match the final built source. Checkpatch reports
+0 errors/warnings/checks. Kernel #16, native-ICC DTB and modules built; DTB
+changes only the frequency limit, and configuration/MSM module are unchanged.
+Short on-device tests passed managed DHCP/SSH, 38 supported channel tunes,
+raw encrypted RX on 1/6/36 and after hopping, independent WPA2 AP DHCP/ping/HTTP,
+and hcxdumptool M1–M4 capture. The image is installed on SD with #12 rollback.
+No endurance test was run. Firmware hot restart, PMF/WPA3, active-monitor ACK,
+arbitrary TX controls and bad-FCS remain outside the verified scope; one patch
+does not imply universal or complete hardware acceptance. See [Wi-Fi](WIFI.md).
