@@ -1,0 +1,139 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+Date: Thu, 22 Oct 2026 02:10:00 +0700
+Subject: [PATCH] Input: atmel_mxt_ts - discard stale contacts across system sleep
+
+A contact active when scanning stops need not receive a lift message. On
+SM-T531 the resulting MT tracking ID survives suspend/resume indefinitely,
+interfering with lock-screen gestures. The input core releases key bits on
+suspend, but does not release the multitouch slots.
+
+Quiesce the IRQ before stopping scan, release all contacts and pointer
+state, and discard queued pre-sleep input before restoring reporting. Keep
+T6 completion handling enabled during the T9 reset sequence and synchronize
+the threaded IRQ before clearing the suppression flag. Retain the existing
+IRQ ownership of input open/close, probe and firmware flashing. Propagate
+message-drain I2C errors instead of treating a negative count as success.
+
+Based on Nick Dyer's release-touch-state fix, last located in Jiada Wang's
+v11 12/56 posting. This is a scoped adaptation for the current driver, not
+the historical series' start/stop/firmware state-machine conversion.
+
+Link: https://lkml.rescloud.iu.edu/2005.1/00068.html
+[BlackF1re: adapt to 7.2.9 PM callbacks and existing IRQ/reset ownership;
+ reset pointer emulation and message heuristic; preserve drain errors.]
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index 2c0e5a671..a3d25979b 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -309,6 +309,7 @@ struct mxt_data {
+ 	u8 *msg_buf;
+ 	u8 t6_status;
+ 	bool update_input;
++	bool suspended;
+ 	u8 last_message_count;
+ 	u8 num_touchids;
+ 	u8 multitouch;
+@@ -1032,10 +1033,10 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
+ 
+ 	if (report_id == data->T6_reportid) {
+ 		mxt_proc_t6_messages(data, message);
+-	} else if (!data->input_dev) {
++	} else if (!data->input_dev || data->suspended) {
+ 		/*
+-		 * Do not report events if input device
+-		 * is not yet registered.
++		 * Keep processing T6 completions, but discard input reports while
++		 * the device is unregistered or crossing a system sleep boundary.
+ 		 */
+ 		mxt_dump_message(data, message);
+ 	} else if (report_id >= data->T9_reportid_min &&
+@@ -1157,6 +1158,8 @@ static int mxt_process_messages_until_invalid(struct mxt_data *data)
+ 	/* Read messages until we force an invalid */
+ 	do {
+ 		read = mxt_read_and_process_messages(data, count);
++		if (read < 0)
++			return read;
+ 		if (read < count)
+ 			return 0;
+ 	} while (--tries);
+@@ -3062,6 +3065,21 @@ static struct attribute *mxt_attrs[] = {
+ 
+ ATTRIBUTE_GROUPS(mxt);
+ 
++static void mxt_reset_slots(struct mxt_data *data)
++{
++	struct input_dev *input_dev = data->input_dev;
++	int id;
++
++	for (id = 0; id < data->num_touchids; id++) {
++		input_mt_slot(input_dev, id);
++		input_mt_report_slot_inactive(input_dev);
++	}
++
++	mxt_input_sync(data);
++	data->update_input = false;
++	data->last_message_count = 0;
++}
++
+ static void mxt_start(struct mxt_data *data)
+ {
+ 	mxt_wakeup_toggle(data->client, true, false);
+@@ -3366,12 +3384,14 @@ static int mxt_suspend(struct device *dev)
+ 		return 0;
+ 
+ 	scoped_guard(mutex, &input_dev->mutex) {
++		/* Quiesce the handler before stopping scans and releasing contacts. */
++		disable_irq(data->irq);
++		data->suspended = true;
+ 		if (input_device_enabled(input_dev))
+ 			mxt_stop(data);
++		mxt_reset_slots(data);
+ 	}
+ 
+-	disable_irq(data->irq);
+-
+ 	return 0;
+ }
+ 
+@@ -3380,18 +3400,34 @@ static int mxt_resume(struct device *dev)
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct mxt_data *data = i2c_get_clientdata(client);
+ 	struct input_dev *input_dev = data->input_dev;
++	int error;
+ 
+ 	if (!input_dev)
+ 		return 0;
+ 
+-	enable_irq(data->irq);
+-
+ 	scoped_guard(mutex, &input_dev->mutex) {
++		mxt_wakeup_toggle(data->client, true, false);
++
++		/* A final pre-sleep scan may have queued reports without a lift. */
++		error = mxt_process_messages_until_invalid(data);
++		if (error)
++			dev_err(dev, "Failed to discard pre-sleep messages: %d\n",
++				error);
++
++		/* T9 soft reset needs the IRQ to deliver its T6 completion. */
++		enable_irq(data->irq);
+ 		if (input_device_enabled(input_dev))
+ 			mxt_start(data);
++		else
++			mxt_wakeup_toggle(data->client, false, false);
++
++		/* Finish any suppressed handler before accepting new contacts. */
++		disable_irq(data->irq);
++		data->suspended = false;
++		enable_irq(data->irq);
+ 	}
+ 
+-	return 0;
++	return error;
+ }
+ 
+ static DEFINE_SIMPLE_DEV_PM_OPS(mxt_pm_ops, mxt_suspend, mxt_resume);
