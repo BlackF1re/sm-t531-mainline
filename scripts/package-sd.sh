@@ -9,6 +9,13 @@ NATIVE_KMS=${NATIVE_KMS:-1}
 # container preserves the appended DT through kexec-tools' zImage loader.
 # ARM's decompressor then selects the appended, updated board DT.
 cp "$a/qcom-msm8226-samsung-matisse3g.dtb" "$work/sd-kernel.dtb"
+# Supply the per-device factory identity privately, as boot firmware normally
+# would. Never put a tablet's Bluetooth address in the public board DTS.
+bt_node=/soc/remoteproc@fb204000/smd-edge/wcnss/bluetooth
+if fdtget "$work/sd-kernel.dtb" "$bt_node" compatible >/dev/null 2>&1; then
+    python3 "$PWD/tools/set-bluetooth-address.py" "$work/sd-kernel.dtb" \
+        "${BT_ADDRESS_FILE:-$work/board-data/bluetooth-address}"
+fi
 # RAM banks verified from the SM-T531 bootloader's live device tree.
 fdtput -t x "$work/sd-kernel.dtb" /memory@0 reg 0 40000000 40000000 20000000
 cmdline='console=tty0 loglevel=7 sysctl.kernel.sysrq=0 clk_ignore_unused msm.separate_gpu_kms=1 root=LABEL=T531_ROOT rootwait rw t531.stage=second'

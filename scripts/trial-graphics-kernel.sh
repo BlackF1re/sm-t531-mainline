@@ -29,6 +29,10 @@ cd "$mountpoint"
 if [[ ${1:-} == --restore || ${1:-} == --rollback ]]; then
     [[ $1 == --rollback || -f $backup/armed ]]
     (cd "$backup"; sha256sum -c saved.sha256)
+    if [[ $1 == --rollback && -f $backup/kernel.release ]]; then
+        module_dir=/lib/modules/$(cat "$backup/kernel.release")
+        module=$module_dir/kernel/drivers/gpu/drm/msm/msm.ko
+    fi
     # Restore the boot image before native graphics is allowed to start.
     cmp initramfs.cpio.gz "$backup/initramfs.cpio.gz"
     cmp kexec.cmdline "$backup/kexec.cmdline"
@@ -85,6 +89,7 @@ else
     [[ ! -e $backup ]]
     install -d -m700 "$backup"
     cp -a zImage initramfs.cpio.gz kernel.sha256 kexec.cmdline "$backup/"
+    uname -r >"$backup/kernel.release"
     install -d -m700 "$backup/modules-meta"
     for file in modules.builtin modules.builtin.modinfo modules.order; do
         [[ ! -f $module_dir/$file ]] || cp -a "$module_dir/$file" "$backup/modules-meta/"
@@ -94,7 +99,7 @@ else
         cp "$newmodule" "$backup/candidate-msm.ko"
         chmod 644 "$backup/candidate-msm.ko"
     fi
-    (cd "$backup"; sha256sum zImage initramfs.cpio.gz kernel.sha256 kexec.cmdline >saved.sha256
+    (cd "$backup"; sha256sum zImage initramfs.cpio.gz kernel.sha256 kexec.cmdline kernel.release >saved.sha256
      [[ ! -f msm.ko ]] || sha256sum msm.ko >>saved.sha256
      [[ ! -f candidate-msm.ko ]] || sha256sum candidate-msm.ko >>saved.sha256
      find modules-meta -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum >>saved.sha256

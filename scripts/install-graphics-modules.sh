@@ -3,7 +3,7 @@
 set -eu
 [ "$(id -u)" = 0 ]
 tr '\000' '\n' < /proc/device-tree/compatible | grep -qx samsung,matisse3g
-version=7.2.9-dirty
+version=$(uname -r)
 stage=$(mktemp -d /var/lib/t531/modules-stage.XXXXXX)
 trap 'rm -rf "$stage"' EXIT
 tar -xzf - -C "$stage"

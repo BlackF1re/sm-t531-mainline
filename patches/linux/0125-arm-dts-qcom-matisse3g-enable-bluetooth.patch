@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Thu, 22 Oct 2026 02:25:00 +0700
+Subject: [PATCH] ARM: dts: qcom: matisse3g: enable WCN3660 Bluetooth
+
+The stock WCNSS firmware advertises APPS_RIVA_BT_CMD and APPS_RIVA_BT_ACL
+on the already running SMD edge. Add the standard WCNSS Bluetooth child
+so btqcomsmd can bind without UART attachment or Android userspace.
+The per-device local-bd-address is supplied privately during packaging.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -241,6 +241,10 @@
+ 				qcom,smd-channels = "WCNSS_CTRL";
+ 				qcom,mmio = <&pronto>;
+ 				firmware-name = "qcom/matisse3g/WCNSS_qcom_wlan_nv.bin";
++
++				bluetooth {
++					compatible = "qcom,wcnss-bt";
++				};
+ 
+ 				wifi {
+ 					compatible = "qcom,wcnss-wlan";
