@@ -287,5 +287,52 @@
     "rollback_kernel": 10,
     "backup_hashes_verified": true,
     "trial_restore_service_enabled": false
+  },
+  "hcxdumptool_acceptance": {
+    "date_local": "2026-10-22",
+    "state": "VERIFIED_DEVICE",
+    "kernel": 12,
+    "packages": {
+      "hcxdumptool": "6.3.5-1 armhf",
+      "hcxtools": "6.3.5-1 armhf"
+    },
+    "initial_all_frequency_run": {
+      "duration_limit_minutes": 2,
+      "records": 2,
+      "eapol_messages": 0,
+      "pmkid": 0,
+      "firmware_channel_switch_status6_observed": true,
+      "failing_frequency_isolated": false
+    },
+    "controlled_capture": {
+      "frequency_mhz": 5180,
+      "channel": 36,
+      "mode": "passive, existing wlan0 switched by hcxdumptool",
+      "peer": "independent MT7921 / Windows connecting to owner WPA2-CCMP network",
+      "pcapng_records": 14,
+      "eapol_messages": 8,
+      "M1": 2,
+      "M2": 2,
+      "M3": 2,
+      "M4": 2,
+      "eapol_pairs_total": 4,
+      "eapol_pairs_best": 1,
+      "authorized_m2_m3_pairs": 1,
+      "independent_structural_parse": "pass",
+      "sha256": "de50a2331389ec1a3bf7c372a1d935faf5cbfe93039659b4f9c4e930df2bb67d",
+      "tool_exit_status": 0,
+      "wrapper_exit_status": 0
+    },
+    "password_cracking_run": false,
+    "pmkid_acquisition_verified": false,
+    "handshake_2ghz_verified": false,
+    "cleanup": {
+      "original_managed_connection_restored": true,
+      "windows_profile_and_xml_removed": true,
+      "spare_windows_radio_disconnected": true,
+      "temporary_sleep_inhibitor_stopped": true,
+      "greetd_native_graphics_active": true,
+      "pstore_files": 0
+    }
   }
 }

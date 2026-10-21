@@ -1,6 +1,6 @@
 # WCN3660 managed, AP and raw monitor
 
-Updated 2026-10-21. **VERIFIED_DEVICE:** the SM-T531 built-in WCN3660 now
+Updated 2026-10-22. **VERIFIED_DEVICE:** the SM-T531 built-in WCN3660 now
 receives management, control and payload Data/QoS Data in standalone monitor
 mode, including non-self unicast and encrypted payload with its extended IV.
 Directed probe and raw data injection elicited actual over-air responses.
@@ -43,7 +43,8 @@ In-place station→monitor type changes with NM still running were unreliable
 (no RX on initial 2.4GHz tests; occasional EBUSY). The exclusive handoff above
 worked on all three tested channels. The exact contribution of scanning versus
 interface-transition state has not been isolated; direct type-change operation
-is not an accepted workflow.
+is not an accepted general workflow. The separate hcxdumptool test below
+passed on channel 36 with both managers stopped.
 
 ## Receive-path fix
 
@@ -127,6 +128,47 @@ client test: association/authorization, DHCP, four of four gateway pings
 passed. The temporary AP/client profiles, DHCP and HTTP services were removed;
 the original managed connection and factory MAC returned. Original-network
 DHCP/SSH, native graphics/greetd and empty pstore were checked after boot.
+
+## hcxdumptool acceptance, 2026-10-22
+
+VERIFIED_DEVICE: Debian armhf `hcxdumptool` and `hcxtools` **6.3.5-1** were
+installed and tested on kernel #12. NM and wpa_supplicant were stopped during
+capture; hcxdumptool itself changed the existing `wlan0` to monitor mode.
+A bounded wrapper saved the original MAC/profile and restored managed service
+on exit. No kernel, firmware or tool-source changes were needed.
+
+An initial two-minute default active run with `-F --rds=1` started, hopped
+frequencies and stored two beacon records, but no EAPOL/PMKID. One firmware
+channel-switch response returned status 6 during the all-frequency scan; the
+failing frequency was not isolated. This does not establish working operation
+on every advertised channel.
+
+For a controlled acceptance, the spare independent MT7921/Windows client
+connected to the owner's WPA2-CCMP test network on **channel 36 / 5180MHz**.
+The tablet captured passively with:
+
+```sh
+hcxdumptool -i wlan0 -w controlled2.pcapng -c 36b --rds=1 --tot=2 \
+  --attemptapmax=0 --attemptclientmax=0 --disable_beacon
+```
+
+The resulting PCAPNG contained 14 records, including **8 EAPOL messages:
+M1=2, M2=2, M3=2, M4=2**. `hcxpcapngtool` identified 4 message pairs,
+1 best pair and **1 authorized M2+M3 pair**. An independent structural parse
+of the unchanged PCAPNG confirmed all four message counts. This establishes
+actual handshake capture by the packaged software, not only process startup
+or local TX echo. PMKID acquisition and handshake capture on 2.4GHz were not
+established by this test. No password cracking was run.
+
+Capture SHA256:
+`de50a2331389ec1a3bf7c372a1d935faf5cbfe93039659b4f9c4e930df2bb67d`.
+Raw handshakes, network identifiers and temporary client credentials stay
+private. The temporary Windows profile/XML were deleted and its spare radio
+returned to disconnected state. Both tool/wrapper exited 0; the original tablet
+MAC/profile, managed SSH, greetd and native graphics returned. Pstore was empty;
+only the known scan errors appeared in the final kernel check. Temporary
+sleep inhibition was stopped. These results add no PMKID, active-monitor ACK,
+arbitrary TX-option or all-channel acceptance.
 
 ## WPA2 and PMF
 
