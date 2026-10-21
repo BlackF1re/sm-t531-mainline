@@ -268,6 +268,10 @@ fully verified support for every WCN3660 function.
 
 ## Sources and evidence
 
+The [stock firmware audit](FIRMWARE.md) confirms byte-for-byte agreement with
+the tablet's apnhlos WCNSS images and system WLAN NV file, and records the
+verified private backups and the remaining clean-rootfs import gap.
+
 - **VERIFIED_UPSTREAM:** project base Linux v7.2.9,
   `5fce161649b4d779d1b76d9fcd52dc77779774b8`, wcn36xx and mac80211 sources.
   [Injection interface](https://docs.kernel.org/networking/mac80211-injection.html)
