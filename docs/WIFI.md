@@ -1,191 +1,202 @@
-# WCN36xx Wi-Fi mode bring-up
+# WCN3660 managed, AP and raw monitor
 
-Ongoing device investigation, 2026-10-20 UTC / 2026-10-21 Tomsk.
-Initial tests used `7.2.9-dirty #9` and a separately built WLAN platform
-driver with the USB recovery console. Production patches 0123–0125 were
-then built and tested as kernel #10 on SD. Internal BOOT and the MSM module
-were not changed. The standalone capture candidate is not in that kernel.
+Updated 2026-10-21. **VERIFIED_DEVICE:** the SM-T531 built-in WCN3660 now
+receives management, control and payload Data/QoS Data in standalone monitor
+mode, including non-self unicast and encrypted payload with its extended IV.
+Directed probe and raw data injection elicited actual over-air responses.
+Managed networking and WPA2 AP were tested again after monitor operation.
+This is native wcn36xx/mac80211 support with the original firmware, not an
+Android userspace dependency or a replacement firmware image.
 
-## Evidence so far
+Kernel `7.2.9-dirty #12` contains production patches 0123–0127. The tested
+firmware is API **1.5.1.2**, CRM **12035159**, Pronto v2 / WCN3660. Capture is
+exclusive: managed/AP service stops while the radio monitors a chosen channel.
+Simultaneous unrestricted managed/AP + monitor is not implemented.
 
-- VERIFIED_DEVICE: managed networking with the original WCN3660/IRIS firmware,
-  API 1.5.1.2, CRM 12035159. Hardware scan message 208 times out; the existing
-  driver patches fall back to software scanning.
-- VERIFIED_DEVICE: mac80211 advertises software monitor interfaces, but the
-  PHY permanent MAC is zero. Default monitor activation failed with
-  `EADDRNOTAVAIL`; an explicitly assigned local unicast address fixes activation.
-- VERIFIED_DEVICE: an associated station plus passive monitor captured radiotap
-  packets. This observes the firmware-filtered receive path and does not prove
-  unrestricted other-BSS/control-frame capture.
-- VERIFIED_DEVICE: the owner's open test AP supplied DHCP; its gateway answered
-  four of four ICMP requests. Three individually injected directed probe requests
-  each elicited a probe response, with RX radio metadata. This establishes
-  actual over-air management-frame transmission, beyond local TX echo/send().
-  It does not verify every frame subtype, arbitrary source/rate/sequence or FCS.
-- VERIFIED_DEVICE: unbinding/reprobing WLAN failed with `-ENXIO`: the DT requests
-  rising edges for GIC hwirqs 177/178, while `wcn36xx_dxe_request_irqs()` programs
-  both level-high. The existing mappings reject a new edge specification.
-  Re-arming just these unbound IRQs to the DT mode allowed the built-in driver
-  to rebind and restored managed networking, without a reboot. A DT candidate
-  instead describes the level-high mode already used by the working driver.
+## Use
 
-Candidates and temporary recovery tools are not production acceptance. Raw
-captures, network configurations and device identifiers stay private under
-`.work/wifi-20261020` and `/var/lib/t531/wifi-20261020`.
+Install the board configuration and helper with `sudo scripts/configure-wifi.sh`.
+Rootfs creation installs the same helper. From a local terminal or USB console:
 
-## Authoritative sources
+```sh
+sudo t531-wifi-monitor start 1
+sudo t531-wifi-monitor status
+sudo tcpdump -i mon0 -s 0 -w capture.pcap
+# Stop tcpdump with Ctrl-C, then return to the saved managed connection:
+sudo t531-wifi-monitor stop
+```
 
-- Linux v7.2.9, `drivers/net/wireless/ath/wcn36xx/{main,txrx,dxe,smd,hal}` and
-  `net/mac80211/{iface,tx}.c`, pinned project kernel plus recorded patches.
-  The monitor interface flags added by mac80211 do not implement firmware
-  promiscuous reception on their own.
-- [Samsung/Qualcomm prima HAL header](https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/staging/prima/riva/inc/wlan_hal_msg.h),
-  retrieved and matched against the research copy on 2026-10-20 UTC; SHA256
-  `ec316e219331373398a07d62c818be246a9826a4ea07b623510b1728e7b7720b`.
-  ISC-style permissive license, original Qualcomm/Linux Foundation authorship.
-  Defines monitor request/response IDs 302–305 and packed request layout;
-  zero MAC filters means receive all. Source-level ABI presence alone does
-  not establish implementation by this board's firmware.
-- The same revision's `CORE/WDI/CP/src/wlan_qct_wdi.c`,
-  `WDI_ProcessMonStartReq()` and `WDI_ProcessMonStopReq()`, supplies the
-  corresponding request parameters and stop behavior.
-- [Linux mac80211 injection interface](https://docs.kernel.org/networking/mac80211-injection.html):
-  radiotap injection and optional controls. Firmware rate-control restrictions
-  must be measured instead of assuming every radiotap request is honored.
-- [Linux Wireless wcn36xx page](https://wireless.docs.kernel.org/en/latest/en/users/drivers/wcn36xx.html)
-  is useful historical context; several claims are stale relative to current
-  driver source, so the on-device tests and code take precedence.
+For an allowed channel/width, for example: `sudo t531-wifi-monitor start 36 HT40+`.
+Regulatory restrictions still apply; no transmission was requested on channel 36
+in acceptance tests. `start` and `stop` submit asynchronous systemd jobs; use
+`status` and `journalctl -u 't531-wifi-monitor-switch-*'` to inspect completion.
+Starting monitor disconnects Wi-Fi SSH. The job survives that disconnection;
+use USB/local access to stop capture. Reboot returns to normal managed startup.
 
-## Recovery during trials
+The helper records the original MAC and NetworkManager connection UUID in a
+root-only directory under `/run`, stops NM, creates exclusive `mon0` and retires
+the inactive station. Stop restores `wlan0`, its MAC, NM and the saved connection.
+An invalid-channel test exercised automatic rollback successfully. There is no
+permanent test service, firmware modification or monitor autostart.
 
-The test driver is named `t531-wcn36xx-trial`, distinct from the built-in
-`wcn36xx`. A timed rollback is armed before changing the binding. The original
-managed profile and station address are retained. The temporary IRQ recovery
-module refuses a bound WLAN device and checks this exact board/GIC mapping;
-it does not touch firmware or run automatically at boot. Permanent DT handling
-must remove the need for this diagnostic step.
+In-place station→monitor type changes with NM still running were unreliable
+(no RX on initial 2.4GHz tests; occasional EBUSY). The exclusive handoff above
+worked on all three tested channels. The exact contribution of scanning versus
+interface-transition state has not been isolated; direct type-change operation
+is not an accepted workflow.
 
-The vendor monitor-enable request 302 received no response in two 10-second
-attempts on this firmware. That candidate path is BLOCKED for the installed
-image; ordinary managed service recovered afterwards. No production claim or
-firmware replacement follows from the header alone. Channel-only and legacy
-PROMISC paths are being tested separately.
+## Receive-path fix
 
-AP open mode passed an independent MT7921/Windows client test: beacon discovery,
-association at 72.2 Mbit/s, DHCP lease, and HTTP retrieval of a public marker.
-The test DHCP service omitted router/DNS options, preserving the host's Ethernet
-uplink. This is functional AP acceptance, not just successful `start_ap`.
+The original software monitor saw firmware-filtered traffic. Three independent
+limits were identified by source inspection, stock firmware disassembly,
+readback and packet captures:
 
-## WPA2 AP and PMF
+1. The PHY had no valid permanent MAC; default monitor creation failed with
+   EADDRNOTAVAIL. Patch0125 supplies a local unicast fallback without replacing
+   the factory station MAC.
+2. RXP address and type/subtype filters rejected non-self/control traffic.
+3. DPU unknown-key/error frames went to firmware BMU queue 8, bypassing Linux.
+   Opening RXP alone therefore still missed encrypted payload.
 
-VERIFIED_DEVICE: WPA2-PSK/RSN/CCMP AP passed the independent client test as
-well: four-way handshake, authorized station, DHCP, HTTP marker (200), and
-four of four gateway pings (0–1 ms). PMF was disabled for this test.
-The failure before that setting was traced in wpa_supplicant DEBUG logs:
-CCMP GTK index 1 installed successfully; AES-CMAC IGTK index 4 failed
-cfg80211 key validation. The driver's advertised cipher list lacks AES-CMAC,
-and its BSS configuration hardcodes `rmf = 0`. This is not a failed PSK or
-broken CCMP data path.
+Patch0127 uses the stock HAL dump ABI (commands 7/8) to read/write only these
+five whitelisted registers, with saved originals and write-readback checks:
 
-`config/wcn36xx-networkmanager.conf` supplies PMF=disabled as the default only
-for `driver:wcn36xx`; explicit profile settings take precedence. Install with
-`sudo scripts/configure-wifi.sh` on the SM-T531. This retains WPA2 CCMP;
-WPA3/mandatory PMF is not established. Existing AP profiles explicitly set
-to optional/required PMF need `nmcli connection modify NAME wifi-sec.pmf disable`.
-The [NetworkManager reference](https://networkmanager.dev/docs/api/latest/NetworkManager.conf.html)
-documents `wifi-sec.pmf` connection defaults and driver matching.
+| Register | Monitor operation |
+| --- | --- |
+| RXP config `0xfb080800` | Clear bit 2; preserve RX enable and other fields. |
+| Type/subtype low `0xfb0808f0` | `0xffff0000`; keep the reserved-type mask. |
+| Type/subtype high `0xfb0808f4` | Zero. |
+| DPU error queue `0xfb081874` | Preserve upper bits, route low byte to host RX queue 11. |
+| DPU error IRQ `0xfb081820` | Mask packet-error bits 20:0; retain other interrupt bits. |
 
-## Standalone capture: precise limits
+DPU packet-error filter `0xfb081878` stays unchanged. Masking the packet-error
+interrupts prevents firmware competing for the redirected descriptors. Linux
+marks monitor RX as monitor-only and does not falsely report ciphertext as
+already decrypted or IV-stripped. Short control frames no longer cause a
+sequence-field access beyond their header.
 
-The legacy `INIT_SCAN(PROMISC)` → `START_SCAN(channel)` path received 741
-actual RX frames in a 12-second test: 738 beacons and three probe responses.
-Six additional records were local echoes of the three injected requests.
-All three requests using the registered radio address elicited an over-air
-response. A longer test received 3777 records in 45 seconds, without kernel
-capture drops. The cleaned implementation captured 393, 129 and 78 records
-in five seconds each on channels 1, 6 and 36, and returned to managed service.
-No transmissions were requested on channel 36 (NO_IR).
+The driver checks Pronto generation, RF identity and the exact firmware
+API/CRM before using this register ABI. It initializes the virtual monitor's
+self context and channel, including HT40 secondary offset. Removal restores all
+five registers; failed restoration retains saved state and blocks an unsafe
+mode transition. Active mixed monitor/managed interfaces are rejected. Normal
+managed/AP decryption handling is retained.
 
-**PARTIAL, not unrestricted RFMON:** no data/control reception has been
-established. A request using a different source address was accepted locally
-but no response was received; arbitrary-source injection remains UNKNOWN.
-The test tool's successful `send()` or a TX echo is never counted as physical
-transmission acceptance. Rate selection, bad-FCS reception, arbitrary frame
-subtypes and FCS retention have not been validated. Stock firmware rate
-control remains enabled.
+Vendor monitor request 302 did not reply in two 10-second trials. A legacy
+PROMISC scan candidate captured management only; it remains historical research
+under `patches/candidates/wifi/`, excluded from production. The final path uses
+normal channel-switch requests, not either failed monitor/scan workaround.
 
-Channel switching alone, and INIT_SCAN(PROMISC) followed by SWITCH_CHANNEL
-without START_SCAN, each captured only the six TX echoes, zero RX. Vendor
-request 302 timed out. The legacy scan path therefore improves management
-capture but is not evidence that firmware forwards all traffic. A second
-client's attempt to join the owner's 802.11b AP failed on Windows, so it did
-not supply a controlled unicast-data test. That is an inconclusive test,
-not proof that the tablet drops such traffic.
+Patch0126 separately bounds SMD TX FIFO waits: retry `rpmsg_trysend()` only on
+EAGAIN with a 10-second deadline, instead of an unbounded `rpmsg_send()`. Other
+transport errors and the separate response timeout are retained. Normal commands
+passed; FIFO exhaustion has not been fault-injected. This does not establish
+reliable WCNSS hot restart.
 
-Production patches 0123–0125 cover TX context/header validation, matching
-level-high WLAN IRQs, and a valid local PHY MAC fallback. Candidate
-`patches/candidates/wifi/0126-wifi-wcn36xx-legacy-scan-capture.patch` is deliberately
-excluded from the normal kernel build. It removes the nonresponsive HAL302
-experiment and does not advertise control/other-BSS data filtering support.
-`tools/build-wifi-trial.sh` reproducibly builds it as a separate WLAN driver;
-it does not install, bind or enable anything automatically.
+## Physical acceptance
 
-The task's full managed/AP/monitor/injection acceptance is **not complete**.
-The next acceptance requires controlled data/control reception and arbitrary
-TX confirmation with an independent capture-capable receiver, or a proven
-firmware receive-filter implementation for this exact WCN3660 image. Do not
-replace calibration or flash another chipset's firmware to bypass this gap.
+All following final tests ran on the actual built-in driver in kernel #12.
+Raw captures and identifiers remain private; aggregate results and SHA256s are
+in [wifi-results.json](wifi-results.json). Counts exclude local TX echoes from
+RX; response counts can include radio retransmissions.
 
-## Kernel #10 deployment and restart finding
+| Exclusive monitor test | Requested duration | Actual RX | TX echoes | Encrypted payload / extended IV | Kernel capture drops |
+| --- | --- | --- | --- | --- | --- |
+| Installed helper, channel 1 | 25s | 5705 | 12 | 29 / 29, including 5 unicast | 0 |
+| Channel1 | 8s | 1098 | 6 | 11 / 11, including 5 unicast | 0 |
+| Channel6 | 8s | 376 | 0 | 4 / 4, all unicast | 0 |
+| Channel36 | 8s | 171 | 0 | 2 / 2, multicast | 0 |
 
-VERIFIED_DEVICE: the corrected #10 native-ICC image booted with native
-graphics/greetd, factory station MAC and managed DHCP/SSH. WPA2 AP with
-PMF=default picked up the driver-specific NM configuration and passed the
-external handshake/DHCP/HTTP test. Default-address monitor activation and
-three of three directed probe responses passed using the built-in driver.
+Management, ACK/CTS/RTS, BlockAck/BlockAckReq and payload Data/QoS Data were
+received. No snaplen truncation was recorded. Extended-IV detection is a
+structural capture check; it is not cryptographic decryption or FCS validation.
+Zero tcpdump kernel drops does not prove zero loss on the air or in firmware.
 
-The initial #10 container was accidentally packaged with the base DTB;
-native graphics did not start. USB remained usable and the one-boot restore
-returned #9 to SD. The corrected DT was compared with the #9 artifact: only
-the two WLAN IRQ trigger cells differ. The corrected image was booted and
-tested before promotion. Its kernel configuration and MSM module are
-byte-identical to #9.
+In the 25s helper test, three directed probes elicited199 actual probe-response
+records from the owner's AP. Three raw ToDS ARP requests from the unassociated
+monitor elicited268 AP deauthentication responses (reason7: class3 from a
+non-associated station), including retransmissions. These responses establish
+probe and data-frame transmission beyond successful send()/local echo. The
+monitor did not transmit deauthentication frames. An earlier associated test
+received21 matching ARP replies after three raw requests. These tests do not
+establish every injection subtype/rate/sequence/FCS option.
 
-- Previous SD image #9 SHA256:
-  `81730fb3bfc9baf34dd827fa3171dc5e25884ffe961e11362b1eab6d8e51506c`.
-- Corrected SD image #10 SHA256:
-  `6602817e4293e3c9ecf06de9c05545f8ad265dace1255dac46b44a51e2a40ea1`.
-- Unchanged MSM module SHA256:
-  `8f6a70bd3350add8a427263706952dc0fb04820e5f88fe5a54ec596c6351fa6f`.
+After monitor removal, WPA2-PSK/CCMP AP passed an independent MT7921/Windows
+client test: association/authorization, DHCP, four of four gateway pings
+(1–10ms), and HTTP200 with the expected marker. An earlier open-AP test also
+passed. The temporary AP/client profiles, DHCP and HTTP services were removed;
+the original managed connection and factory MAC returned. Original-network
+DHCP/SSH, native graphics/greetd and empty pstore were checked after boot.
 
-Hot WLAN rebinding no longer failed at GIC mapping with -ENXIO, but one
-subsequent firmware NV upload (request 55) timed out. A later retry blocked
-NetworkManager in `qcom_smd_send`, holding RTNL and blocking an `ip link`
-query. This is a separate, unresolved firmware/transport lifecycle problem;
-patch0124 does **not** establish reliable hot rebinding.
+## WPA2 and PMF
 
-The timeout in `wcn36xx_smd_send_and_wait()` starts its completion wait only
-after `rpmsg_send()` returns; `__qcom_smd_send()` can wait indefinitely for
-TX FIFO space. Recovery was possible without restarting the tablet:
-reconnect USB to obtain a fresh console after the blocked foreground query,
-kill the blocked NetworkManager process, stop its restart job, and restart
-WCNSS through remoteproc. The initial explicit NM activation raced device
-creation; normal autoconnect then restored the original network and SSH.
-No new pstore entry was present. Do not automatically hot-unbind WLAN in
-normal startup or offer the experimental driver as a production mode switch.
+The earlier WPA2 AP failure was traced to AES-CMAC IGTK installation, not CCMP
+or the PSK. The driver does not advertise AES-CMAC and its BSS configuration
+sets `rmf = 0`. `config/wcn36xx-networkmanager.conf` defaults PMF to disabled
+only for `driver:wcn36xx`; explicit profile settings take precedence. The final
+AP test used profile PMF=default and picked up this board default. Existing
+profiles requiring PMF must be changed explicitly if appropriate. WPA3 and
+mandatory PMF are not established.
 
-The #9 backup remains under `/var/lib/t531/kernel-trial-backup`; the older
-backup was retained under `/var/lib/t531/kernel-trial-before-wifi-0125`.
-The existing `t531-kernel-trial-restore --rollback` procedure restores #9
-on SD, with verified image/initramfs/cmdline/module hashes.
+## Deployment, recovery and limits
 
-## Reproducibility checks
+The final #12 SD image SHA256 is
+`f0b29e7f1a8badf1c21c406ca3093a6ee763d2086508d2e9ae388074847afa57`.
+Configuration, native-ICC DTB, initramfs and cmdline are unchanged from #10.
+The MSM module is unchanged, SHA256
+`8f6a70bd3350add8a427263706952dc0fb04820e5f88fe5a54ec596c6351fa6f`.
+Only the whitelisted T531_BOOT SD kernel image/checksum were replaced after a
+one-boot trial. Internal BOOT/lk2nd, calibration and firmware were untouched.
 
-All 124 production patch files applied to a temporary index of the pinned
-kernel base, with zero differences against the built source tree. Kernel,
-native-ICC DTB and matching modules built successfully. The three production
-Wi-Fi patches and candidate0126 passed checkpatch with zero errors/warnings.
-The diagnostic driver and guarded IRQ helper built separately; shell syntax,
-Python compilation and the public JSON dataset were checked. These software
-checks do not extend the physical acceptance listed above. Rootfs creation
-also installs the driver-specific NetworkManager default.
+The verified #10 backup is `/var/lib/t531/kernel-trial-backup`, image SHA256
+`6602817e4293e3c9ecf06de9c05545f8ad265dace1255dac46b44a51e2a40ea1`.
+The existing `t531-kernel-trial-restore --rollback` procedure restores it to
+SD. The older #9 backup remains in `kernel-trial-before-wifi-0127`; #8 is in
+`kernel-trial-before-wifi-0125`. USB recovery and the internal bootstrap remain
+available. WLAN IRQ patch0124 describes level-high triggers already used by
+the driver; historical edge-rearming diagnostics must not be reused with it.
+
+Remaining limits:
+
+- Stock firmware controls TX rates. Bad-FCS capture, FCS retention, arbitrary
+  PHY/radiotap TX controls, every frame subtype and sustained-rate loss are
+  not validated. This is not acceptance of every possible RFMON feature.
+- Firmware channel-list request208 still times out; scan failures and the
+  software-scan fallback remain.
+- Hot WCNSS restart/NV upload is still unreliable. A restart failed to reopen
+  WCNSS_CTRL before watchdog recovery; explicit CTRL reprobe later restored
+  service. Do not hot-unbind WLAN as a normal mode-switch procedure.
+- The earlier USB/SSH disappearance at 07:55 UTC was preceded by
+  `PM: suspend entry (s2idle)`; pstore was empty after restart. A crash was not
+  established. A temporary sleep inhibitor was used for diagnostics only.
+
+All 126 production patch files applied to a temporary index of the pinned base
+with zero differences from the built kernel source. Both new patches passed
+checkpatch without errors/warnings/checks. Kernel, matching modules and the
+standalone driver build passed; shell/Python/JSON and real-capture parsing were
+checked. These build checks add no hardware acceptance beyond the tests above.
+`tools/build-wifi-trial.sh` now builds the patched production driver separately
+without installing/binding it; it does not apply historical scan candidates.
+
+## Sources and evidence
+
+- **VERIFIED_UPSTREAM:** project base Linux v7.2.9,
+  `5fce161649b4d779d1b76d9fcd52dc77779774b8`, wcn36xx and mac80211 sources.
+  [Injection interface](https://docs.kernel.org/networking/mac80211-injection.html)
+  describes radiotap TX controls; firmware support requires measurement.
+- **VERIFIED_VENDOR_SOURCE:** [Samsung/Qualcomm prima HAL](https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/staging/prima/riva/inc/wlan_hal_msg.h),
+  revision `3fa1853ed5d6c3a8ef5a2fda9822705243bbc256`, retrieved 2026-10-20/21.
+  ISC-style permissive header SHA256
+  `ec316e219331373398a07d62c818be246a9826a4ea07b623510b1728e7b7720b`;
+  WDI source describes monitor requests302–305. Their presence did not prove
+  support in the installed image.
+- **VERIFIED_DEVICE:** read-only analysis of the installed firmware identified
+  dump handlers7/8 at firmware VAs `0x0d2be196`/`0x0d2be1da`, command table
+  `0x0d4b0378`, RXP mask function `0x0d2aa96e` and DPU queue 8 handling.
+  Live readback and captures established the five-register implementation.
+  Firmware b06 SHA256
+  `a57d7a162f15a9d281ec66f24c0e0f7b4f37d81e891ebd64356403bdfb9fd96e`;
+  MDT SHA256 `aa09c377bfb663aafebf0b5d0bb43bfcb296fb15997a3725b25a756ba7352480`.
+  Firmware binaries and experimental register tools are not committed.
+- **VERIFIED_UPSTREAM:** [NetworkManager configuration reference](https://networkmanager.dev/docs/api/latest/NetworkManager.conf.html),
+  driver matching and PMF defaults. Runtime default selection was checked.

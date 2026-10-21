@@ -41,12 +41,25 @@ See GRAPHICS-STABILITY.md, BACKLIGHT.md and BATTERY.md for exact tests,
 artifact hashes and the rollback path. Internal boot/lk2nd are unchanged.
 
 
-Wi-Fi follow-up, 2026-10-21: patches0123–0125 validate TX context/header
+Wi-Fi follow-up, 2026-10-21: patches 0123–0125 validate TX context/header
 lengths and injection flags, describe the actual level-high DXE IRQs, and
 supply a valid local PHY address when DT lacks one. They were built as #10
 with unchanged configuration/MSM module, and passed managed, WPA2 AP and
 3/3 directed probe-injection acceptance. See [Wi-Fi evidence](WIFI.md) for
 the corrected DT packaging, firmware hot-rebind failure/recovery and exact
-limits. Candidate0126 remains outside the series: scan-based management
-capture is not unrestricted RFMON. No claim of complete monitor/injection
-support or reliable firmware restart is made.
+limits. The historical legacy-scan candidate remains outside the series;
+scan-based management capture alone was not unrestricted RFMON.
+
+Final monitor follow-up, 2026-10-21: production patch0126 bounds SMD TX FIFO
+waits; patch0127 adds guarded five-register RXP/DPU routing for the exact
+stock WCN3660 firmware, saved-state restoration and monitor-only ciphertext
+handling. Built-in kernel #12 passed management/control and encrypted payload
+capture with extended IV on channels 1/6/36, actual probe/data TX responses,
+helper failure rollback, original managed reconnection and independent WPA2
+AP DHCP/ping/HTTP. All 126 production patch files match the built source;
+new patches pass checkpatch without errors/warnings/checks. Persistent #12
+boot was checked, with #10 retained for rollback. Configuration, native-ICC
+DTB and MSM module are unchanged from #10. Full monitor requires exclusive
+radio ownership; bad-FCS/FCS retention, arbitrary TX controls and reliable
+firmware hot restart remain unvalidated or unresolved. See [Wi-Fi](WIFI.md)
+and [aggregate results](wifi-results.json) for exact acceptance.

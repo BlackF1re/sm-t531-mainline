@@ -5,157 +5,287 @@
   "firmware": {
     "api": "1.5.1.2",
     "crm": "12035159",
-    "mdt_sha256": "aa09c377bfb663aafebf0b5d0bb43bfcb296fb15997a3725b25a756ba7352480"
+    "mdt_sha256": "aa09c377bfb663aafebf0b5d0bb43bfcb296fb15997a3725b25a756ba7352480",
+    "b06_sha256": "a57d7a162f15a9d281ec66f24c0e0f7b4f37d81e891ebd64356403bdfb9fd96e"
   },
-  "installed_kernel": "7.2.9-dirty #10",
+  "installed_kernel": "7.2.9-dirty #12",
   "production_patches": [
     123,
     124,
-    125
+    125,
+    126,
+    127
   ],
-  "sd_image_sha256": "6602817e4293e3c9ecf06de9c05545f8ad265dace1255dac46b44a51e2a40ea1",
-  "previous_image_sha256": "81730fb3bfc9baf34dd827fa3171dc5e25884ffe961e11362b1eab6d8e51506c",
+  "sd_image_sha256": "f0b29e7f1a8badf1c21c406ca3093a6ee763d2086508d2e9ae388074847afa57",
+  "previous_image_sha256": "6602817e4293e3c9ecf06de9c05545f8ad265dace1255dac46b44a51e2a40ea1",
   "msm_module_sha256": "8f6a70bd3350add8a427263706952dc0fb04820e5f88fe5a54ec596c6351fa6f",
   "kernel_configuration_changed": false,
+  "dtb_changed_from_kernel10": false,
   "internal_partitions_changed": false,
-  "tests": [
-    {
-      "name": "managed_open_ap",
-      "state": "VERIFIED_DEVICE",
-      "kernel": 10,
-      "dhcp": true,
-      "gateway_ping_sent": 4,
-      "gateway_ping_received": 4
+  "monitor": {
+    "state": "VERIFIED_DEVICE",
+    "implementation": "WORKING",
+    "scope": "exclusive standalone management/control/payload RX, including ciphertext with extended IV",
+    "simultaneous_managed_ap_full_monitor": false,
+    "firmware_modified": false,
+    "registers": {
+      "0xfb080800": "clear bit2",
+      "0xfb0808f0": "0xffff0000",
+      "0xfb0808f4": "0",
+      "0xfb081874": "low byte to host RX queue11",
+      "0xfb081820": "clear bits20:0"
     },
+    "register_originals_saved_restored": true,
+    "writes_readback_checked": true,
+    "captures": [
+      {
+        "file": "kernel12-helper.pcap",
+        "sha256": "546be0c43710e4af754c7d198c6ef72edecf99e73f28badf3ff910c1fdf95531",
+        "duration_s": 23.947252,
+        "counts": {
+          "payload_data_rx": 29,
+          "protected_extended_iv_present": 29,
+          "protected_payload_rx": 29,
+          "protected_unicast_rx": 5,
+          "records": 5717,
+          "rx_records": 5705,
+          "snaplen_truncated": 0,
+          "tx_radiotap_records": 12
+        },
+        "rx_type_subtype": {
+          "0:12": 268,
+          "0:13": 1,
+          "0:4": 11,
+          "0:5": 273,
+          "0:8": 1965,
+          "1:11": 177,
+          "1:12": 1605,
+          "1:13": 529,
+          "1:14": 2,
+          "1:8": 74,
+          "1:9": 753,
+          "2:0": 24,
+          "2:12": 9,
+          "2:4": 9,
+          "2:8": 5
+        }
+      },
+      {
+        "file": "exclusive12-ch1.pcap",
+        "sha256": "51ba85890d2659d8ce652b40fbc7521eac990a17f4586f86ed3beeb310edac02",
+        "duration_s": 6.970291,
+        "counts": {
+          "payload_data_rx": 11,
+          "protected_extended_iv_present": 11,
+          "protected_payload_rx": 11,
+          "protected_unicast_rx": 5,
+          "records": 1104,
+          "rx_records": 1098,
+          "snaplen_truncated": 0,
+          "tx_radiotap_records": 6
+        },
+        "rx_type_subtype": {
+          "0:12": 2,
+          "0:4": 4,
+          "0:5": 245,
+          "0:8": 557,
+          "1:12": 126,
+          "1:13": 100,
+          "1:14": 24,
+          "1:9": 12,
+          "2:0": 6,
+          "2:12": 9,
+          "2:4": 8,
+          "2:8": 5
+        }
+      },
+      {
+        "file": "exclusive12-ch6.pcap",
+        "sha256": "74471fb63b9aae0077bf21bbc678185a2fcc98788e97a828f9fd702aaadec88f",
+        "duration_s": 6.945926,
+        "counts": {
+          "payload_data_rx": 4,
+          "protected_extended_iv_present": 4,
+          "protected_payload_rx": 4,
+          "protected_unicast_rx": 4,
+          "records": 376,
+          "rx_records": 376,
+          "snaplen_truncated": 0
+        },
+        "rx_type_subtype": {
+          "0:4": 5,
+          "0:5": 8,
+          "0:8": 203,
+          "1:11": 33,
+          "1:12": 43,
+          "1:13": 27,
+          "1:9": 12,
+          "2:12": 2,
+          "2:4": 39,
+          "2:8": 4
+        }
+      },
+      {
+        "file": "exclusive12-ch36.pcap",
+        "sha256": "8123e682e5163eda4db9811a86612661076cbc1f9dddd7bbe905b94502bb8fa1",
+        "duration_s": 6.865033,
+        "counts": {
+          "payload_data_rx": 2,
+          "protected_extended_iv_present": 2,
+          "protected_payload_rx": 2,
+          "protected_unicast_rx": 0,
+          "records": 171,
+          "rx_records": 171,
+          "snaplen_truncated": 0
+        },
+        "rx_type_subtype": {
+          "0:8": 136,
+          "1:11": 3,
+          "1:12": 4,
+          "1:13": 9,
+          "1:9": 8,
+          "2:0": 2,
+          "2:4": 9
+        }
+      }
+    ],
+    "kernel_capture_drops_each": 0,
+    "capture_note": "TX radiotap echoes excluded from RX; extended-IV checks structural, not cryptographic/FCS validation"
+  },
+  "tests": [
     {
       "name": "managed_original_network",
       "state": "VERIFIED_DEVICE",
-      "kernel": 10,
+      "kernel": 12,
       "dhcp": true,
       "ssh": true,
       "factory_mac_preserved": true
+    },
+    {
+      "name": "ap_wpa2_ccmp_after_monitor",
+      "state": "VERIFIED_DEVICE",
+      "kernel": 12,
+      "peer": "independent MT7921 / Windows",
+      "four_way_handshake": true,
+      "dhcp": true,
+      "http_status": 200,
+      "gateway_ping_sent": 4,
+      "gateway_ping_received": 4,
+      "ping_ms_min": 1,
+      "ping_ms_max": 10,
+      "pmf_profile": 0,
+      "pmf_effective": "disabled by driver-specific NM default",
+      "negotiated_mbps": 72.2,
+      "throughput_measured": false
     },
     {
       "name": "ap_open",
       "state": "VERIFIED_DEVICE",
       "kernel": 9,
       "driver": "trial",
-      "peer": "independent MT7921 / Windows",
       "association": true,
       "dhcp": true,
-      "http_status": 200,
-      "negotiated_mbps": 72.2,
-      "throughput_measured": false
+      "http_status": 200
     },
     {
-      "name": "ap_wpa2_ccmp",
+      "name": "standalone_probe_injection",
       "state": "VERIFIED_DEVICE",
-      "kernel": 10,
-      "peer": "independent MT7921 / Windows",
-      "four_way_handshake": true,
-      "dhcp": true,
-      "http_status": 200,
-      "pmf_profile": 0,
-      "pmf_effective": "disabled by driver-specific NM default",
-      "gateway_ping_sent": 4,
-      "gateway_ping_received": 4
-    },
-    {
-      "name": "probe_injection_associated",
-      "state": "VERIFIED_DEVICE",
-      "kernel": 10,
+      "kernel": 12,
       "tx_requests": 3,
-      "rx_probe_responses": 3,
-      "tx_echo_counted_as_rx": false,
-      "source": "registered station address"
+      "rx_probe_response_records": 199,
+      "response_counts_include_retries": true,
+      "local_echo_is_not_acceptance": true
     },
     {
-      "name": "probe_injection_standalone",
+      "name": "standalone_raw_data_injection",
       "state": "VERIFIED_DEVICE",
-      "kernel": 9,
-      "driver": "candidate0126",
+      "kernel": 12,
       "tx_requests": 3,
-      "rx_probe_responses": 3,
-      "source": "registered radio address"
+      "frame": "ToDS ARP from unassociated monitor",
+      "actual_ap_response": "deauthentication reason7 (class3 from non-associated station)",
+      "rx_response_records_including_retries": 268,
+      "deauthentication_transmitted_by_test": false,
+      "local_echo_is_not_acceptance": true
     },
     {
-      "name": "standalone_management_capture",
+      "name": "associated_raw_arp",
       "state": "VERIFIED_DEVICE",
-      "kernel": 9,
-      "driver": "trial legacy PROMISC + START_SCAN",
-      "duration_s": 12,
-      "pcap_records": 747,
-      "rx_beacons": 738,
-      "rx_probe_responses": 3,
-      "local_tx_echoes": 6,
-      "kernel_capture_drops": 0
+      "tx_requests": 3,
+      "rx_matching_arp_reply_records_including_retries": 21
     },
     {
-      "name": "standalone_channel_change",
+      "name": "helper_invalid_channel_rollback",
       "state": "VERIFIED_DEVICE",
-      "kernel": 9,
-      "driver": "clean candidate0126",
-      "duration_s_each": 5,
-      "channels": [
-        1,
-        6,
-        36
-      ],
-      "pcap_records": [
-        393,
-        129,
-        78
-      ],
-      "kernel_capture_drops": 0,
-      "tx_on_channel36": false,
-      "managed_return": true
+      "kernel": 12,
+      "channel": 0,
+      "managed_mac_uuid_restored": true,
+      "runtime_state_removed": true
     },
     {
-      "name": "arbitrary_source_injection",
-      "state": "UNKNOWN",
-      "local_send_accepted": true,
-      "rx_response_received": false,
-      "over_air_confirmation": false
-    },
-    {
-      "name": "data_and_control_monitor_rx",
-      "state": "UNKNOWN",
-      "controlled_external_data_test_completed": false,
-      "full_monitor_acceptance": false
+      "name": "direct_in_place_type_change_with_nm",
+      "state": "VERIFIED_DEVICE",
+      "implementation": "REGRESSION",
+      "result": "no RX on initial 2.4GHz tests; intermittent EBUSY",
+      "accepted_workflow": false,
+      "exact_root_cause_isolated": false
     },
     {
       "name": "vendor_monitor_command302",
       "state": "VERIFIED_DEVICE",
-      "implementation": "BLOCKED_FOR_TESTED_COMMAND",
-      "result": "no firmware reply in two 10-second attempts"
+      "implementation": "BLOCKED",
+      "result": "no reply in two 10-second attempts; unused in production"
     },
     {
-      "name": "hot_wlan_rebind",
+      "name": "bounded_smd_send",
+      "normal_commands_and_mode_changes": "pass",
+      "fifo_exhaustion_fault_injected": false,
+      "firmware_restart_fixed": false
+    },
+    {
+      "name": "usb_ssh_disappearance_0755utc",
       "state": "VERIFIED_DEVICE",
-      "implementation": "PARTIAL",
-      "irq_mapping_enxio_fixed": true,
-      "firmware_nv55_timeout_observed": true,
-      "smd_send_fifo_wait_observed": true,
-      "remoteproc_recovery": true,
-      "new_pstore_entries": false
+      "previous_kernel_journal": "PM: suspend entry (s2idle)",
+      "pstore_files": 0,
+      "crash_established": false
     }
+  ],
+  "remaining_limits": [
+    "firmware channel-list request208 timeout and scan failures; software fallback remains",
+    "unreliable hot WCNSS_CTRL/NV restart",
+    "no simultaneous unrestricted managed/AP + monitor",
+    "stock firmware TX rate control",
+    "bad-FCS/FCS retention and arbitrary TX controls unvalidated",
+    "sustained-rate loss not measured"
   ],
   "cleanup": {
     "test_network_profiles_removed": true,
     "windows_test_profiles_removed": true,
     "test_ap_stopped": true,
-    "trial_driver_autostart": false
+    "monitor_stopped": true,
+    "trial_driver_autostart": false,
+    "firmware_helper_autoload": false,
+    "temporary_sleep_inhibitor_stopped": true
   },
-  "overall": "PARTIAL: managed/AP and directed probe injection verified; unrestricted monitor and hot firmware restart acceptance incomplete",
   "software_validation": {
-    "production_patch_count": 124,
+    "production_patch_count": 126,
     "temporary_index_matches_built_source": true,
     "kernel_native_icc_dtb_modules_build": "pass",
-    "wifi_checkpatch_errors": 0,
-    "wifi_checkpatch_warnings": 0,
-    "diagnostic_module_build": "pass",
-    "irq_helper_build": "pass",
+    "new_wifi_checkpatch_errors": 0,
+    "new_wifi_checkpatch_warnings": 0,
+    "new_wifi_checkpatch_checks": 0,
+    "separate_driver_build": "pass",
     "shell_syntax": "pass",
-    "python_compile": "pass"
+    "python_compile": "pass",
+    "capture_summary_replayed": "pass"
+  },
+  "overall": "Managed/WPA2 AP and exclusive raw monitor/injection pass the listed physical tests; remaining firmware and RF-control limits are explicit.",
+  "deployment": {
+    "persistent_sd_image_verified": true,
+    "persistent_kernel12_reboot_passed": true,
+    "networkmanager_greetd_native_graphics_active": true,
+    "pstore_files": 0,
+    "rollback_kernel": 10,
+    "backup_hashes_verified": true,
+    "trial_restore_service_enabled": false
   }
 }

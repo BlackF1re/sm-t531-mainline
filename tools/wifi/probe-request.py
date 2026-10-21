@@ -30,7 +30,10 @@ def mac(text):
         p.error('a unicast six-byte address is required')
     return value
 
-source = mac(a.source or Path('/sys/class/net', a.station, 'address').read_text().strip())
+source_path = Path('/sys/class/net', a.station, 'address')
+if not source_path.exists():
+    source_path = Path('/sys/class/net', a.interface, 'address')
+source = mac(a.source or source_path.read_text().strip())
 bssid = mac(a.bssid)
 # TX_FLAGS: keep the supplied sequence number; use normal ACK handling.
 radiotap = struct.pack('<BBHIH', 0, 0, 10, 1 << 15, 0x0010)
