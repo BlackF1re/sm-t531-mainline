@@ -60,6 +60,11 @@ sources:
     url: https://downloadcenter.samsung.com/content/UM/201506/20150602135914448/SM-T531_UM_EU_Lollipop_Eng_Rev.1.0_150602.pdf
     scope: Samsung SM-T531 EU Lollipop English user manual rev1.0 (2015-06-02), layout p7, phone/messages/location/media
       chapters; manufacturer-copyrighted, not redistributed.
+  fm-service-manual:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://www.manualslib.com/manual/2076923/Samsung-Sm-T531.html?page=45
+    scope: Samsung SM-T531 service manual Rev1.0 April2014, pages5/29/45; textual pin labels inspected.
+      Unwired FM pins are a hypothesis pending graphical schematic inspection; no physical continuity test.
   fm-trial:
     kind: VERIFIED_DEVICE
     path: docs/fm-results.json
@@ -2042,10 +2047,12 @@ subsystems:
   - vendor-full-config
   - android
   - fm-trial
+  - fm-service-manual
   implemented_or_observed: Diagnostic native V4L2 candidate registers radio0 and passes 49/49 API checks.
     All 29 supplied frequencies return zero signal/no RDS with wired headphones; preserved Android also returns
     zero RSSI, including DSP capture and calibration trials. No production FM patch enabled.
-  remaining_acceptance: Establish board antenna/RF population and no-signal cause; verify real reception/RDS/seek,
+  remaining_acceptance: First inspect schematic FM pins41/48/61/68 visually; text suggests unwired FM but does not prove it.
+    Establish board antenna/RF population and no-signal cause; verify real reception/RDS/seek,
     acknowledged receiver power-off and suspend. Audio routing remains separate.
   depends_on:
   - radio.shared

@@ -7,6 +7,35 @@ Tomsk frequencies returned zero signal, no stereo/RDS lock and no RDS bytes.
 Successful tuning commands and API compliance do not prove reception.
 [Measurements](fm-results.json) retain that distinction.
 
+## Is FM actually connected on SM-T531?
+
+The leading hypothesis is now **an unwired FM function**, not merely a missing
+Linux driver. Samsung's SM-T531 service manual, Rev.1.0 (April 2014), provides
+model-specific evidence:
+
+* [Product functions, page 5](https://www.manualslib.com/manual/2076923/Samsung-Sm-T531.html?page=5)
+  lists Wi-Fi/Bluetooth/GNSS but does not advertise FM.
+* [Board block diagram, page 29 / sheet 8-1](https://www.manualslib.com/manual/2076923/Samsung-Sm-T531.html?page=29)
+  identifies MATISSE3G SM-T531 rev0.3 and a WCN3660A Wi-Fi/Bluetooth block;
+  no FM route is identified in the extracted text.
+* [Radio schematic, page 45 / sheet 8-17](https://www.manualslib.com/manual/2076923/Samsung-Sm-T531.html?page=45)
+  names the chip's FM pins: FM_DATA (41), FM_SSBI (48), FM_HS_RX (61) and
+  FM_TXRX (68). Unlike neighboring Bluetooth signals, these appear only as
+  pin labels without corresponding external net names in the text extraction.
+
+Retrieved 2026-10-22. These are Samsung-authored documents hosted by a third
+party; copyrighted scans are not redistributed. **Only the textual rendering
+was accessible.** Wires and no-connect crosses have not been visually inspected,
+and the physical board has not been traced. Missing text labels alone do not
+prove an open circuit. Thus disconnected FM is a **HYPOTHESIS**, not a verified
+absence or a claim that WCN3660 silicon lacks FM.
+
+The same zero-signal behavior in native Linux and preserved Android supports
+that hypothesis, but Android was a downstream ROM rather than factory Samsung.
+Before further driver work, inspect the graphical schematic at those four pins
+and, if necessary, establish continuity/population on the actual board revision.
+Keep FM outside production until a usable board-level receiver is established.
+
 ## Implementation and deployment
 
 The [candidate patch](../patches/candidates/fm/0001-media-radio-qcom-smd-candidate.patch)
@@ -146,6 +175,7 @@ operations only; no transmitter commands, firmware restart or calibration writes
   match this tablet's partitions. No replacement firmware was installed for FM.
 
 Evidence states: **VERIFIED_DEVICE** for the bounded observations above;
-**VERIFIED_VENDOR_SOURCE** for protocol/source facts; **UNKNOWN** for usable
-board FM population/routing; **HYPOTHESIS** for the unresolved cause of no RF.
+**VERIFIED_VENDOR_SOURCE** for protocol/source facts and the service-manual
+pin labels; **UNKNOWN** for usable board FM population/routing; **HYPOTHESIS**
+for unwired FM pins as the cause of no RF.
 Implementation state: **BLOCKED**, with an API-tested diagnostic candidate.
