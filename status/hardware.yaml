@@ -1,0 +1,2154 @@
+schema_version: 1
+updated: '2026-10-22'
+device: Samsung Galaxy Tab 4 10.1 3G SM-T531 / matisse3g
+baseline:
+  kernel: '7.2.9-t531-dirty #19'
+  kernel_base_commit: 5fce161649b4d779d1b76d9fcd52dc77779774b8
+  project_commit: 1511f60
+  production_patch_count: 120
+  runtime: Phoc 0.46 / Phosh 0.58, native split GPU/KMS
+  inspection: Read-only sysfs/proc/source/previous acceptance records; no reboot, suspend, register writes, RF scan
+    or new physical acceptance.
+scope_note: Tasks cover confirmed board/SoC functions plus explicitly unconfirmed variants. This is not a signed
+  BOM or proof that every shared vendor node is populated. VERIFIED is restricted to the stated physical test; WORKING
+  is not full release acceptance. Dependency lists express primary porting prerequisites, not every kernel dependency.
+state_legend:
+  VERIFIED: Stated physical acceptance test passed; scope/build/date bounded.
+  WORKING: Required useful function demonstrated; broader release acceptance remains.
+  PARTIAL: Some functionality or control paths work; material missing functionality/tests.
+  PROBES: Driver/device/interface exists; real function not physically accepted.
+  IMPLEMENTING: Infrastructure/configuration exists; endpoint not accepted and completion may need changes.
+  RESEARCHING: Function identified; native board integration not implemented/accepted.
+  BLOCKED: Specific failed experiment or missing hardware fact prevents acceptance.
+  REGRESSION: Observed user-visible failure remains unresolved.
+  UNKNOWN: Population, capability or operation not established.
+priorities:
+  P0: Stabilize primary display/recovery/memory path before broad feature work.
+  P1: Daily-use safety, boot, charging/thermal and power management.
+  P2: Audio, normal I/O, sensors and usable feature completion.
+  P3: Large remaining ports, advanced options and unconfirmed population; priority may change with owner needs.
+sources:
+  live:
+    kind: VERIFIED_DEVICE
+    path: docs/hardware-observation-20261022.json
+    scope: 'Read-only #19 probe/interface snapshot; earlier physical tests are separately dated.'
+  dt:
+    kind: VERIFIED_DEVICE
+    path: docs/hardware-observation-20261022.json
+    scope: Read-only deployed DT compatible/status list, cross-checked with local board/SoC source; no claim local
+      patches are merged upstream.
+  config:
+    kind: VERIFIED_DEVICE
+    path: config/kernel.fragment
+    scope: Checked against current .work/out/.config; required settings differ from generic defconfig.
+  patches:
+    kind: VERIFIED_DEVICE
+    path: patches/linux/
+    scope: Current applied 120-patch source; builds/patches are not physical acceptance.
+  rng:
+    kind: VERIFIED_UPSTREAM
+    path: .work/linux/drivers/crypto/qcom-rng.c
+    scope: 'Pinned base behavior: qcom,prng has hwrng_support=false; public upstream source link below.'
+    url: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/drivers/crypto/qcom-rng.c?h=v7.2.9
+  bt-driver:
+    kind: VERIFIED_UPSTREAM
+    path: .work/linux/drivers/bluetooth/btqcomsmd.c
+    scope: Send callback handles CMD/ACL, not a demonstrated SCO transport.
+    url: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/drivers/bluetooth/btqcomsmd.c?h=v7.2.9
+  manual:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://downloadcenter.samsung.com/content/UM/201506/20150602135914448/SM-T531_UM_EU_Lollipop_Eng_Rev.1.0_150602.pdf
+    scope: Samsung SM-T531 EU Lollipop English user manual rev1.0 (2015-06-02), layout p7, phone/messages/location/media
+      chapters; manufacturer-copyrighted, not redistributed.
+  vendor-board:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r02.dtsi
+    scope: Board-specific r02; does not prove this physical PCB revision or every generic endpoint is populated.
+  vendor-top-r02:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r02.dts
+    scope: Includes SoC v2 and r02; earjack override detect69/sendend111.
+  vendor-r00:
+    kind: HISTORICAL_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r00.dtsi
+    scope: Early revision options; NOT proof of fitted sensors/LED/IR on owner tablet.
+  vendor-config:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/configs/msm8226-sec_matisse3g_defconfig
+    scope: Samsung matisse3g variant fragment; positive board selections, not current Linux config.
+  vendor-full-config:
+    kind: HISTORICAL_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/configs/lineage_matisse3g_defconfig
+    scope: Full downstream matisse3g config; downstream derivative, not an unmodified stock-kernel configuration.
+  vendor-soc:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226.dtsi
+    scope: Shared MSM8226 hardware blocks; board population must be established separately.
+  vendor-gpiomux:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/mach-msm/board-matisse-gpiomux.c
+    scope: Includes variants and conditional NC GPIO tables; only MATISSE3G_OPEN applies here.
+  vendor-ir:
+    kind: HISTORICAL_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226-mc96irda.dtsi
+    scope: Included by early r00/r01; not r02.
+  vendor-audio:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/sound/soc/msm/msm8226.c
+    scope: Tapan/WCD9306 machine path with matisse conditionals; hardware revision still to read.
+  vendor-therm:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/mach-msm/sec_thermistor_8226.c
+    scope: Samsung board thermistor lookup/ADC implementation; exact fitted sensor nets unverified.
+  vendor-camera:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226-camera-sensor-mtp-matisse_eur-r02.dtsi
+    scope: Camera supplies, enables/reset/clock and CSIPHY/CSID graph. Generic flash block is not population proof.
+  vendor-sr352:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/media/platform/msm/camera_v2/sensor/sr352_yuv.c
+    scope: Rear YUV sensor driver with matisse-specific tuning include.
+  vendor-sr130:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/media/platform/msm/camera_v2/sensor/sr130pc20_yuv.c
+    scope: Front YUV sensor driver with matisse-specific tuning include.
+  vendor-camss:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226-camera.dtsi
+    scope: Shared camera DMA/ISP/JPEG resources; used as research, not transplanted Android HAL.
+  vendor-display:
+    kind: VERIFIED_VENDOR_SOURCE
+    url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/dsi_panel_tc358764_wxga_video-r01.dtsi
+    scope: Board DSI/LVDS timing and PHY reference; final panel supplier not identified.
+  recovery:
+    kind: VERIFIED_DEVICE
+    path: docs/RECOVERY.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  build:
+    kind: VERIFIED_DEVICE
+    path: docs/BUILD-DEPLOY.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  bt:
+    kind: VERIFIED_DEVICE
+    path: docs/BLUETOOTH.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  wifi:
+    kind: VERIFIED_DEVICE
+    path: docs/WIFI.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  memory:
+    kind: VERIFIED_DEVICE
+    path: docs/MEMORY-BUS.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  graphics:
+    kind: VERIFIED_DEVICE
+    path: docs/GRAPHICS-STABILITY.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  native:
+    kind: VERIFIED_DEVICE
+    path: docs/NATIVE-KMS.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  performance:
+    kind: VERIFIED_DEVICE
+    path: docs/GRAPHICS-BOTTLENECK.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  backlight:
+    kind: VERIFIED_DEVICE
+    path: docs/BACKLIGHT.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  touch:
+    kind: VERIFIED_DEVICE
+    path: docs/TOUCH-SLEEP.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  charging:
+    kind: VERIFIED_DEVICE
+    path: docs/CHARGING.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  chargepath:
+    kind: VERIFIED_DEVICE
+    path: docs/CHARGE-PATH.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  vbus:
+    kind: VERIFIED_DEVICE
+    path: docs/VBUS.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  battery:
+    kind: VERIFIED_DEVICE
+    path: docs/BATTERY.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  rtc:
+    kind: VERIFIED_DEVICE
+    path: docs/RTC-WATCHDOG.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  firmware:
+    kind: VERIFIED_DEVICE
+    path: docs/FIRMWARE.md
+    scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
+  android:
+    kind: VERIFIED_DEVICE
+    path: docs/ANDROID-HARDWARE-AUDIT.md
+    scope: Temporary boot of preserved Android 6.0.1 kernel, live DT/config/driver/ID reads, then byte-exact BOOT
+      restore; hardware presence only, not native Linux acceptance.
+subsystems:
+- id: boot.internal
+  area: Platform
+  subsystem: Internal boot chain
+  hardware: Samsung bootloader, lk2nd 23.1, immutable bootstrap
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - recovery
+  - live
+  implemented_or_observed: Normal internal boot -> SD kexec used repeatedly; internal BOOT unchanged.
+  remaining_acceptance: Repeat cold boot, interrupted countdown and button recovery with release artifacts.
+  depends_on: []
+  priority: P0
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: boot.sd
+  area: Platform
+  subsystem: SD kernel and rootfs boot
+  hardware: kexec, appended DTB, Debian armhf
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - live
+  - recovery
+  implemented_or_observed: 'Current #19 boots Phosh from microSD.'
+  remaining_acceptance: Repeat cold/warm/recovery boot matrix and failure fallback.
+  depends_on:
+  - boot.internal
+  priority: P0
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: boot.recovery
+  area: Platform
+  subsystem: Recovery and crash records
+  hardware: USB ACM, SD rollback, ramoops/pstore
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - recovery
+  - rtc
+  implemented_or_observed: 'SSH/ACM and checked #17 rollback artifacts retained; pstore collected previously.'
+  remaining_acceptance: Automatic recovery from a genuinely wedged kernel is not accepted; watchdogs fail.
+  depends_on:
+  - boot.internal
+  priority: P0
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: boot.repro
+  area: Platform
+  subsystem: Reproducible image and board data
+  hardware: Kernel/DTB/modules/initramfs, WCNSS NV, factory BT identity
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - build
+  - bt
+  - firmware
+  implemented_or_observed: Build/package scripts and current outputs exist; BT identity injected privately.
+  remaining_acceptance: Clean checkout -> exact installed Phosh/rootfs/firmware/module manifest and reproducible
+    release.
+  depends_on:
+  - boot.sd
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: cpu.smp
+  area: Platform
+  subsystem: CPU execution and SMP
+  hardware: MSM8226, four Cortex-A7; NEON/VFPv4
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - live
+  - memory
+  implemented_or_observed: All four CPUs online; ordinary ARMv7 Linux runs.
+  remaining_acceptance: Sustained multicore/memory/thermal acceptance; not a new stress run.
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: cpu.dvfs
+  area: Platform
+  subsystem: CPU frequency and voltage
+  hardware: A7 PLL/APCS, seven stock OPPs, SAW/RPM-CX
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - memory
+  - patches
+  - live
+  implemented_or_observed: Stock steps and hotplug tested historically; active 1.19 GHz independently measured.
+  remaining_acceptance: Validate all voltage/OPP transitions, load and resume without retained bring-up votes.
+  depends_on:
+  - core.clocks
+  - core.regulators
+  - cpu.smp
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: cpu.idle
+  area: Platform
+  subsystem: CPU idle and hotplug
+  hardware: WFI, per-core standalone collapse
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - patches
+  - touch
+  implemented_or_observed: WFI/SPC/hotplug exercised in earlier acceptance.
+  remaining_acceptance: Idle residency, energy savings and repeated current-profile hotplug/idle.
+  depends_on:
+  - cpu.smp
+  - core.regulators
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: cpu.l2
+  area: Platform
+  subsystem: L2 cache and cluster low power
+  hardware: Cortex-A7 shared L2, SAW2 L2
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - patches
+  - memory
+  - touch
+  implemented_or_observed: Cache/cluster used; standalone cluster collapse implemented and tried historically.
+  remaining_acceptance: Measure L2 rate/retention and whole-cluster sleep; deep suspend has a known DRM failure.
+  depends_on:
+  - cpu.idle
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: memory.ddr
+  area: Platform
+  subsystem: System RAM and DDR clocks
+  hardware: 1.5 GB RAM, BIMC memory controller
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - memory
+  implemented_or_observed: 1438952 KiB Linux MemTotal now; physical active DDR measured about 533.33 MHz.
+  remaining_acceptance: Identify exact RAM part/type; idle/sleep DDR rates, self-refresh and contention tests.
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: memory.interconnect
+  area: Platform
+  subsystem: Memory buses and bandwidth policy
+  hardware: BIMC, SNOC/PNOC/CNOC, MMSS NoC, GPU/MDP AXI
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - memory
+  - patches
+  implemented_or_observed: ICC votes corrected; active GPU AXI 266.67 MHz, SNOC 240 MHz measured.
+  remaining_acceptance: All masters/QoS, low-load scaling, latency and power states; measurements do not prove full
+    correctness.
+  depends_on:
+  - core.clocks
+  - core.ipc
+  priority: P0
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: memory.ocmem
+  area: Platform
+  subsystem: GPU on-chip memory
+  hardware: OCMEM SRAM and virtual NoC
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - memory
+  - live
+  implemented_or_observed: OCMEM driver and bandwidth votes used by GPU.
+  remaining_acceptance: Measure actual OCMEM clock and validate allocation/low-power transitions.
+  depends_on:
+  - memory.interconnect
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: core.clocks
+  area: Platform
+  subsystem: Clock and reset infrastructure
+  hardware: XO, GCC, MMCC, RPM clocks, PLLs, resets/GDSCs
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - dt
+  - memory
+  implemented_or_observed: Required storage/display/GPU/peripheral clocks operate.
+  remaining_acceptance: Unused-domain shutdown and every low-power/resume clock/reset dependency.
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: core.regulators
+  area: Platform
+  subsystem: PMIC and power rails
+  hardware: PM8226 SPMI, RPM regulators, fixed board enables
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - dt
+  - native
+  implemented_or_observed: Core and active peripheral rails operate through Linux frameworks.
+  remaining_acceptance: Full rail ownership and sequencing, especially panel/bridge and remaining peripherals.
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: core.interrupts
+  area: Platform
+  subsystem: Timers, interrupts and pin control
+  hardware: GIC, ARM timers, TLMM, PMIC GPIO/MPP
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - live
+  - dt
+  implemented_or_observed: Timer/IRQ/pinctrl framework supports the running system.
+  remaining_acceptance: Pin/wake audit for unused peripherals and deep sleep; no separate physical acceptance of
+    every pin.
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: core.dma
+  area: Platform
+  subsystem: DMA controllers
+  hardware: BAM DMA and device DMA mappings
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - dt
+  implemented_or_observed: BAM binds; active devices transfer data.
+  remaining_acceptance: Exercise future audio/camera/USB/modem channels and fault cleanup.
+  depends_on:
+  - core.interrupts
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: core.iommu
+  area: Platform
+  subsystem: Address translation and isolation
+  hardware: GPU ARM SMMU; legacy display IOMMU/TZ tables
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - graphics
+  - native
+  - patches
+  implemented_or_observed: Native GPU/MDP mappings and observed NULL-domain failure fixed.
+  remaining_acceptance: Repeated fault/recovery and suspend; camera/video contexts not brought up.
+  depends_on:
+  - core.scm
+  - core.clocks
+  priority: P0
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: core.ipc
+  area: Platform
+  subsystem: Remote subsystem communication
+  hardware: SMEM, SMD/RPMSG, SMSM, SMP2P, RPM, hwspinlock
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - dt
+  - bt
+  implemented_or_observed: RPM and WCNSS use working native communication paths.
+  remaining_acceptance: ADSP/MPSS services, restart and subsystem power coordination.
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: core.scm
+  area: Platform
+  subsystem: Secure firmware interface
+  hardware: TrustZone/SCM, legacy secure IOMMU setup
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - native
+  - rtc
+  - patches
+  implemented_or_observed: Required SCM calls/display mapping work.
+  remaining_acceptance: Other secure services/permissions remain board-specific; RTC writes denied.
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: core.nvmem
+  area: Platform
+  subsystem: Hardware calibration and identities
+  hardware: QFPROM/eFuses, per-device EFS and WCNSS NV
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - firmware
+  - bt
+  implemented_or_observed: QFPROM provider and private Wi-Fi NV/BT factory identity used.
+  remaining_acceptance: Consumer-by-consumer calibration inventory; preserve private backups and never synthesize
+    RF data.
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: core.prng
+  area: Platform
+  subsystem: SoC random generator
+  hardware: Qualcomm PRNG at f9bff000
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PROBES
+  evidence_refs:
+  - live
+  - rng
+  implemented_or_observed: Driver binds but explicitly reports TRNG support not detected; rng_available is none.
+  remaining_acceptance: Audit supported PRNG interface if useful; do not expose it as a proven physical entropy
+    source.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_UPSTREAM
+- id: core.crypto
+  area: Platform
+  subsystem: Hardware cryptography
+  hardware: QCE/qcrypto/qcedev engine and BAM
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-soc
+  - live
+  - config
+  - android
+  implemented_or_observed: Android binds qce at fd400000.qcom,qcedev; native QCE module exists but no board integration
+    observed.
+  remaining_acceptance: Identify engine version and native DT/DMA/clocks, then standard crypto test vectors/performance.
+  depends_on:
+  - core.dma
+  - core.clocks
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: core.debug
+  area: Platform
+  subsystem: Hardware diagnostics
+  hardware: ARM PMU; CoreSight/JTAG/trace fabric
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - memory
+  - vendor-soc
+  implemented_or_observed: PMU cycle counter corroborated CPU rate; some other PMU events returned invalid zero
+    data.
+  remaining_acceptance: Validate supported PMU events; CoreSight/external UART/JTAG access not established.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: storage.emmc
+  area: Storage
+  subsystem: Internal storage
+  hardware: 16 GB eMMC, SDHCI1
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - recovery
+  - dt
+  implemented_or_observed: Read-only critical-partition backups and size 30777344 sectors verified; controller bound.
+  remaining_acceptance: Safe disposable-file read/write, timing modes, suspend and power-loss behavior; no destructive
+    partition tests.
+  depends_on:
+  - core.regulators
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: storage.sd
+  area: Storage
+  subsystem: Removable storage
+  hardware: microSD, SDHCI2, card detect and supply loads
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - live
+  - recovery
+  - patches
+  implemented_or_observed: Current rootfs boots/runs; prior ext4 write/readback passed.
+  remaining_acceptance: Card hotplug outside rootfs, other cards, signal modes and sleep recovery.
+  depends_on:
+  - core.regulators
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: storage.integrity
+  area: Storage
+  subsystem: Storage recovery and safe updates
+  hardware: ext2 SD boot, ext4 rootfs, flush/atomic image replacement
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - recovery
+  - build
+  implemented_or_observed: Checked SD-only kernel replacement and retained rollback used.
+  remaining_acceptance: Filesystem/power-interruption tests, package-aware update and recovery-image reproducibility.
+  depends_on:
+  - storage.emmc
+  - storage.sd
+  - boot.recovery
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: display.kms
+  area: Display
+  subsystem: Native display controller and link
+  hardware: MDP5 -> 28 nm DSI PHY -> TC358764 -> LVDS LCD, 1280x800 ~60 Hz
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - native
+  - graphics
+  implemented_or_observed: Real full-screen pattern and desktop accepted on native output; MDP/DSI/bridge/panel
+    bound now.
+  remaining_acceptance: Stable modeset/DPMS/sleep under application load and link/power acceptance.
+  depends_on:
+  - core.iommu
+  - core.clocks
+  - memory.interconnect
+  priority: P0
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: display.panelpower
+  area: Display
+  subsystem: LCD and bridge power ownership
+  hardware: LCD rails/enables and TC358764 reset; exact panel supplier unconfirmed
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - native
+  - dt
+  - vendor-display
+  implemented_or_observed: Working timing/PHY sequence; firmware power retention still used.
+  remaining_acceptance: Identify all physical rails/panel variant and implement cold init + full off/on without
+    firmware hold.
+  depends_on:
+  - core.regulators
+  - display.kms
+  priority: P0
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: display.backlight
+  area: Display
+  subsystem: Backlight and brightness
+  hardware: TI LP8556 at I2C 0x2c
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - backlight
+  - live
+  implemented_or_observed: Actual Phosh slider and BRT register span 2/7/23/76/255; DPMS checked.
+  remaining_acceptance: Physical luminance/endpoints and repeated current-build sleep/power sequencing.
+  depends_on:
+  - display.panelpower
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: display.scanout
+  area: Display
+  subsystem: Presentation, vblank and buffer handoff
+  hardware: Native DRM/KMS with split render/display devices
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - graphics
+  - memory
+  - performance
+  implemented_or_observed: Full-screen direct scanout about 59.993 presentations/s; simpledrm is not desktop output.
+  remaining_acceptance: General composition still about 33 FPS in historical drawer runs; fence/latency/tearing
+    acceptance.
+  depends_on:
+  - display.kms
+  - display.gpu
+  priority: P0
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: display.gpu
+  area: Display
+  subsystem: 3D acceleration
+  hardware: Adreno 305B, msm DRM, Freedreno Mesa 25.0.7
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - bt
+  - graphics
+  - live
+  implemented_or_observed: Hardware GLES rendering and ordinary Phosh work.
+  remaining_acceptance: Settings workload still triggers Adreno hangs; no claim of general stable 60 FPS.
+  depends_on:
+  - core.iommu
+  - memory.ocmem
+  - memory.interconnect
+  priority: P0
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: display.recovery
+  area: Display
+  subsystem: GPU and compositor fault recovery
+  hardware: A3xx recovery, fences, Phoc/wlroots
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: REGRESSION
+  evidence_refs:
+  - bt
+  - graphics
+  implemented_or_observed: 'Recovery patches exist; #19 settings test logged GPU hang then Phoc SIGSEGV/black screen.'
+  remaining_acceptance: Reproduce/isolate fault and recover automatically without losing the session; manual session
+    recovery is insufficient.
+  depends_on:
+  - display.gpu
+  - display.kms
+  priority: P0
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: display.color
+  area: Display
+  subsystem: Color, overlays and screen capture
+  hardware: MDP planes/blending, gamma/LUT; vendor mDNIe policy
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - graphics
+  - native
+  - live
+  implemented_or_observed: Owner accepted normal colors; software screenshots and basic planes used.
+  remaining_acceptance: Plane/alpha matrix, color controls and screen-capture paths; Samsung mDNIe not reimplemented.
+  depends_on:
+  - display.kms
+  - display.gpu
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: display.console
+  area: Display
+  subsystem: Early boot console and KMS takeover
+  hardware: Firmware framebuffer/simplefb -> native DRM console
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - recovery
+  - native
+  implemented_or_observed: Owner confirmed boot text and subsequent desktop; early framebuffer intentionally remains
+    transitional.
+  remaining_acceptance: Repeat cold/kexec/rollback transitions without blue/black gaps or competing display owners.
+  depends_on:
+  - boot.sd
+  - display.kms
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: input.touch
+  area: Input and sensors
+  subsystem: Multitouch
+  hardware: Atmel maXTouch MXT1188S family, I2C 0x4a
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - touch
+  - live
+  - vendor-config
+  implemented_or_observed: Owner accepted normal touch/PIN; standard evdev/libinput.
+  remaining_acceptance: 'Full contact/edge/orientation matrix and long use on #19.'
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: input.touchpm
+  area: Input and sensors
+  subsystem: Touch sleep/wake
+  hardware: maXTouch T7/T6 and queued MT slots
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: VERIFIED
+  evidence_refs:
+  - touch
+  implemented_or_observed: 'Patch0124: 10 callback cycles, 3 real s2idle wakes, owner PIN/Power/touch acceptance
+    on #17.'
+  remaining_acceptance: Repeat after future PM/display changes; deep suspend not covered.
+  depends_on:
+  - input.touch
+  - power.sleep
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: input.keys
+  area: Input and sensors
+  subsystem: Physical keys
+  hardware: Power (PMIC), Home, Volume Up/Down (GPIO)
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - touch
+  - live
+  - dt
+  implemented_or_observed: Real Power and volume/Home input devices; owner accepted Power after touch fix.
+  remaining_acceptance: Explicit each-key long-press/repeat/wake matrix and stuck-key recovery.
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: input.touchkeys
+  area: Input and sensors
+  subsystem: Capacitive navigation keys
+  hardware: maXTouch Back/Recent Apps keycodes
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PROBES
+  evidence_refs:
+  - dt
+  - touch
+  - vendor-config
+  implemented_or_observed: Key mappings are present in DT and touchscreen input.
+  remaining_acceptance: Physically press both and verify shell actions before declaring working.
+  depends_on: []
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: input.hall
+  area: Input and sensors
+  subsystem: Cover magnet sensor
+  hardware: Hall switch, TLMM GPIO110 / SW_LID
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PROBES
+  evidence_refs:
+  - live
+  - dt
+  - vendor-board
+  implemented_or_observed: gpio-hall-sensor input device binds with wake capability.
+  remaining_acceptance: Physical magnet/cover switch and screen/wake behavior.
+  depends_on: []
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: input.accel
+  area: Input and sensors
+  subsystem: Accelerometer
+  hardware: ST K2HH, identified under Android; native LIS2HH12-compatible driver, I2C 0x1d
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PROBES
+  evidence_refs:
+  - live
+  - vendor-board
+  - dt
+  - android
+  implemented_or_observed: Native IIO/SensorProxy present. Android separately identifies STM K2HH at the expected
+    address.
+  remaining_acceptance: Native six-orientation, axis/sign/range and sleep tests remain; Android identity is not
+    mainline functional acceptance.
+  depends_on: []
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: input.rotation
+  area: Input and sensors
+  subsystem: Automatic orientation
+  hardware: IIO -> iio-sensor-proxy -> Phosh/Phoc
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  implemented_or_observed: Service active and accelerometer advertised.
+  remaining_acceptance: Physical rotation must rotate image and touch mapping correctly; do not equate D-Bus presence
+    with acceptance.
+  depends_on:
+  - input.accel
+  - display.kms
+  - input.touch
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: input.grip
+  area: Input and sensors
+  subsystem: Grip/SAR sensor
+  hardware: Semtech SX9500, I2C 0x28 on GPIO0/1, IRQ66
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-board
+  - vendor-config
+  - config
+  - android
+  implemented_or_observed: Android SX9500 driver probes, exposes SEMTECH/SX9500 and reads back initialized I2C registers;
+    current native DT lacks it.
+  remaining_acceptance: Port through native IIO SX9500, validate physical grip events and coordinate modem SAR policy.
+  depends_on: []
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: input.haptic
+  area: Input and sensors
+  subsystem: Vibration
+  hardware: ISA1200, I2C 0x48 on GPIO12/13; enable32/clock34
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-board
+  - vendor-config
+  - android
+  implemented_or_observed: Live Android DT includes ISA1200, but no bound device/timed-output vibrator observed.
+    Actual CONFIG_HAPTIC_ISA1200=n; CONFIG_CONFIG_HAPTIC_ISA1200=y is a distinct symbol.
+  remaining_acceptance: Confirm fitted controller/motor before native force-feedback integration; a DT template
+    is not physical presence.
+  depends_on:
+  - core.regulators
+  - core.clocks
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: input.leds
+  area: Input and sensors
+  subsystem: Navigation/notification lights
+  hardware: Revision-dependent button-backlight GPIO; PMIC LED templates
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - live
+  - vendor-r00
+  - vendor-board
+  implemented_or_observed: Only virtual mmc activity LEDs exposed now; button light appears in r00, absent in r02.
+  remaining_acceptance: Confirm populated LEDs and wiring on actual PCB before adding a driver.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - HISTORICAL_SOURCE
+  - UNKNOWN
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: power.charging
+  area: Power
+  subsystem: Charging and input-current control
+  hardware: SMB358 external charger at 0x6a, SM5502 cable detection
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - charging
+  - chargepath
+  - vbus
+  - live
+  implemented_or_observed: Charging/net cell current measured; 500 mA startup + AICL-backed software ramp implemented.
+  remaining_acceptance: Full terminate/recharge and weak-source/temperature tests; rapid current-limit ramp is not
+    guaranteed actual input current.
+  depends_on:
+  - usb.muic
+  - core.regulators
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.battery
+  area: Power
+  subsystem: Battery telemetry
+  hardware: PM8226 BMS1, IADC/VADC, 6800 mAh design battery
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - battery
+  - live
+  implemented_or_observed: Standard power_supply voltage/current/temperature/charge counter and UPower data exist.
+  remaining_acceptance: Cross-check external current/voltage reference and accumulated charge over time.
+  depends_on:
+  - core.regulators
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.soc
+  area: Power
+  subsystem: State of charge and battery health
+  hardware: Coulomb/OCV model; aging and learned capacity
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - battery
+  - chargepath
+  implemented_or_observed: Modeled percentage exported; known reboot-related SOC jumps documented.
+  remaining_acceptance: Controlled charge/discharge cycle and retention/aging calibration; displayed percent is
+    not validated capacity.
+  depends_on:
+  - power.battery
+  - power.charging
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.vbus
+  area: Power
+  subsystem: External supply voltage measurement
+  hardware: USB input analog route to ADC not established
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: BLOCKED
+  evidence_refs:
+  - vbus
+  implemented_or_observed: PM8226 USBIN/DCIN reads do not track the external 5 V supply.
+  remaining_acceptance: Find electrically valid measurement point; requested 4.8 V software floor cannot currently
+    be guaranteed.
+  depends_on:
+  - usb.muic
+  - power.battery
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.thermal
+  area: Power
+  subsystem: SoC/battery temperature and cooling
+  hardware: TSENS, battery thermistor, thermal/cpufreq framework
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - battery
+  - dt
+  implemented_or_observed: Current CPU thermal zones 35/36 C and battery about 25.4 C readable.
+  remaining_acceptance: Calibrated thermal throttling, battery stop/recovery and system critical-temperature policy
+    under real load.
+  depends_on:
+  - cpu.dvfs
+  - power.battery
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.pmictemp
+  area: Power
+  subsystem: PMIC die overtemperature protection
+  hardware: PM8226 temp-alarm at 0x2400
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - dt
+  - config
+  - live
+  implemented_or_observed: DT describes it; CONFIG_QCOM_SPMI_TEMP_ALARM is off; no PMIC thermal zone now.
+  remaining_acceptance: Enable and verify sensor/IRQ/cooling policy with safe non-destructive tests.
+  depends_on:
+  - core.regulators
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.boardtemp
+  area: Power
+  subsystem: Board/RF thermistors and current limiting
+  hardware: Vendor sec-thermistor, PA_THERM0/1, PMIC ADC/BCL
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-soc
+  - vendor-therm
+  - vendor-board
+  - live
+  implemented_or_observed: Vendor describes thermistor ADC and BCL paths; current public thermal interface is incomplete.
+  remaining_acceptance: Confirm fitted sensors, conversion tables and consumer policy without confusing VBUS/system
+    voltage with thermistors.
+  depends_on:
+  - power.battery
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: power.sleep
+  area: Power
+  subsystem: System suspend
+  hardware: s2idle policy; standby/deep and CPU-L2 states
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - touch
+  - graphics
+  - live
+  implemented_or_observed: 'Three real logind s2idle cycles passed on #17; installed policy selects s2idle.'
+  remaining_acceptance: 'Whole-system consumption and repeated #19 resume; direct deep test previously hit MDP resource
+    failure.'
+  depends_on:
+  - cpu.idle
+  - display.kms
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.wake
+  area: Power
+  subsystem: Wakeup sources
+  hardware: Power, RTC, Hall; touch/USB/radio as individually validated
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - touch
+  - rtc
+  - dt
+  implemented_or_observed: Power/touch interaction physically accepted; three RTC-alarm s2idle wakes passed.
+  remaining_acceptance: Per-source matrix including unwanted wakeups; Wi-Fi/BT/modem wake not accepted.
+  depends_on:
+  - power.sleep
+  - power.rtc
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.rtc
+  area: Power
+  subsystem: Timekeeping and alarms
+  hardware: PM8226 RTC via rtc-pm8xxx
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - rtc
+  - touch
+  - live
+  implemented_or_observed: Counter rate and alarm IRQ tested; relative RTC alarm used for real s2idle wake.
+  remaining_acceptance: 'Calendar setting/retention unresolved: counter writes denied by firmware; safe offset persistence
+    needed.'
+  depends_on:
+  - core.regulators
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.watchdog
+  area: Power
+  subsystem: Application processor watchdog
+  hardware: APSS qcom_wdt
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: BLOCKED
+  evidence_refs:
+  - rtc
+  - live
+  implemented_or_observed: Probe, feed and stop worked; expiry did not reliably reset/recover Linux; counter rate
+    load-dependent.
+  remaining_acceptance: Resolve gating/reset routing and validate actual reset plus recoverable boot before enabling
+    policy.
+  depends_on:
+  - boot.recovery
+  - core.clocks
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.pmicwatchdog
+  area: Power
+  subsystem: PMIC watchdog
+  hardware: PM8226 PON watchdog, candidate pm8916_wdt
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: BLOCKED
+  evidence_refs:
+  - rtc
+  implemented_or_observed: Candidate feed/register readback passed but actual expiry failed to reset; candidate
+    rolled back.
+  remaining_acceptance: Understand secure clock/reset semantics; no production watchdog enabled.
+  depends_on:
+  - boot.recovery
+  - core.scm
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: power.offcharge
+  area: Power
+  subsystem: Charging with system off
+  hardware: SMB358/bootloader low-power charging path
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-config
+  - charging
+  implemented_or_observed: Vendor low-power charging mode exists; no native acceptance recorded.
+  remaining_acceptance: Unplug/replug and charge termination while Linux off, including low battery recovery.
+  depends_on:
+  - power.charging
+  - boot.internal
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: power.shutdown
+  area: Power
+  subsystem: Restart, power-off and long Power reset
+  hardware: PS_HOLD, PMIC PON/RESIN and firmware
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - recovery
+  - rtc
+  implemented_or_observed: Ordinary reboots and owner-forced Power resets used successfully.
+  remaining_acceptance: Clean shutdown without USB power, charger-insert behavior, reset causes and low-battery
+    shutdown.
+  depends_on:
+  - core.scm
+  - core.regulators
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: usb.gadget
+  area: USB
+  subsystem: USB device and console
+  hardware: Micro-USB 2.0, ChipIdea UDC, Qualcomm HS PHY
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - live
+  - recovery
+  - dt
+  implemented_or_observed: USB ACM console and file/diagnostic transfer used; acm.usb0 active now.
+  remaining_acceptance: Repeated plug/unplug, host compatibility, speed/error and suspend acceptance.
+  depends_on:
+  - core.clocks
+  - usb.muic
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: usb.network
+  area: USB
+  subsystem: USB networking/tether
+  hardware: Configfs ECM/RNDIS
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: IMPLEMENTING
+  evidence_refs:
+  - config
+  - live
+  implemented_or_observed: Required gadget functions built; current gadget exposes ACM only.
+  remaining_acceptance: Configure normal network function and pass real bidirectional traffic from an external host.
+  depends_on:
+  - usb.gadget
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: usb.mtp
+  area: USB
+  subsystem: USB file access/other gadget functions
+  hardware: FunctionFS/MTP; optional mass-storage/configfs roles
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - config
+  - live
+  - vendor-config
+  implemented_or_observed: FunctionFS available; no MTP physical acceptance recorded.
+  remaining_acceptance: Standard userspace file transfer and activation policy; do not export mounted root filesystem
+    as raw mass storage.
+  depends_on:
+  - usb.gadget
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: usb.host
+  area: USB
+  subsystem: USB host / OTG data
+  hardware: ChipIdea host controller and HS PHY
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - config
+  - dt
+  - vendor-config
+  implemented_or_observed: Host driver built and board supports OTG; no physical peripheral test accepted.
+  remaining_acceptance: Known OTG cable with keyboard/mouse/storage, role switching and resume.
+  depends_on:
+  - usb.vbus
+  - usb.muic
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: usb.vbus
+  area: USB
+  subsystem: OTG 5 V generation and protection
+  hardware: Board charger/power switch path; exact ownership unresolved
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-board
+  - vbus
+  implemented_or_observed: Vendor contains VBUS control and charger OTG descriptions.
+  remaining_acceptance: Trace actual boost/switch route, current limit and backfeed protection before claiming powered
+    host mode.
+  depends_on:
+  - power.charging
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: usb.muic
+  area: USB
+  subsystem: Cable, charger and accessory detection
+  hardware: Silicon Mitus SM5502 MUIC at 0x25
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - dt
+  - vendor-board
+  - charging
+  implemented_or_observed: Native extcon driver binds and powers charging source detection.
+  remaining_acceptance: Every relevant USB/charger/OTG cable type and attach/detach IRQ through suspend.
+  depends_on: []
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: usb.accessories
+  area: USB
+  subsystem: Wired accessory routing
+  hardware: SM5502 UART/jig, LAN hub/dock and simultaneous power cases
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-config
+  - vendor-board
+  implemented_or_observed: Vendor enables LANHUB_TA and has UART selection GPIO; not native acceptance.
+  remaining_acceptance: Identify supported physical accessories and verify only fitted paths; no standalone dock
+    assumed.
+  depends_on:
+  - usb.muic
+  - usb.host
+  priority: P3
+  evidence_states:
+  - VERIFIED_VENDOR_SOURCE
+- id: radio.shared
+  area: Wi-Fi and Bluetooth
+  subsystem: Shared wireless subsystem
+  hardware: Pronto/WCNSS + WCN3660, stock firmware/NV, SMD
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - live
+  - firmware
+  - wifi
+  - bt
+  implemented_or_observed: WCNSS running; shared stock firmware verified; Wi-Fi and BT initialize.
+  remaining_acceptance: Reliable firmware crash/hot restart, rail/power ownership and calibration lifecycle.
+  depends_on:
+  - core.ipc
+  - core.nvmem
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: wifi.managed
+  area: Wi-Fi and Bluetooth
+  subsystem: Wi-Fi station
+  hardware: One WCN3660 radio, 802.11a/b/g/n, 2.4/5 GHz
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - wifi
+  - live
+  implemented_or_observed: Real managed DHCP/SSH traffic and return after monitor accepted.
+  remaining_acceptance: Band/rate/security/roaming matrix, resume and stability; not Wi-Fi 5/ac.
+  depends_on:
+  - radio.shared
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: wifi.ap
+  area: Wi-Fi and Bluetooth
+  subsystem: Wi-Fi access point
+  hardware: wcn36xx/mac80211 + hostapd
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - wifi
+  implemented_or_observed: WPA2 AP with independent client DHCP, ping 4/4 and HTTP 200 passed.
+  remaining_acceptance: PMF-required/WPA3 are not established; all bands and multiclient behavior.
+  depends_on:
+  - radio.shared
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: wifi.monitor
+  area: Wi-Fi and Bluetooth
+  subsystem: Monitor and raw injection
+  hardware: Standalone monitor RX/filter/raw TX
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - wifi
+  implemented_or_observed: Raw RX, authorized probe/data responses and hcxdumptool handshake capture passed.
+  remaining_acceptance: Advanced radiotap/RF/FCS controls and loss characterization; exclusive monitor only.
+  depends_on:
+  - radio.shared
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: wifi.concurrent
+  area: Wi-Fi and Bluetooth
+  subsystem: Concurrent Wi-Fi roles
+  hardware: Managed/AP plus monitor or multiple VIF combinations
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - wifi
+  implemented_or_observed: Unrestricted monitor + normal data interfaces is not implemented.
+  remaining_acceptance: Firmware/interface-combination support and real independent-client tests.
+  depends_on:
+  - wifi.managed
+  - wifi.ap
+  - wifi.monitor
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: wifi.p2p
+  area: Wi-Fi and Bluetooth
+  subsystem: Wi-Fi Direct and wireless display transport
+  hardware: P2P GO/client; Miracast is a userspace feature
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - wifi
+  - manual
+  implemented_or_observed: No native end-to-end P2P acceptance; not a separate Wi-Fi adapter.
+  remaining_acceptance: Capability audit and peer connection/data; Miracast additionally needs video encode and
+    policy.
+  depends_on:
+  - wifi.managed
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: wifi.pm
+  area: Wi-Fi and Bluetooth
+  subsystem: Wi-Fi power saving and restart
+  hardware: mac80211 power save, WCNSS suspend/wake/recovery
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - wifi
+  implemented_or_observed: Ordinary networking works; firmware hot-restart failure documented.
+  remaining_acceptance: Sleep traffic recovery, WoWLAN capability and measured idle draw; no hot-unbind as normal
+    mode switch.
+  depends_on:
+  - wifi.managed
+  - power.sleep
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: wifi.regulatory
+  area: Wi-Fi and Bluetooth
+  subsystem: Radio channels, DFS and RF controls
+  hardware: Factory WCNSS NV + cfg80211 regulatory limits
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - wifi
+  - firmware
+  implemented_or_observed: 38 supported channels tune in short test; NV lacks channel144, now correctly excluded.
+  remaining_acceptance: Country/DFS/CAC/HT40/TX power/antenna features only as firmware and regulation permit.
+  depends_on:
+  - wifi.managed
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: bt.controller
+  area: Wi-Fi and Bluetooth
+  subsystem: Bluetooth controller
+  hardware: Same WCN3660; native btqcomsmd; Bluetooth 4.0 BR/EDR + LE
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: WORKING
+  evidence_refs:
+  - bt
+  - live
+  implemented_or_observed: HCI version6, factory identity, discovery and pairing observed.
+  remaining_acceptance: Classic security/profile matrix and controller recovery; controller version is not BT5 from
+    mouse branding.
+  depends_on:
+  - radio.shared
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: bt.ble
+  area: Wi-Fi and Bluetooth
+  subsystem: BLE HID and basic GATT
+  hardware: BlueZ, HID over GATT, UHID/evdev
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: VERIFIED
+  evidence_refs:
+  - bt
+  implemented_or_observed: Owner Baseus mouse paired/bonded; 982 relative + 2 button events; physical operation
+    confirmed.
+  remaining_acceptance: Other GATT devices and repeated reconnect; acceptance is this BLE HID test only.
+  depends_on:
+  - bt.controller
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: bt.classic
+  area: Wi-Fi and Bluetooth
+  subsystem: Classic pairing, HID and profiles
+  hardware: BR/EDR, HIDP, SSP, BlueZ
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: IMPLEMENTING
+  evidence_refs:
+  - bt
+  - config
+  implemented_or_observed: Controller advertises Classic; kernel HIDP/profile infrastructure available.
+  remaining_acceptance: Real Classic-device pairing and HID/data; BLE success does not cover Classic.
+  depends_on:
+  - bt.controller
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: bt.audio
+  area: Wi-Fi and Bluetooth
+  subsystem: Bluetooth music and remote controls
+  hardware: A2DP/AVRCP through PipeWire/BlueZ
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: IMPLEMENTING
+  evidence_refs:
+  - bt
+  implemented_or_observed: PipeWire Bluetooth endpoints registered.
+  remaining_acceptance: Real output/input and codec/reconnect/latency acceptance; registration is not audio playback.
+  depends_on:
+  - bt.controller
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: bt.voice
+  area: Wi-Fi and Bluetooth
+  subsystem: Bluetooth voice
+  hardware: HFP/HSP and SCO/eSCO/PCM audio route
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - bt
+  - bt-driver
+  - vendor-soc
+  implemented_or_observed: Profile infrastructure alone does not implement this board voice route.
+  remaining_acceptance: Audit SCO transport/PCM/ADSP path and real microphone+speaker call audio.
+  depends_on:
+  - bt.controller
+  - audio.dsp
+  - audio.codec
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_UPSTREAM
+  - VERIFIED_VENDOR_SOURCE
+- id: bt.data
+  area: Wi-Fi and Bluetooth
+  subsystem: Bluetooth networking and serial/file profiles
+  hardware: BNEP/PAN, RFCOMM/TTY; OBEX profiles
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: IMPLEMENTING
+  evidence_refs:
+  - bt
+  - config
+  implemented_or_observed: BNEP and RFCOMM modules enabled.
+  remaining_acceptance: Real PAN traffic/RFCOMM transfer; OBEX/PBAP/MAP need explicit userspace services if desired.
+  depends_on:
+  - bt.controller
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: bt.pm
+  area: Wi-Fi and Bluetooth
+  subsystem: Bluetooth sleep and reconnection
+  hardware: WCNSS/BlueZ bonding, radio wake/runtime PM
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - bt
+  implemented_or_observed: One recovery reconnect worked; no BT sleep acceptance.
+  remaining_acceptance: Repeated system sleep, radio toggle, automatic mouse/audio reconnect and idle power.
+  depends_on:
+  - bt.controller
+  - power.sleep
+  priority: P1
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: radio.coexistence
+  area: Wi-Fi and Bluetooth
+  subsystem: Wi-Fi/Bluetooth coexistence
+  hardware: Shared WCNSS/antenna scheduling
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: PARTIAL
+  evidence_refs:
+  - bt
+  - wifi
+  implemented_or_observed: 'Both initialize on #19; no controlled simultaneous throughput/audio test.'
+  remaining_acceptance: Loaded Wi-Fi plus BLE/audio without resets, input stalls or excess draw.
+  depends_on:
+  - wifi.managed
+  - bt.controller
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: audio.dsp
+  area: Audio
+  subsystem: Audio DSP and transport
+  hardware: Q6 ADSP/LPASS, APR/AFE/ASM and SLIMbus NGD/BAM
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-soc
+  - vendor-audio
+  - dt
+  - config
+  - live
+  - android
+  implemented_or_observed: Android binds pil-q6v5-lpass and exposes an ALSA card; native ADSP/SLIMbus remain disabled.
+  remaining_acceptance: Native ADSP firmware/services and SLIMbus transfer before endpoint acceptance.
+  depends_on:
+  - core.ipc
+  - core.dma
+  - core.clocks
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: audio.codec
+  area: Audio
+  subsystem: Analog audio codec
+  hardware: Qualcomm WCD9306/Tapan, detected under Android; SLIMbus, MCLK 9.6 MHz
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-audio
+  - vendor-full-config
+  - vendor-board
+  - live
+  - android
+  implemented_or_observed: Running Android reports wcd9306 detected, SLIMbus devices and msm8226-tapan-snd-card;
+    current native system has no ALSA card.
+  remaining_acceptance: Native codec/regulator/reset/IRQ integration and actual playback/recording acceptance.
+  depends_on:
+  - audio.dsp
+  - core.regulators
+  priority: P2
+  evidence_states:
+  - HISTORICAL_SOURCE
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: audio.speakers
+  area: Audio
+  subsystem: Built-in speakers and amplifier routing
+  hardware: Two speakers in SM-T531 manual; board GPIO23/24 enables
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - manual
+  - vendor-board
+  - live
+  implemented_or_observed: Physical endpoints documented, no accepted native sound.
+  remaining_acceptance: Real left/right playback, gain/pop/protection and speaker power-off.
+  depends_on:
+  - audio.codec
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: audio.mic
+  area: Audio
+  subsystem: Built-in microphone recording
+  hardware: Main microphone; additional vendor mic routes need board confirmation
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - manual
+  - vendor-board
+  implemented_or_observed: Manual shows microphone; vendor generic routing also names Sub Mic.
+  remaining_acceptance: Record intelligible audio, gain/noise and channel selection; do not assume every generic
+    route is populated.
+  depends_on:
+  - audio.codec
+  priority: P2
+  evidence_states:
+  - VERIFIED_VENDOR_SOURCE
+- id: audio.headphones
+  area: Audio
+  subsystem: 3.5 mm stereo output
+  hardware: WCD9306 headphone DAC/amplifier and headset jack
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - manual
+  - vendor-board
+  implemented_or_observed: Jack is present in manual/vendor wiring.
+  remaining_acceptance: Real stereo audio, insertion/removal routing and safe volume.
+  depends_on:
+  - audio.codec
+  priority: P2
+  evidence_states:
+  - VERIFIED_VENDOR_SOURCE
+- id: audio.headset
+  area: Audio
+  subsystem: Headset detection, microphone and buttons
+  hardware: Detect GPIO69, send/end111, ADC/micbias
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-top-r02
+  - vendor-board
+  implemented_or_observed: Exact matisse3g earjack override found in r02 DTS.
+  remaining_acceptance: Native ALSA jack/extcon classification and real 3/4-pole headset microphone/buttons.
+  depends_on:
+  - audio.codec
+  - power.battery
+  priority: P2
+  evidence_states:
+  - VERIFIED_VENDOR_SOURCE
+- id: audio.policy
+  area: Audio
+  subsystem: Desktop audio integration
+  hardware: ALSA topology/UCM and PipeWire/WirePlumber
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - live
+  - bt
+  implemented_or_observed: Userspace audio stack installed; built-in card absent.
+  remaining_acceptance: Board UCM routes, mic permissions, calls/media selection and idle power.
+  depends_on:
+  - audio.speakers
+  - audio.mic
+  - audio.headphones
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+- id: camera.rear
+  area: Camera and video
+  subsystem: Rear camera sensor
+  hardware: SR352, about 3 MP, vendor YUV sensor program
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-config
+  - vendor-camera
+  - vendor-sr352
+  - live
+  - android
+  implemented_or_observed: Android probes SR352, verifies chip ID 0xc2 and exposes SILICONFILE_SR352; no native
+    capture node.
+  remaining_acceptance: Native sensor driver, safe supplies and real image capture; Android probing is presence
+    evidence only.
+  depends_on:
+  - camera.pipeline
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: camera.front
+  area: Camera and video
+  subsystem: Front camera sensor
+  hardware: SR130PC20, about 1.3 MP, vendor YUV sensor program
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-config
+  - vendor-camera
+  - vendor-sr130
+  - live
+  - android
+  implemented_or_observed: Android probes SR130PC20, verifies chip ID 0xc1 and exposes SILICONFILE_SR130PC20.
+  remaining_acceptance: Native front sensor integration and actual captured images.
+  depends_on:
+  - camera.pipeline
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: camera.pipeline
+  area: Camera and video
+  subsystem: Camera receiver and image pipeline
+  hardware: CAMSS CCI, MCLK, CSIPHY/CSID, ISPIF/VFE, CPP/VPE where fitted
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-camera
+  - vendor-camss
+  - dt
+  - live
+  implemented_or_observed: CCI SoC description exists disabled; vendor camera resources mapped.
+  remaining_acceptance: MSM8226 native media graph, DMA/IOMMU/clocks and V4L2 streaming; modern CAMSS presence is
+    not board support.
+  depends_on:
+  - core.iommu
+  - core.dma
+  - core.clocks
+  - core.regulators
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: camera.jpeg
+  area: Camera and video
+  subsystem: JPEG acceleration
+  hardware: Qualcomm JPEG engine in vendor camera subsystem
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-camss
+  - live
+  implemented_or_observed: Vendor camera source describes engine; no native media node.
+  remaining_acceptance: Confirm exact hardware/revision, native mem2mem integration and encode/decode test.
+  depends_on:
+  - camera.pipeline
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: video.codec
+  area: Camera and video
+  subsystem: Hardware video decoding and encoding
+  hardware: Qualcomm Venus VIDC, firmware and video IOMMU
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - vendor-soc
+  - live
+  - config
+  - android
+  implemented_or_observed: Android binds pil_venus; current native system has no video/media nodes.
+  remaining_acceptance: Native MSM8226 HFI/firmware/resources and real decode/encode; Android binding alone is not
+    video acceptance.
+  depends_on:
+  - core.iommu
+  - core.dma
+  - memory.interconnect
+  priority: P2
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: modem.boot
+  area: Cellular and location
+  subsystem: Cellular baseband and RF
+  hardware: Integrated MPSS/Q6 modem, MBA, RF transceiver/front end
+  presence_evidence: VERIFIED_DEVICE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - manual
+  - dt
+  - vendor-soc
+  - recovery
+  - android
+  implemented_or_observed: Android binds pil-q6v5-mss; native modem DT remains disabled. No cellular traffic/call
+    test performed in this audit.
+  remaining_acceptance: Identify RF parts, preserve NV and bring up native remoteproc/RMTFS/QMI.
+  depends_on:
+  - core.ipc
+  - core.regulators
+  - core.nvmem
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: modem.sim
+  area: Cellular and location
+  subsystem: SIM and network registration
+  hardware: Single SIM slot, UIM/QMI, GSM/UMTS RF
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - manual
+  - dt
+  implemented_or_observed: Manual documents SIM/cellular use; no native modem service accepted.
+  remaining_acceptance: Real SIM detection/PIN, antenna/bands and operator registration.
+  depends_on:
+  - modem.boot
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: modem.data
+  area: Cellular and location
+  subsystem: Cellular packet data
+  hardware: GSM/GPRS/EDGE and UMTS/HSPA; BAM-DMUX/QMI networking
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - manual
+  - dt
+  - vendor-soc
+  implemented_or_observed: Generic modem/BAM-DMUX source exists, board modem disabled; SM-T531 is not LTE model.
+  remaining_acceptance: Native control/data path and real IP traffic through an owner SIM.
+  depends_on:
+  - modem.sim
+  - core.dma
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: modem.sms
+  area: Cellular and location
+  subsystem: SMS/MMS services
+  hardware: QMI messaging; MMS is userspace over mobile data
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - manual
+  - dt
+  implemented_or_observed: No native SMS acceptance recorded.
+  remaining_acceptance: Send/receive real SMS and notification/wakeup; MMS needs separate data/APN/client acceptance.
+  depends_on:
+  - modem.sim
+  priority: P3
+  evidence_states:
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: modem.calls
+  area: Cellular and location
+  subsystem: Voice calls and call audio
+  hardware: 2G/3G modem voice + ADSP/codec routes
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - manual
+  - vendor-audio
+  implemented_or_observed: Stock manual documents calls; neither signaling nor audio is accepted in Linux.
+  remaining_acceptance: Incoming/outgoing call, two-way audio, routing, suspend wake; emergency behavior requires
+    separate care.
+  depends_on:
+  - modem.sim
+  - audio.dsp
+  - audio.codec
+  priority: P3
+  evidence_states:
+  - VERIFIED_VENDOR_SOURCE
+- id: modem.gnss
+  area: Cellular and location
+  subsystem: Satellite positioning
+  hardware: Qualcomm location subsystem; GPS antenna; supported constellations need confirmation
+  presence_evidence: VERIFIED_VENDOR_SOURCE
+  implementation_state: RESEARCHING
+  evidence_refs:
+  - manual
+  - vendor-soc
+  implemented_or_observed: GPS antenna/location documented; native position fix absent.
+  remaining_acceptance: Establish firmware/control path (likely modem QMI LOC, still hypothesis), cold fix, tracking
+    and suspend/power policy.
+  depends_on:
+  - modem.boot
+  priority: P3
+  evidence_states:
+  - VERIFIED_VENDOR_SOURCE
+  - HYPOTHESIS
+- id: optional.alsprox
+  area: Unconfirmed or variant-only
+  subsystem: Ambient light / optical proximity
+  hardware: CM36653/TMD2672 in early r00 templates
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-r00
+  - vendor-board
+  - vendor-full-config
+  - live
+  implemented_or_observed: Missing from r02; relevant drivers disabled in full matisse3g config; HasAmbientLight=false
+    now.
+  remaining_acceptance: Treat as unconfirmed population, not a missing working sensor; BOM/physical confirmation
+    first.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - HISTORICAL_SOURCE
+  - UNKNOWN
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: optional.compassgyro
+  area: Unconfirmed or variant-only
+  subsystem: Magnetometer / gyroscope
+  hardware: Early HSCDTD008 and other generic sensor options
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-r00
+  - vendor-full-config
+  - live
+  implemented_or_observed: No device in current DT; gyro/compass options disabled in full config.
+  remaining_acceptance: No basis to promise these sensors; distinguish sensor fusion from a physically fitted gyro/compass.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - HISTORICAL_SOURCE
+  - UNKNOWN
+  - VERIFIED_DEVICE
+- id: optional.ir
+  area: Unconfirmed or variant-only
+  subsystem: Infrared remote transmitter
+  hardware: MC96FR332/MC96FR116 family, early/common board variants
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-ir
+  - vendor-r00
+  - vendor-board
+  - vendor-gpiomux
+  - vendor-full-config
+  implemented_or_observed: r00/r01 include IR node; r02 omits it; full matisse3g driver disabled and GPIO4/62 marked
+    NC.
+  remaining_acceptance: Confirm actual fitted hardware before porting; Wi-Fi/US variants are not evidence for SM-T531.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - HISTORICAL_SOURCE
+  - UNKNOWN
+  - VERIFIED_VENDOR_SOURCE
+- id: optional.nfc
+  area: Unconfirmed or variant-only
+  subsystem: NFC
+  hardware: SEC NFC/PN547 generic family alternatives
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-board
+  - vendor-full-config
+  implemented_or_observed: Board NFC block commented out; matisse3g NFC configs disabled.
+  remaining_acceptance: Not confirmed as fitted on SM-T531; no porting task unless BOM/physical evidence establishes
+    it.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - HISTORICAL_SOURCE
+  - UNKNOWN
+  - VERIFIED_VENDOR_SOURCE
+- id: optional.fm
+  area: Unconfirmed or variant-only
+  subsystem: FM broadcast radio
+  hardware: WCN3660/Qualcomm iris FM capability
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-soc
+  - vendor-full-config
+  - android
+  implemented_or_observed: Running Android actually enables RADIO_IRIS/TRANSPORT and binds iris_fm, contrary to
+    the inspected Lineage defconfig; no native FM or real reception tested.
+  remaining_acceptance: Verify firmware commands, RF/antenna/audio routing and real reception before calling usable
+    FM hardware present.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - HISTORICAL_SOURCE
+  - UNKNOWN
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+- id: optional.videoout
+  area: Unconfirmed or variant-only
+  subsystem: Wired external display
+  hardware: Possible MHL/HDMI accessory claims; no verified board transmitter
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - manual
+  - vendor-board
+  - vendor-soc
+  - config
+  implemented_or_observed: No dedicated connector in manual layout or board MHL transmitter identified in inspected
+    DT; no accepted output.
+  remaining_acceptance: Do not assume MHL from accessory listings or generic HDMI audio DAI; obtain schematic/BOM
+    evidence.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - UNKNOWN
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: optional.flashaf
+  area: Unconfirmed or variant-only
+  subsystem: Camera flash, autofocus and calibration peripherals
+  hardware: Generic PM8226 flash nodes; no proven physical LED/actuator/EEPROM
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-camera
+  - vendor-board
+  - vendor-config
+  implemented_or_observed: Vendor templates include flash even for this camera file; this does not establish physical
+    population.
+  remaining_acceptance: Confirm modules/flash/actuator/OTP/EEPROM before adding nodes; never activate generic high-current
+    flash blindly.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - UNKNOWN
+  - VERIFIED_VENDOR_SOURCE
+- id: optional.ant
+  area: Unconfirmed or variant-only
+  subsystem: ANT / ANT+
+  hardware: Potential shared-radio service
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-config
+  - bt
+  - wifi
+  implemented_or_observed: No inspected board-specific source or native hardware test establishes usable ANT.
+  remaining_acceptance: Find actual firmware endpoint/product support and a physical ANT peer before calling it
+    present.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - UNKNOWN
+  - VERIFIED_DEVICE
+  - VERIFIED_VENDOR_SOURCE
+- id: optional.ethernet
+  area: Unconfirmed or variant-only
+  subsystem: Built-in Ethernet / HSIC and dock
+  hardware: KS8851/HSIC generic reference-board nodes; USB Ethernet separate
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-board
+  - vendor-soc
+  - vendor-config
+  implemented_or_observed: KS8851 node disabled; no physical built-in Ethernet established; vendor lists USB dongle
+    drivers.
+  remaining_acceptance: Do not count generic node as a populated NIC; USB Ethernet can be tested after USB host
+    works.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - UNKNOWN
+  - VERIFIED_VENDOR_SOURCE
+- id: optional.other
+  area: Unconfirmed or variant-only
+  subsystem: Other product-family options
+  hardware: Fingerprint, barometer, sensor hub, S Pen, TV tuner, wireless charging
+  presence_evidence: UNKNOWN
+  implementation_state: UNKNOWN
+  evidence_refs:
+  - vendor-full-config
+  - manual
+  implemented_or_observed: No positive SM-T531 board-specific evidence in inspected sources/current device.
+  remaining_acceptance: Outside confirmed inventory until physical/BOM evidence; shared kernel options alone do
+    not imply population.
+  depends_on: []
+  priority: P3
+  evidence_states:
+  - HISTORICAL_SOURCE
+  - UNKNOWN
+  - VERIFIED_VENDOR_SOURCE
+android_audit:
+  report: docs/ANDROID-HARDWARE-AUDIT.md
+  observations: docs/android-hardware-observation-20261022.json
+  board_revision_reported: '0003'
+  selected_dt: r02 (explicit compatible QCDT metadata; original FDT bytes unchanged)
+  native_acceptance_unchanged: true
+  boot_restored_exact: true

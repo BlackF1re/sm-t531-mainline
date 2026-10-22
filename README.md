@@ -29,15 +29,18 @@
 | 🟡 **Suspend** | Earlier profiles passed s2idle / standby / standalone CPU-L2 collapse and physical wake/desktop checks | Repeat acceptance on the current native profile; whole-SoC savings, display power sequencing and power draw |
 | 🟡 **Battery** | PM8226 BMS voltage/current/temperature/coulombs and modeled SOC | Capacity / aging / full-cycle accuracy |
 | 🟡 **Wi-Fi** | Managed, WPA2 AP, raw standalone monitor + probe/data injection | [Tested scope](docs/WIFI.md); firmware restart, PMF and RF-control limitations |
-| ⚪ **Bluetooth / audio** | Hardware identified, limited bring-up | Untested / deferred |
+| 🟡 **Bluetooth** | Native WCN3660 controller, discovery/pairing and BLE mouse | Audio/data profiles, Classic and sleep acceptance pending |
+| ⚪ **Built-in audio** | WCD9306/SLIMbus confirmed under Android | Native ADSP/ALSA card not brought up |
 | ⚪ **Modem / cameras** | — | Not brought up / untested |
 
 > [!NOTE]
 > **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](docs/GRAPHICS-STABILITY.md), [battery evidence](docs/BATTERY.md), and [patch review](docs/PATCH-REVIEW.md).
 
-Evidence spans several kernel and display profiles. **Latest installed profile**, rechecked on **2026-10-22**: kernel `7.2.9-dirty #16`, native split GPU/KMS, Mesa **25.0.7**, Phoc **0.46.0**, Phosh **0.58.0-1~t5313**, Debian **13.7**. This check confirmed processes, DRM ownership, module hash and battery interfaces; it adds no new physical display, FPS or suspend acceptance. Firmware bridge power, `FD_MESA_DEBUG=inorder` and a device-local GPU runtime hold remain in use.
+Evidence spans several kernel and display profiles. **Latest installed profile**, rechecked on **2026-10-22**: kernel `7.2.9-t531-dirty #19`, native split GPU/KMS, Mesa **25.0.7**, Phoc **0.46.0**, Phosh **0.58.0-1~t5313**, Debian **13.7**. This check confirmed processes, DRM ownership, module hash and battery interfaces; it adds no new physical display, FPS or suspend acceptance. Firmware bridge power, `FD_MESA_DEBUG=inorder` and a device-local GPU runtime hold remain in use.
 
 On **2026-10-22**, kernel #16 consolidates [WCN3660 support](docs/WIFI.md) into one kernel patch, selects software scanning without the known HAL208 timeout, clears stale scan state and excludes the unsupported channel 144 through standard OF limits. Managed, WPA2 AP, raw monitor, probe/data injection and hcxdumptool handshake capture passed short tests. Configuration/MSM module are unchanged; DTB adds only the frequency limit. Monitor is exclusive; firmware hot restart, PMF and advanced RF controls remain incomplete or unvalidated.
+
+The **[full hardware matrix](docs/HARDWARE.md)** tracks 108 porting/acceptance tasks, with sources, remaining tests and [machine-readable dependencies](status/hardware.yaml). The [temporary Android cross-check](docs/ANDROID-HARDWARE-AUDIT.md) confirms several component identities; original internal BOOT was restored byte-for-byte. Android observations do not establish native Linux acceptance.
 
 ## Boot flow
 
@@ -76,7 +79,7 @@ Detailed prerequisites, mount layout, deployment options and recovery-safe comma
 | [Samsung downstream kernel](https://github.com/LineageOS/android_kernel_samsung_msm8226/tree/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256) | Hardware research **only**; not imported wholesale |
 | [matisse3g device config](https://github.com/matissewifi/android_device_samsung_matisse3g/tree/cf5a3b04f9598d6756113b79df64e91aa53868d9) | Hardware reference |
 
-Linux patch files live in [`patches/linux/`](patches/linux); board and build configuration in [`config/`](config). The port currently applies **124 local kernel patches** to the pinned upstream base, including bring-up diagnostics and unmerged changes. Original licensing and authorship are retained. Original source pins were recorded on **2026-10-13**; later device results and upstream checks carry their own dates.
+Linux patch files live in [`patches/linux/`](patches/linux); board and build configuration in [`config/`](config). The port currently applies **120 local kernel patches** to the pinned upstream base, including bring-up diagnostics and unmerged changes. Original licensing and authorship are retained. Original source pins were recorded on **2026-10-13**; later device results and upstream checks carry their own dates.
 
 </details>
 
@@ -84,6 +87,7 @@ Linux patch files live in [`patches/linux/`](patches/linux); board and build con
 
 | Area | Start here |
 |---|---|
+| Hardware inventory / porting order | [Full functional matrix](docs/HARDWARE.md) · [Machine-readable tasks](status/hardware.yaml) |
 | 🖥️ **Native screen / DSI / LVDS** | [Native KMS](docs/NATIVE-KMS.md) · [Graphics stability](docs/GRAPHICS-STABILITY.md) |
 | 🎮 **Rendering performance** | [Graphics](docs/GRAPHICS.md) · [Bottlenecks](docs/GRAPHICS-BOTTLENECK.md) · [Memory bus](docs/MEMORY-BUS.md) |
 | 📱 **Mobile shell** | [Phosh](docs/PHOSH.md) · [Backlight](docs/BACKLIGHT.md) |

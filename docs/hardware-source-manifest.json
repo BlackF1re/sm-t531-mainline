@@ -1,0 +1,262 @@
+{
+  "retrieved": "2026-10-22",
+  "repository": "https://github.com/LineageOS/android_kernel_samsung_msm8226",
+  "commit": "3fa1853ed5d6c3a8ef5a2fda9822705243bbc256",
+  "license": "GPL-2.0 (see individual file headers); used only as hardware research",
+  "include_closure": [
+    "arch/arm/boot/dts/msm8226/batterydata-mtp-3000mah.dtsi",
+    "arch/arm/boot/dts/msm8226/batterydata-palladium.dtsi",
+    "arch/arm/boot/dts/msm8226/dsi_panel_tc358764_wxga_video-r01.dtsi",
+    "arch/arm/boot/dts/msm8226/dsi_panel_tc358764_wxga_video.dtsi",
+    "arch/arm/boot/dts/msm8226/msm-gdsc.dtsi",
+    "arch/arm/boot/dts/msm8226/msm-iommu-v1.dtsi",
+    "arch/arm/boot/dts/msm8226/msm-pm8226-rpm-regulator.dtsi",
+    "arch/arm/boot/dts/msm8226/msm-pm8226.dtsi",
+    "arch/arm/boot/dts/msm8226/msm-rdbg.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-bus.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-camera-sensor-mtp-matisse_eur-r02.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-camera.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-coresight.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-gpu.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-iommu-domains.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-iommu.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-ion.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-mc96irda.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-mdss.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-regulator.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r00.dts",
+    "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r00.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r01.dts",
+    "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r01.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r02.dts",
+    "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r02.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-smp2p.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-v2-pm.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226-v2.dtsi",
+    "arch/arm/boot/dts/msm8226/msm8226.dtsi",
+    "arch/arm/boot/dts/msm8226/skeleton.dtsi"
+  ],
+  "files": [
+    {
+      "path": "COPYING",
+      "bytes": 18693,
+      "sha256": "af8067302947c01fd9eee72befa54c7e3ef8a48fecde7fd71277f2290b2bf0f7"
+    },
+    {
+      "path": "Makefile",
+      "bytes": 54019,
+      "sha256": "1b4fa0d445aabb588ed65af73b456685a8d38eec916bc2a69a5f212b6704f189"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/batterydata-mtp-3000mah.dtsi",
+      "bytes": 3125,
+      "sha256": "35e34ac7a5474e2b61aa08299226746ef597bc61fd2d84ca638f284bd3e2f83a"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/batterydata-palladium.dtsi",
+      "bytes": 3216,
+      "sha256": "e5d86be325cb7157ef0659ea5e843cd8dc8f2cc2d2aba8a3566a73c9570a5493"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/dsi_panel_tc358764_wxga_video-r01.dtsi",
+      "bytes": 5969,
+      "sha256": "d0529b23ebf1093a581cd69b75ca776f868adb43318ab112ad0b9ed8d3a2ab05"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/dsi_panel_tc358764_wxga_video.dtsi",
+      "bytes": 5966,
+      "sha256": "1f39e98140eae476a37afccc6b6ee45ce10d1ea19e85f5f83b4666507f5a0e29"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm-gdsc.dtsi",
+      "bytes": 2821,
+      "sha256": "fab0c853f59ea6135b5fe3f10e5771ba66cc2c4028210e894fa0f6a09aa7dc73"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm-iommu-v1.dtsi",
+      "bytes": 20850,
+      "sha256": "efd1b72d24fcc71be34025fd58c5e4ffd8b148bb998b4b7a72cf3ab797966f32"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm-pm8226-rpm-regulator.dtsi",
+      "bytes": 11647,
+      "sha256": "4219d49e77aef752df58dac7684a8377924e250c3d10f70044c5be89bb4e91db"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm-pm8226.dtsi",
+      "bytes": 22243,
+      "sha256": "df74f127358d915a481fad070fcc4dec87c8a1c4c3a6af3306c56c9e2eac0cdc"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm-rdbg.dtsi",
+      "bytes": 2018,
+      "sha256": "f098da141b83e7ec349a7b159ee28ac6793b1c652eb6b865a1bae8449263f00f"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-bus.dtsi",
+      "bytes": 21441,
+      "sha256": "4d9cadeeaa4ddb6121a9c709aeeb95ad22b1431b2eee46167c16efdaea4f200e"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-camera-sensor-mtp-matisse_eur-r02.dtsi",
+      "bytes": 2833,
+      "sha256": "bca230fbeb5a4d8830dd732de955ad28b36c857d82fa9e5b8f37a7948f6b45ac"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-camera.dtsi",
+      "bytes": 3481,
+      "sha256": "a5b5a805a1a12381960c6f7c3f81236bb255729f6fa4df5b5e984460b091a89f"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-coresight.dtsi",
+      "bytes": 11358,
+      "sha256": "2d93bc3a78709fbcda24331d93a59a27bc265f80b22a28998b4c38e7b5301761"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-gpu.dtsi",
+      "bytes": 4170,
+      "sha256": "a3f455919bce1b50d04359f3fda2a60981e9646cdc2d9ccae73fc69fc11965fc"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-iommu-domains.dtsi",
+      "bytes": 1003,
+      "sha256": "b6f2a4321602d58b21f4170753144749d9cc7d42e050407bddb49e80db9a74e2"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-iommu.dtsi",
+      "bytes": 3289,
+      "sha256": "ca9bcc3c1e3bc97ae54cca6c8f0f6854e615bde113d952dffc937fd776897ade"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-ion.dtsi",
+      "bytes": 2002,
+      "sha256": "80397e64a938e5d1f34c1ebbb537194f8a56cf45454bb34dd983e537b4d629a6"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-mc96irda.dtsi",
+      "bytes": 1431,
+      "sha256": "10a877508920368da9f9c7059f921c1a493dfed55cab76b9a3c9668ead97c382"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-mdss.dtsi",
+      "bytes": 3974,
+      "sha256": "97b373899dd12a7632607b66ced22a48bc0789c814862a9af5e91dec8e3671fb"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-regulator.dtsi",
+      "bytes": 13128,
+      "sha256": "a959563ea34dd6fb69e7f31344283474db7a99147819593308f2058c082e9257"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r00.dts",
+      "bytes": 3531,
+      "sha256": "902ebd14b8424f6ee01f37189faed0825b414a8ae7c46448f8bb2b8b1a75c6c7"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r00.dtsi",
+      "bytes": 22131,
+      "sha256": "4b953d63136f5427afecedec1abfce5cd950f2db1dee8876a6d64251dd9855f4"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r01.dts",
+      "bytes": 3534,
+      "sha256": "95965a4c984ee338a68106910c9a07c40ab46f32f6fd20eea9bd771410c61a62"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r01.dtsi",
+      "bytes": 20673,
+      "sha256": "c1eaf3818fd6f41f439d43b1de6f7cbb77e975a561e99f9d625b488e414e92d2"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r02.dts",
+      "bytes": 3425,
+      "sha256": "4b6fc8bfcef4c21cbc8f5d7f05a1d95af370569897b7d1db212855d789755a71"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r02.dtsi",
+      "bytes": 20687,
+      "sha256": "356c2e0a68bac7771a7585b00afa262e5e1f2d986c03c9f9415fc5410ff27d05"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-smp2p.dtsi",
+      "bytes": 5657,
+      "sha256": "d2b8f41e25dc32d70e0f4b0e9b4ef0e143fe62897e952272de3f1419ec7a131d"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-v2-pm.dtsi",
+      "bytes": 9950,
+      "sha256": "9b90788e727f799876f64c1083dfe1a9a6bfa21b121715a8ba06392d78ea149d"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226-v2.dtsi",
+      "bytes": 3026,
+      "sha256": "12f533c2638c8ce7099de5d8c346294ab03c02405ee2a834657b5e7cda536520"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/msm8226.dtsi",
+      "bytes": 43540,
+      "sha256": "c08b6456fb614f2a08d570eb6bec286b983466e29e32796479bcf9f452b4c154"
+    },
+    {
+      "path": "arch/arm/boot/dts/msm8226/skeleton.dtsi",
+      "bytes": 347,
+      "sha256": "5bb7a1314e8be3f43e2c34ab92a0ce0b26a8ac6368571f70ce470ec31a76236a"
+    },
+    {
+      "path": "arch/arm/configs/lineage_matisse3g_defconfig",
+      "bytes": 124846,
+      "sha256": "472496dd23aa90cc56bce478aff79bbfd67fba187b680b3ec0612865ae4d5a8e"
+    },
+    {
+      "path": "arch/arm/configs/msm8226-sec_matisse3g_defconfig",
+      "bytes": 2586,
+      "sha256": "8ec735df7a66ad67fd6eec9e64e4268508a08d0ffe1eb8f0de5683b278fb01ca"
+    },
+    {
+      "path": "arch/arm/mach-msm/board-8226.c",
+      "bytes": 9135,
+      "sha256": "1ee5c6514fec61bb2307ec51fe6a87466129cf0121b9c86b07616523c596a085"
+    },
+    {
+      "path": "arch/arm/mach-msm/board-matisse-gpiomux.c",
+      "bytes": 45039,
+      "sha256": "8bec053b506e7ced0b99a136e2fe47402ff03c5532fb449b66269bc180477d84"
+    },
+    {
+      "path": "arch/arm/mach-msm/sec_thermistor_8226.c",
+      "bytes": 9668,
+      "sha256": "2a614456a94bd72ecdbb72f40a57b39e95db2cebea7b0c5fcf008c702fd3f604"
+    },
+    {
+      "path": "drivers/media/platform/msm/camera_v2/sensor/sr130pc20_yuv.c",
+      "bytes": 23220,
+      "sha256": "ace56e6f4ee6ac452ab9cbb7f61ce67017117a1e6ee9385a690d9aa7f9594ba4"
+    },
+    {
+      "path": "drivers/media/platform/msm/camera_v2/sensor/sr352_yuv.c",
+      "bytes": 88487,
+      "sha256": "22a6e94c90435c7a4cf67df442de9d4364e4a7c36c6f704966b8d2cf5131ef20"
+    },
+    {
+      "path": "drivers/motor/isa1200_vibrator.c",
+      "bytes": 12676,
+      "sha256": "f48dbeffe1153f55ecde6a29c8ae61c4fabca0d2db997440514280519234cb87"
+    },
+    {
+      "path": "drivers/sensors/sx9500.c",
+      "bytes": 40669,
+      "sha256": "328c3067efe500344931c8cda7ea6aab71e1587b7bfa0bd63398fd09167ef5bc"
+    },
+    {
+      "path": "sound/soc/msm/msm8226.c",
+      "bytes": 85504,
+      "sha256": "2aa4bf29b0da30686e90777bf59ab8a4f200a455e30d68f7ec3ad84dce8f1d7c"
+    }
+  ],
+  "manual": {
+    "url": "https://downloadcenter.samsung.com/content/UM/201506/20150602135914448/SM-T531_UM_EU_Lollipop_Eng_Rev.1.0_150602.pdf",
+    "revision": "1.0, 2015-06-02",
+    "sha256": "c7a2ed89abf69df86530d0851fb902932c72a3b45eba10be430bc2d046edd764",
+    "license": "Samsung copyrighted user manual; not redistributed"
+  }
+}

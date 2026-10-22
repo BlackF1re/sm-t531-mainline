@@ -1,0 +1,1052 @@
+{
+  "observed_at": "2026-10-22T08:06:06.355511+00:00",
+  "device": "SM-T531 (project owner tablet)",
+  "kernel": "7.2.9-t531-dirty #19 SMP Thu Oct 22 02:24:56 +07 2026",
+  "collection": "Read-only SSH proc/sysfs/source snapshot; no functional test, register write, RF scan, suspend or reboot. No device identities, MAC addresses or raw private logs included.",
+  "cpu": {
+    "online": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "min_khz": 300000,
+    "max_khz": 1190400
+  },
+  "ram": {
+    "MemTotal_kib": 1438952
+  },
+  "storage_512byte_sectors": {
+    "emmc": 30777344,
+    "microsd": 30253056
+  },
+  "bound_i2c": {
+    "lp8556": "0-002c",
+    "smb358": "1-006a",
+    "lis2hh12": "2-001d",
+    "sm5502-muic": "3-0025",
+    "maxtouch": "4-004a"
+  },
+  "running_remoteproc": [
+    "WCNSS fb204000.remoteproc"
+  ],
+  "graphics": {
+    "bound": [
+      "msm-mdss",
+      "msm_mdp",
+      "msm_dsi",
+      "msm_dsi_phy",
+      "panel-lvds",
+      "adreno",
+      "qcom-iommu",
+      "arm-smmu"
+    ],
+    "session_processes": [
+      "phoc",
+      "gnome-session (phosh)",
+      "phosh"
+    ]
+  },
+  "audio_video": {
+    "alsa_cards": "No /proc/asound/cards content returned",
+    "video_nodes": [],
+    "media_nodes": []
+  },
+  "input_devices": [
+    "Atmel maXTouch Touchscreen",
+    "pm8941_pwrkey",
+    "gpio-hall-sensor",
+    "gpio-keys"
+  ],
+  "iio": [
+    "PM8226 IADC",
+    "lis2hh12",
+    "PM8226 VADC",
+    "battery-thermal-sensor"
+  ],
+  "sensorproxy": {
+    "active": true,
+    "HasAccelerometer": true,
+    "HasAmbientLight": false
+  },
+  "thermal_snapshot_celsius": {
+    "cpu1-thermal": 35,
+    "cpu0-thermal": 36,
+    "battery-temp": 25.41,
+    "pm8226-bms": 25.4
+  },
+  "battery_snapshot": {
+    "status": "Full",
+    "voltage_uv": 4326357,
+    "current_ua": -5737,
+    "capacity_percent_model": 97,
+    "temp_tenths_c": 254
+  },
+  "charger_snapshot": {
+    "online": true,
+    "status": "Not charging",
+    "input_current_limit_ua": 500000,
+    "note": "Single read, not a charging/endurance acceptance or proof of ramp execution."
+  },
+  "rtc_sleep": {
+    "mem_sleep_at_read": "s2idle shallow [deep]",
+    "systemd_sleep_policy": "MemorySleepMode=s2idle from prior accepted configuration; /sys/power/mem_sleep default alone is not the logind-selected suspend mode.",
+    "supported_states": [
+      "freeze",
+      "standby",
+      "mem"
+    ]
+  },
+  "rng": {
+    "driver_bound": true,
+    "log": "TRNG support not detected",
+    "rng_available": "none",
+    "rng_current": "none"
+  },
+  "usb_gadget_functions": [
+    "acm.usb0"
+  ],
+  "leds_exposed": [
+    "mmc0::",
+    "mmc1::"
+  ],
+  "config_disabled": [
+    "CONFIG_QCOM_SPMI_TEMP_ALARM",
+    "CONFIG_QCOM_Q6V5_ADSP",
+    "CONFIG_SLIMBUS",
+    "CONFIG_SX9500"
+  ],
+  "device_tree_compatible_nodes": [
+    {
+      "node": "/battery-cell",
+      "compatible": [
+        "simple-battery"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/battery-thermal-sensor",
+      "compatible": [
+        "generic-adc-thermal"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/chosen/framebuffer@3200000",
+      "compatible": [
+        "simple-framebuffer"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/clocks/sleep_clk",
+      "compatible": [
+        "fixed-clock"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/clocks/xo_board",
+      "compatible": [
+        "fixed-clock"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/.",
+      "compatible": [
+        "samsung,matisse3g",
+        "qcom,msm8226"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/cpus/cpu@0",
+      "compatible": [
+        "arm,cortex-a7"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/cpus/cpu@1",
+      "compatible": [
+        "arm,cortex-a7"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/cpus/cpu@2",
+      "compatible": [
+        "arm,cortex-a7"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/cpus/cpu@3",
+      "compatible": [
+        "arm,cortex-a7"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/cpus/idle-states/cpu-spc",
+      "compatible": [
+        "qcom,idle-state-spc",
+        "arm,idle-state"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/cpus/l2-cache",
+      "compatible": [
+        "cache"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/firmware/scm",
+      "compatible": [
+        "qcom,scm-msm8226",
+        "qcom,scm"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/gpio-hall-sensor",
+      "compatible": [
+        "gpio-keys"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/gpio-keys",
+      "compatible": [
+        "gpio-keys"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/i2c-backlight/backlight@2c",
+      "compatible": [
+        "ti,lp8556"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/i2c-backlight",
+      "compatible": [
+        "i2c-gpio"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/i2c-charger/charger@6a",
+      "compatible": [
+        "summit,smb358"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/i2c-charger",
+      "compatible": [
+        "i2c-gpio"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/opp-table-cpu",
+      "compatible": [
+        "operating-points-v2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/panel",
+      "compatible": [
+        "samsung,matisse3g-lcd",
+        "panel-lvds"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/pmu",
+      "compatible": [
+        "arm,cortex-a7-pmu"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/pwm",
+      "compatible": [
+        "clk-pwm"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/regulator-tsp-1p8v",
+      "compatible": [
+        "regulator-fixed"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/regulator-tsp-3p3v",
+      "compatible": [
+        "regulator-fixed"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/remoteproc",
+      "compatible": [
+        "qcom,msm8226-rpm-proc",
+        "qcom,rpm-proc"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/remoteproc/master-stats",
+      "compatible": [
+        "qcom,rpm-master-stats"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/remoteproc/smd-edge/rpm-requests/clock-controller",
+      "compatible": [
+        "qcom,rpmcc-msm8226",
+        "qcom,rpmcc"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/remoteproc/smd-edge/rpm-requests",
+      "compatible": [
+        "qcom,rpm-msm8226",
+        "qcom,smd-rpm"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/remoteproc/smd-edge/rpm-requests/power-controller",
+      "compatible": [
+        "qcom,msm8226-rpmpd"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table",
+      "compatible": [
+        "operating-points-v2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/remoteproc/smd-edge/rpm-requests/regulators",
+      "compatible": [
+        "qcom,rpm-pm8226-regulators"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/reserved-memory/ramoops@2ff80000",
+      "compatible": [
+        "ramoops"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/reserved-memory/rmtfs@fd80000",
+      "compatible": [
+        "qcom,rmtfs-mem"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/smem",
+      "compatible": [
+        "qcom,smem"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/smp2p-adsp",
+      "compatible": [
+        "qcom,smp2p"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/smp2p-modem",
+      "compatible": [
+        "qcom,smp2p"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/smp2p-wcnss",
+      "compatible": [
+        "qcom,smp2p"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/smsm",
+      "compatible": [
+        "qcom,smsm"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/cci@fda0c000",
+      "compatible": [
+        "qcom,msm8226-cci"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/clock-controller@fc400000",
+      "compatible": [
+        "qcom,gcc-msm8226"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/clock-controller@fd8c0000",
+      "compatible": [
+        "qcom,mmcc-msm8226"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/clock@f9016000",
+      "compatible": [
+        "qcom,msm8226-a7pll"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/clock@f9016000/opp-table",
+      "compatible": [
+        "operating-points-v2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc",
+      "compatible": [
+        "simple-bus"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/display-subsystem@fd900000",
+      "compatible": [
+        "qcom,mdss"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/display-subsystem@fd900000/display-controller@fd900000",
+      "compatible": [
+        "qcom,msm8226-mdp5",
+        "qcom,mdp5"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/display-subsystem@fd900000/dsi@fd922800/bridge@0",
+      "compatible": [
+        "samsung,matisse-tc358764",
+        "toshiba,tc358764"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/display-subsystem@fd900000/dsi@fd922800",
+      "compatible": [
+        "qcom,msm8226-dsi-ctrl",
+        "qcom,mdss-dsi-ctrl"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/display-subsystem@fd900000/phy@fd922a00",
+      "compatible": [
+        "qcom,dsi-phy-28nm-8226"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/dma-controller@fc834000",
+      "compatible": [
+        "qcom,bam-v1.4.0"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/efuse@fc4bc000",
+      "compatible": [
+        "qcom,msm8226-qfprom",
+        "qcom,qfprom"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/gpu@fdb00000",
+      "compatible": [
+        "qcom,adreno-305.18",
+        "qcom,adreno"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/gpu@fdb00000/opp-table",
+      "compatible": [
+        "operating-points-v2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/hwlock@fd484000",
+      "compatible": [
+        "qcom,msm8226-tcsr-mutex",
+        "qcom,tcsr-mutex"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/i2c@f9923000",
+      "compatible": [
+        "qcom,i2c-qup-v2.1.1"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/i2c@f9924000/accelerometer@1d",
+      "compatible": [
+        "st,lis2hh12"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/i2c@f9924000",
+      "compatible": [
+        "qcom,i2c-qup-v2.1.1"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/i2c@f9925000",
+      "compatible": [
+        "qcom,i2c-qup-v2.1.1"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/i2c@f9926000",
+      "compatible": [
+        "qcom,i2c-qup-v2.1.1"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/i2c@f9926000/usb-switch@25",
+      "compatible": [
+        "siliconmitus,sm5502-muic"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/i2c@f9927000",
+      "compatible": [
+        "qcom,i2c-qup-v2.1.1"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/i2c@f9927000/touchscreen@4a",
+      "compatible": [
+        "atmel,maxtouch"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/i2c@f9928000",
+      "compatible": [
+        "qcom,i2c-qup-v2.1.1"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/interconnect-ocmem",
+      "compatible": [
+        "qcom,msm8226-ocmem-vnoc"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/interconnect@fc380000",
+      "compatible": [
+        "qcom,msm8226-bimc"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/interconnect@fc478000",
+      "compatible": [
+        "qcom,msm8226-mmssnoc"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/interrupt-controller@f9000000",
+      "compatible": [
+        "qcom,msm-qgic2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/iommu@fd92a000",
+      "compatible": [
+        "qcom,msm8226-iommu",
+        "qcom,msm-iommu-v1"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/iommu@fd92a000/iommu-ctx@8000",
+      "compatible": [
+        "qcom,msm-iommu-v1-ns"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/iommu@fdb10000",
+      "compatible": [
+        "qcom,msm8226-smmu",
+        "arm,smmu-v1"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/mailbox@f9011000",
+      "compatible": [
+        "qcom,msm8226-apcs-kpss-global",
+        "qcom,msm8916-apcs-kpss-global",
+        "syscon"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/mmc@f9824900",
+      "compatible": [
+        "qcom,msm8226-sdhci",
+        "qcom,sdhci-msm-v4"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/mmc@f9864900",
+      "compatible": [
+        "qcom,msm8226-sdhci",
+        "qcom,sdhci-msm-v4"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/mmc@f98a4900",
+      "compatible": [
+        "qcom,msm8226-sdhci",
+        "qcom,sdhci-msm-v4"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/pinctrl@fd510000",
+      "compatible": [
+        "qcom,msm8226-pinctrl"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/power-manager@f9012000",
+      "compatible": [
+        "qcom,msm8226-saw2-v2.1-l2",
+        "qcom,saw2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/power-manager@f9088000",
+      "compatible": [
+        "qcom,kpss-acc-v2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/power-manager@f9089000",
+      "compatible": [
+        "qcom,msm8226-saw2-v2.1-cpu",
+        "qcom,saw2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/power-manager@f9098000",
+      "compatible": [
+        "qcom,kpss-acc-v2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/power-manager@f9099000",
+      "compatible": [
+        "qcom,msm8226-saw2-v2.1-cpu",
+        "qcom,saw2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/power-manager@f90a8000",
+      "compatible": [
+        "qcom,kpss-acc-v2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/power-manager@f90a9000",
+      "compatible": [
+        "qcom,msm8226-saw2-v2.1-cpu",
+        "qcom,saw2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/power-manager@f90b8000",
+      "compatible": [
+        "qcom,kpss-acc-v2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/power-manager@f90b9000",
+      "compatible": [
+        "qcom,msm8226-saw2-v2.1-cpu",
+        "qcom,saw2"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/remoteproc@fb204000",
+      "compatible": [
+        "qcom,pronto-v1-pil",
+        "qcom,pronto"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/remoteproc@fb204000/iris",
+      "compatible": [
+        "qcom,wcn3660"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/remoteproc@fb204000/smd-edge/wcnss/bluetooth",
+      "compatible": [
+        "qcom,wcnss-bt"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/remoteproc@fb204000/smd-edge/wcnss",
+      "compatible": [
+        "qcom,wcnss"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/remoteproc@fb204000/smd-edge/wcnss/wifi",
+      "compatible": [
+        "qcom,wcnss-wlan"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/remoteproc@fc880000/bam-dmux",
+      "compatible": [
+        "qcom,bam-dmux"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/remoteproc@fc880000",
+      "compatible": [
+        "qcom,msm8226-mss-pil"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/remoteproc@fe200000",
+      "compatible": [
+        "qcom,msm8226-adsp-pil"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/restart@fc4ab000",
+      "compatible": [
+        "qcom,pshold"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/rng@f9bff000",
+      "compatible": [
+        "qcom,prng"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/serial@f991d000",
+      "compatible": [
+        "qcom,msm-uartdm-v1.4",
+        "qcom,msm-uartdm"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/serial@f991e000",
+      "compatible": [
+        "qcom,msm-uartdm-v1.4",
+        "qcom,msm-uartdm"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/serial@f991f000",
+      "compatible": [
+        "qcom,msm-uartdm-v1.4",
+        "qcom,msm-uartdm"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/serial@f9920000",
+      "compatible": [
+        "qcom,msm-uartdm-v1.4",
+        "qcom,msm-uartdm"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000",
+      "compatible": [
+        "qcom,spmi-pmic-arb"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/adc@3100",
+      "compatible": [
+        "qcom,spmi-vadc"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/adc@3600",
+      "compatible": [
+        "qcom,pm8226-iadc",
+        "qcom,spmi-iadc"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/battery@4000",
+      "compatible": [
+        "qcom,pm8226-bms"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/charger@1000",
+      "compatible": [
+        "qcom,pm8226-charger"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0",
+      "compatible": [
+        "qcom,pm8226",
+        "qcom,spmi-pmic"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/gpio@c000",
+      "compatible": [
+        "qcom,pm8226-gpio",
+        "qcom,spmi-gpio"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/mpps@a000",
+      "compatible": [
+        "qcom,pm8226-mpp",
+        "qcom,spmi-mpp"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/pon@800",
+      "compatible": [
+        "qcom,pm8916-pon"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/pon@800/pwrkey",
+      "compatible": [
+        "qcom,pm8941-pwrkey"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/pon@800/resin",
+      "compatible": [
+        "qcom,pm8941-resin"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/rtc@6000",
+      "compatible": [
+        "qcom,pm8941-rtc"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@0/temp-alarm@2400",
+      "compatible": [
+        "qcom,spmi-temp-alarm"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@1",
+      "compatible": [
+        "qcom,pm8226",
+        "qcom,spmi-pmic"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@1/regulators",
+      "compatible": [
+        "qcom,pm8226-regulators"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/spmi@fc4cf000/pm8226@1/vibrator@c000",
+      "compatible": [
+        "qcom,pm8916-vib"
+      ],
+      "status": "disabled"
+    },
+    {
+      "node": "/soc/sram@fc190000",
+      "compatible": [
+        "qcom,msm8226-rpm-stats"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/sram@fc428000",
+      "compatible": [
+        "qcom,rpm-msg-ram"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/sram@fdd00000",
+      "compatible": [
+        "qcom,msm8226-ocmem"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/sram@fe805000",
+      "compatible": [
+        "qcom,msm8226-imem",
+        "syscon",
+        "simple-mfd"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/sram@fe805000/reboot-mode",
+      "compatible": [
+        "syscon-reboot-mode"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/syscon@fd485000",
+      "compatible": [
+        "qcom,tcsr-msm8226",
+        "syscon"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/thermal-sensor@fc4a9000",
+      "compatible": [
+        "qcom,msm8226-tsens",
+        "qcom,tsens-v0_1"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/timer@f9020000",
+      "compatible": [
+        "arm,armv7-timer-mem"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/usb@f9a55000",
+      "compatible": [
+        "qcom,ci-hdrc"
+      ],
+      "status": "okay"
+    },
+    {
+      "node": "/soc/usb@f9a55000/ulpi/phy",
+      "compatible": [
+        "qcom,usb-hs-phy-msm8226",
+        "qcom,usb-hs-phy"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/soc/watchdog@f9017000",
+      "compatible": [
+        "qcom,apss-wdt-msm8226",
+        "qcom,kpss-wdt"
+      ],
+      "status": "okay (implicit)"
+    },
+    {
+      "node": "/timer",
+      "compatible": [
+        "arm,armv7-timer"
+      ],
+      "status": "okay (implicit)"
+    }
+  ],
+  "host_config_sha256": "03287d152f696576506dcc686d3324cda3f8cc5314bb78491e2ddb139e00fd50"
+}
