@@ -7,8 +7,8 @@ baseline:
   project_commit: 1511f60
   production_patch_count: 120
   runtime: Phoc 0.46 / Phosh 0.58, native split GPU/KMS
-  inspection: Read-only sysfs/proc/source/previous acceptance records; no reboot, suspend, register writes, RF scan
-    or new physical acceptance.
+  inspection: Initial inventory was read-only. The FM row now includes separate native/Android RF trials
+    documented in docs/FM.md; no FM reception acceptance.
 scope_note: Tasks cover confirmed board/SoC functions plus explicitly unconfirmed variants. This is not a signed
   BOM or proof that every shared vendor node is populated. VERIFIED is restricted to the stated physical test; WORKING
   is not full release acceptance. Dependency lists express primary porting prerequisites, not every kernel dependency.
@@ -60,6 +60,10 @@ sources:
     url: https://downloadcenter.samsung.com/content/UM/201506/20150602135914448/SM-T531_UM_EU_Lollipop_Eng_Rev.1.0_150602.pdf
     scope: Samsung SM-T531 EU Lollipop English user manual rev1.0 (2015-06-02), layout p7, phone/messages/location/media
       chapters; manufacturer-copyrighted, not redistributed.
+  fm-trial:
+    kind: VERIFIED_DEVICE
+    path: docs/fm-results.json
+    scope: Temporary native V4L2 candidate/API and failed RF trials; not production FM acceptance.
   vendor-board:
     kind: VERIFIED_VENDOR_SOURCE
     url: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226-sec-matisse3g-r02.dtsi
@@ -2030,25 +2034,28 @@ subsystems:
 - id: optional.fm
   area: Unconfirmed or variant-only
   subsystem: FM broadcast radio
-  hardware: WCN3660/Qualcomm iris FM capability
+  hardware: WCN3660/Qualcomm iris FM capability; usable board RF route unknown
   presence_evidence: UNKNOWN
-  implementation_state: UNKNOWN
+  implementation_state: BLOCKED
   evidence_refs:
   - vendor-soc
   - vendor-full-config
   - android
-  implemented_or_observed: Running Android actually enables RADIO_IRIS/TRANSPORT and binds iris_fm, contrary to
-    the inspected Lineage defconfig; no native FM or real reception tested.
-  remaining_acceptance: Verify firmware commands, RF/antenna/audio routing and real reception before calling usable
-    FM hardware present.
-  depends_on: []
+  - fm-trial
+  implemented_or_observed: Diagnostic native V4L2 candidate registers radio0 and passes 49/49 API checks.
+    All 29 supplied frequencies return zero signal/no RDS with wired headphones; preserved Android also returns
+    zero RSSI, including DSP capture and calibration trials. No production FM patch enabled.
+  remaining_acceptance: Establish board antenna/RF population and no-signal cause; verify real reception/RDS/seek,
+    acknowledged receiver power-off and suspend. Audio routing remains separate.
+  depends_on:
+  - radio.shared
   priority: P3
   evidence_states:
-  - HISTORICAL_SOURCE
-  - UNKNOWN
   - VERIFIED_DEVICE
   - VERIFIED_VENDOR_SOURCE
-  android_acceptance_scope: Identification/probe only; native implementation state is unchanged.
+  - UNKNOWN
+  - HYPOTHESIS
+  android_acceptance_scope: Vendor control/tuning, DSP PCM capture and process calibration exercised; zero RSSI, so real FM reception remains unaccepted.
 - id: optional.videoout
   area: Unconfirmed or variant-only
   subsystem: Wired external display

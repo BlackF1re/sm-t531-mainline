@@ -1,0 +1,834 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Date: Thu, 22 Oct 2026 16:55:00 +0700
+Subject: [RFC PATCH] media: radio: add diagnostic Qualcomm SMD FM receiver
+
+Provide a native V4L2 interface to the firmware APPS_FM RPMSG service.
+Serialize firmware commands, bound completion waits and release endpoint
+ownership on last close. Expose standard frequency, tuner, mute, emphasis,
+seek and RDS interfaces without the private Android userspace ABI.
+
+Protocol reference: Qualcomm/Samsung radio-iris at
+LineageOS/android_kernel_samsung_msm8226 commit
+3fa1853ed5d6c3a8ef5a2fda9822705243bbc256 (GPL-2.0).
+
+Diagnostic candidate only; deliberately outside patches/linux and all
+production fragments. V4L2 API checks passed, but real RF reception and
+RDS have not passed on SM-T531. DISABLE does not acknowledge. These are
+release blockers, not conditions to paper over with userspace helpers.
+See docs/FM.md and docs/fm-results.json in the project repository.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
+--- a/drivers/media/radio/Kconfig
++++ b/drivers/media/radio/Kconfig
+@@ -12,6 +12,15 @@
+ 	  Say Y here to enable selecting AM/FM radio adapters.
+ 
+ if RADIO_ADAPTERS
++
++config RADIO_QCOM_SMD
++	tristate "Qualcomm WCNSS SMD FM receiver (experimental)"
++	depends on RPMSG
++	help
++	  Native V4L2 interface to the APPS_FM service in Qualcomm WCNSS
++	  firmware. This driver is a diagnostic candidate: RF reception,
++	  RDS and receiver power-off remain unverified on SM-T531.
++	  The module will be called radio-qcom-smd.
+ 
+ config RADIO_MAXIRADIO
+ 	tristate "Guillemot MAXI Radio FM 2000 radio"
+diff --git a/drivers/media/radio/Makefile b/drivers/media/radio/Makefile
+--- a/drivers/media/radio/Makefile
++++ b/drivers/media/radio/Makefile
+@@ -37,3 +37,4 @@
+ obj-$(CONFIG_USB_MA901) += radio-ma901.o
+ obj-$(CONFIG_USB_MR800) += radio-mr800.o
+ obj-$(CONFIG_USB_RAREMONO) += radio-raremono.o
++obj-$(CONFIG_RADIO_QCOM_SMD) += radio-qcom-smd.o
+diff --git a/drivers/media/radio/radio-qcom-smd.c b/drivers/media/radio/radio-qcom-smd.c
+new file mode 100644
+--- /dev/null
++++ b/drivers/media/radio/radio-qcom-smd.c
+@@ -0,0 +1,780 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Qualcomm WCNSS FM receiver over the APPS_FM SMD/RPMSG service.
++ * Copyright (c) 2026 BlackF1re
++ *
++ * Wire protocol researched from Qualcomm/Samsung radio-iris (GPL-2.0),
++ * Copyright (c) 2011-2013 The Linux Foundation. No Android userspace ABI.
++ */
++#include <linux/completion.h>
++#include <linux/delay.h>
++#include <linux/kfifo.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/poll.h>
++#include <linux/rpmsg.h>
++#include <linux/slab.h>
++#include <linux/unaligned.h>
++#include <media/v4l2-ctrls.h>
++#include <media/v4l2-device.h>
++#include <media/v4l2-event.h>
++#include <media/v4l2-fh.h>
++#include <media/v4l2-ioctl.h>
++
++#define FM_ENABLE	0x4c01
++#define FM_DISABLE	0x4c02
++#define FM_GET_CONFIG	0x4c03
++#define FM_SET_CONFIG	0x4c04
++#define FM_MUTE		0x4c05
++#define FM_STEREO	0x4c06
++#define FM_ANTENNA	0x4c07
++#define FM_STATION	0x4c0a
++#define FM_SEARCH	0x4c0e
++#define FM_CANCEL	0x4c11
++#define FM_RDS_GROUPS	0x4c12
++#define FM_EVENT_MASK	0x4c16
++#define FM_TUNE		0x5401
++#define FM_RESET	0x5404
++#define FM_FEATURES	0x5405
++#define FM_TIMEOUT_MS	3000
++#define FM_LOW_KHZ	87500
++#define FM_HIGH_KHZ	108000
++#define FM_RDS_BYTES	(3 * 4 * 256)
++
++struct qcom_fm {
++	struct v4l2_device v4l2;
++	struct video_device video;
++	struct v4l2_ctrl_handler ctrls;
++	struct v4l2_ctrl *mute;
++	struct v4l2_ctrl *deemphasis;
++	struct v4l2_ctrl *rds_enable;
++	struct rpmsg_device *rpdev;
++	struct rpmsg_endpoint *ept;
++	struct mutex lock;
++	spinlock_t rx_lock;
++	struct completion command_done;
++	struct completion tune_done;
++	struct completion seek_done;
++	wait_queue_head_t read_queue;
++	struct kfifo rds;
++	u16 pending_opcode;
++	bool pending;
++	bool removed;
++	bool suspended;
++	bool broken;
++	bool powered;
++	unsigned int users;
++	int command_error;
++	u8 response[255];
++	size_t response_len;
++	u8 station[12];
++	u32 frequency;
++	u32 tune_target;
++	u32 rds_dropped;
++	bool seeking;
++	u8 audmode;
++};
++
++static int qcom_fm_status(u8 status)
++{
++	switch (status) {
++	case 0: return 0;
++	case 1: return -EOPNOTSUPP;
++	case 0x0c: return -EBUSY;
++	case 0x12: return -EINVAL;
++	default: return -EIO;
++	}
++}
++
++/* lock serializes all transactions; rx_lock protects IRQ-side completion. */
++static int qcom_fm_command(struct qcom_fm *fm, u16 opcode,
++			   const void *payload, unsigned int len)
++{
++	u8 packet[258];
++	unsigned long flags, deadline;
++	int ret;
++
++	lockdep_assert_held(&fm->lock);
++	if (fm->removed || !fm->ept)
++		return -ENODEV;
++	if (fm->broken)
++		return -EIO;
++	if (len > 255)
++		return -EINVAL;
++	put_unaligned_le16(opcode, packet);
++	packet[2] = len;
++	if (len)
++		memcpy(packet + 3, payload, len);
++	reinit_completion(&fm->command_done);
++	spin_lock_irqsave(&fm->rx_lock, flags);
++	fm->pending_opcode = opcode;
++	fm->response_len = 0;
++	fm->command_error = -EINPROGRESS;
++	fm->pending = true;
++	spin_unlock_irqrestore(&fm->rx_lock, flags);
++
++	/* Do not inherit rpmsg_send's long, uninterruptible FIFO wait. */
++	deadline = jiffies + msecs_to_jiffies(500);
++	do {
++		ret = rpmsg_trysend(fm->ept, packet, len + 3);
++		if (ret != -ENOMEM && ret != -EAGAIN)
++			break;
++		usleep_range(1000, 2000);
++	} while (time_before(jiffies, deadline));
++	if (!ret && !wait_for_completion_timeout(&fm->command_done,
++					msecs_to_jiffies(FM_TIMEOUT_MS)))
++		ret = -ETIMEDOUT;
++
++	spin_lock_irqsave(&fm->rx_lock, flags);
++	fm->pending = false;
++	if (!ret)
++		ret = fm->command_error;
++	/* Reopening the transport is required before reusing an ambiguous reply. */
++	if (ret == -ETIMEDOUT)
++		fm->broken = true;
++	spin_unlock_irqrestore(&fm->rx_lock, flags);
++	return ret;
++}
++
++static void qcom_fm_rds(struct qcom_fm *fm, const u8 *data, size_t len)
++{
++	unsigned int count, group, block;
++	u8 out[12];
++
++	if (!len || !READ_ONCE(fm->powered) || !READ_ONCE(fm->rds_enable->val))
++		return;
++	count = data[0];
++	if (!count)
++		return;
++	/* Qualcomm/Samsung radio-iris consumes four little-endian words/group.
++	 * This format has no per-block error metadata; do not invent it.
++	 */
++	if (len != 1 + count * 8)
++		return;
++	for (group = 0; group < count; group++) {
++		for (block = 0; block < 4; block++) {
++			const u8 *p = data + 1 + (group * 4 + block) * 2;
++
++			out[block * 3] = p[0];
++			out[block * 3 + 1] = p[1];
++			out[block * 3 + 2] = block;
++
++		}
++		if (kfifo_avail(&fm->rds) >= sizeof(out))
++			kfifo_in(&fm->rds, out, sizeof(out));
++		else
++			fm->rds_dropped++;
++	}
++	wake_up_interruptible(&fm->read_queue);
++}
++
++static int qcom_fm_rx(struct rpmsg_device *rpdev, void *buffer, int size,
++		      void *priv, u32 addr)
++{
++	struct qcom_fm *fm = priv;
++	const u8 *data = buffer;
++	unsigned long flags;
++	u16 opcode;
++	u8 event;
++	int len;
++
++	/* A malformed packet must be consumed, or SMD retries it forever. */
++	if (size < 2 || data[1] != size - 2)
++		return 0;
++	event = data[0];
++	data += 2;
++	len = size - 2;
++	spin_lock_irqsave(&fm->rx_lock, flags);
++	if (fm->removed)
++		goto unlock;
++	if (event == 0x0f && len >= 4) {
++		opcode = get_unaligned_le16(data + 1);
++		if (fm->pending && fm->pending_opcode == opcode) {
++			fm->response_len = len - 3;
++			memcpy(fm->response, data + 3, len - 3);
++			fm->command_error = opcode == FM_STATION ? 0 :
++				qcom_fm_status(data[3]);
++			fm->pending = false;
++			complete(&fm->command_done);
++		}
++	} else if (event == 0x10 && len == 4) {
++		opcode = get_unaligned_le16(data + 2);
++		if (fm->pending && fm->pending_opcode == opcode) {
++			fm->command_error = qcom_fm_status(data[0]);
++			fm->response[0] = data[0];
++			fm->response_len = 1;
++			fm->pending = false;
++			complete(&fm->command_done);
++		}
++	} else if (event == 0x01 && len == sizeof(fm->station)) {
++		memcpy(fm->station, data, len);
++		if (get_unaligned_le32(data + 1) == fm->tune_target)
++			complete(&fm->tune_done);
++	} else if (event == 0x12 && fm->seeking) {
++		complete(&fm->seek_done);
++	} else if (event == 0x08) {
++		qcom_fm_rds(fm, data, len);
++	}
++unlock:
++	spin_unlock_irqrestore(&fm->rx_lock, flags);
++	return 0;
++}
++
++static int qcom_fm_config(struct qcom_fm *fm)
++{
++	u8 config[12] = { 1, 2, 1, 0 };
++
++	config[0] = fm->deemphasis->val == V4L2_DEEMPHASIS_50_uS;
++	config[2] = fm->rds_enable->val ? 1 : 2;
++	put_unaligned_le32(FM_LOW_KHZ, config + 4);
++	put_unaligned_le32(FM_HIGH_KHZ, config + 8);
++	return qcom_fm_command(fm, FM_SET_CONFIG, config, sizeof(config));
++}
++
++static int qcom_fm_tune(struct qcom_fm *fm, u32 khz)
++{
++	unsigned long flags;
++	u8 param[4];
++	int ret;
++
++	spin_lock_irqsave(&fm->rx_lock, flags);
++	fm->tune_target = khz;
++	kfifo_reset(&fm->rds);
++	spin_unlock_irqrestore(&fm->rx_lock, flags);
++	reinit_completion(&fm->tune_done);
++	put_unaligned_le32(khz, param);
++	ret = qcom_fm_command(fm, FM_TUNE, param, sizeof(param));
++	if (ret)
++		return ret;
++	if (!wait_for_completion_timeout(&fm->tune_done, msecs_to_jiffies(2000)))
++		return fm->removed ? -ENODEV : -ETIMEDOUT;
++	if (READ_ONCE(fm->removed))
++		return -ENODEV;
++	fm->frequency = khz;
++	return 0;
++}
++
++static void qcom_fm_transport_close(struct qcom_fm *fm)
++{
++	if (fm->ept)
++		rpmsg_destroy_ept(fm->ept);
++	fm->ept = NULL;
++	fm->powered = false;
++}
++
++static int qcom_fm_start(struct qcom_fm *fm)
++{
++	struct rpmsg_channel_info channel = {
++		.name = "APPS_FM", .src = RPMSG_ADDR_ANY, .dst = RPMSG_ADDR_ANY,
++	};
++	u8 param[9] = { 0 };
++	int ret;
++
++	if (fm->removed)
++		return -ENODEV;
++	fm->broken = false;
++	fm->ept = rpmsg_create_ept(fm->rpdev, qcom_fm_rx, fm, channel);
++	if (!fm->ept)
++		return -ENODEV;
++	ret = qcom_fm_command(fm, FM_ENABLE, NULL, 0);
++	if (ret)
++		goto fail;
++	fm->powered = true;
++	ret = qcom_fm_config(fm);
++	if (ret)
++		goto disable;
++	param[0] = fm->mute->val ? 3 : 0;
++	param[1] = 1;
++	ret = qcom_fm_command(fm, FM_MUTE, param, 2);
++	if (ret)
++		goto disable;
++	param[0] = fm->audmode == V4L2_TUNER_MODE_MONO;
++	param[1] = param[2] = param[3] = 1;
++	ret = qcom_fm_command(fm, FM_STEREO, param, 4);
++	if (ret)
++		goto disable;
++	param[0] = 0; /* External antenna; physical board routing is not yet verified. */
++	ret = qcom_fm_command(fm, FM_ANTENNA, param, 1);
++	if (ret)
++		goto disable;
++	param[0] = 7;
++	ret = qcom_fm_command(fm, FM_EVENT_MASK, param, 1);
++	if (ret)
++		goto disable;
++	put_unaligned_le32(fm->rds_enable->val ? U32_MAX : 0, param);
++	put_unaligned_le32(1, param + 4);
++	param[8] = 0;
++	ret = qcom_fm_command(fm, FM_RDS_GROUPS, param, 9);
++	if (ret)
++		goto disable;
++	ret = qcom_fm_tune(fm, fm->frequency);
++	if (!ret)
++		return 0;
++disable:
++	if (!fm->broken)
++		qcom_fm_command(fm, FM_DISABLE, NULL, 0);
++fail:
++	qcom_fm_transport_close(fm);
++	return ret;
++}
++
++static int qcom_fm_stop(struct qcom_fm *fm)
++{
++	int ret = 0;
++
++	if (fm->powered && !fm->broken && !fm->removed)
++		ret = qcom_fm_command(fm, FM_DISABLE, NULL, 0);
++	if (ret)
++		dev_warn(&fm->rpdev->dev, "FM disable not acknowledged: %d\n", ret);
++	qcom_fm_transport_close(fm);
++	return ret;
++}
++
++static int qcom_fm_ctrl(struct v4l2_ctrl *ctrl)
++{
++	struct qcom_fm *fm = container_of(ctrl->handler, struct qcom_fm, ctrls);
++	u8 data[9];
++	int ret;
++
++	if (fm->removed)
++		return -ENODEV;
++	if (!fm->powered || fm->suspended)
++		return 0;
++	switch (ctrl->id) {
++	case V4L2_CID_AUDIO_MUTE:
++		data[0] = ctrl->val ? 3 : 0;
++		data[1] = 1;
++		return qcom_fm_command(fm, FM_MUTE, data, 2);
++	case V4L2_CID_TUNE_DEEMPHASIS:
++		return qcom_fm_config(fm);
++	case V4L2_CID_RDS_RECEPTION:
++		ret = qcom_fm_config(fm);
++		if (ret)
++			return ret;
++		put_unaligned_le32(ctrl->val ? U32_MAX : 0, data);
++		put_unaligned_le32(1, data + 4);
++		data[8] = 0;
++		return qcom_fm_command(fm, FM_RDS_GROUPS, data, 9);
++	default:
++		return -EINVAL;
++	}
++}
++
++static const struct v4l2_ctrl_ops qcom_fm_ctrl_ops = { .s_ctrl = qcom_fm_ctrl };
++
++static int qcom_fm_querycap(struct file *file, void *priv,
++			    struct v4l2_capability *cap)
++{
++	struct qcom_fm *fm = video_drvdata(file);
++
++	strscpy(cap->driver, "qcom-smd-fm", sizeof(cap->driver));
++	strscpy(cap->card, "Qualcomm WCNSS FM", sizeof(cap->card));
++	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
++		 dev_name(&fm->rpdev->dev));
++	return 0;
++}
++
++static int qcom_fm_g_tuner(struct file *file, void *priv, struct v4l2_tuner *t)
++{
++	struct qcom_fm *fm = video_drvdata(file);
++	int ret;
++
++	if (t->index)
++		return -EINVAL;
++	if (fm->suspended)
++		return -EHOSTDOWN;
++	ret = qcom_fm_command(fm, FM_STATION, NULL, 0);
++	if (ret)
++		return ret;
++	if (fm->response_len != sizeof(fm->station))
++		return -EPROTO;
++	strscpy(t->name, "FM", sizeof(t->name));
++	t->type = V4L2_TUNER_RADIO;
++	t->capability = V4L2_TUNER_CAP_LOW | V4L2_TUNER_CAP_STEREO |
++		V4L2_TUNER_CAP_RDS | V4L2_TUNER_CAP_RDS_BLOCK_IO |
++		V4L2_TUNER_CAP_FREQ_BANDS | V4L2_TUNER_CAP_HWSEEK_BOUNDED;
++	t->rangelow = FM_LOW_KHZ * 16;
++	t->rangehigh = FM_HIGH_KHZ * 16;
++	t->rxsubchans = fm->response[7] ? V4L2_TUNER_SUB_STEREO : V4L2_TUNER_SUB_MONO;
++	if (fm->response[8])
++		t->rxsubchans |= V4L2_TUNER_SUB_RDS;
++	t->audmode = fm->audmode;
++	t->signal = min_t(u32, fm->response[6], 127) * 65535 / 127;
++	t->afc = 0;
++	return 0;
++}
++
++static int qcom_fm_s_tuner(struct file *file, void *priv, const struct v4l2_tuner *t)
++{
++	struct qcom_fm *fm = video_drvdata(file);
++	u8 mode[4] = { 0, 1, 1, 1 };
++	int ret;
++
++	if (t->index)
++		return -EINVAL;
++	if (fm->suspended)
++		return -EHOSTDOWN;
++	mode[0] = t->audmode == V4L2_TUNER_MODE_MONO;
++	ret = qcom_fm_command(fm, FM_STEREO, mode, sizeof(mode));
++	if (!ret)
++		fm->audmode = mode[0] ? V4L2_TUNER_MODE_MONO : V4L2_TUNER_MODE_STEREO;
++	return ret;
++}
++
++static int qcom_fm_enum_bands(struct file *file, void *priv,
++			      struct v4l2_frequency_band *band)
++{
++	if (band->tuner || band->index || band->type != V4L2_TUNER_RADIO)
++		return -EINVAL;
++	band->capability = V4L2_TUNER_CAP_LOW | V4L2_TUNER_CAP_STEREO |
++		V4L2_TUNER_CAP_RDS | V4L2_TUNER_CAP_RDS_BLOCK_IO |
++		V4L2_TUNER_CAP_FREQ_BANDS | V4L2_TUNER_CAP_HWSEEK_BOUNDED;
++	band->rangelow = FM_LOW_KHZ * 16;
++	band->rangehigh = FM_HIGH_KHZ * 16;
++	band->modulation = V4L2_BAND_MODULATION_FM;
++	return 0;
++}
++
++static int qcom_fm_g_frequency(struct file *file, void *priv, struct v4l2_frequency *f)
++{
++	struct qcom_fm *fm = video_drvdata(file);
++
++	if (f->tuner)
++		return -EINVAL;
++	f->type = V4L2_TUNER_RADIO;
++	f->frequency = fm->frequency * 16;
++	return 0;
++}
++
++static int qcom_fm_s_frequency(struct file *file, void *priv,
++			      const struct v4l2_frequency *f)
++{
++	struct qcom_fm *fm = video_drvdata(file);
++	u32 frequency;
++
++	if (f->tuner || f->type != V4L2_TUNER_RADIO)
++		return -EINVAL;
++	if (fm->suspended)
++		return -EHOSTDOWN;
++	frequency = clamp(f->frequency, FM_LOW_KHZ * 16, FM_HIGH_KHZ * 16) / 16;
++	frequency = DIV_ROUND_CLOSEST(frequency, 50) * 50;
++	return qcom_fm_tune(fm, frequency);
++}
++
++static int qcom_fm_seek(struct file *file, void *priv,
++		       const struct v4l2_hw_freq_seek *seek)
++{
++	struct qcom_fm *fm = video_drvdata(file);
++	u8 search[3] = { 0, 1, !seek->seek_upward };
++	unsigned long flags;
++	int ret;
++
++	if (seek->tuner || seek->type != V4L2_TUNER_RADIO || seek->wrap_around ||
++	    (seek->spacing && seek->spacing != 50000) ||
++	    (seek->rangelow && seek->rangelow != FM_LOW_KHZ * 16) ||
++	    (seek->rangehigh && seek->rangehigh != FM_HIGH_KHZ * 16))
++		return -EINVAL;
++	if (file->f_flags & O_NONBLOCK)
++		return -EWOULDBLOCK;
++	if (fm->suspended)
++		return -EHOSTDOWN;
++	reinit_completion(&fm->seek_done);
++	spin_lock_irqsave(&fm->rx_lock, flags);
++	fm->seeking = true;
++	spin_unlock_irqrestore(&fm->rx_lock, flags);
++	ret = qcom_fm_command(fm, FM_SEARCH, search, sizeof(search));
++	if (!ret) {
++		ret = wait_for_completion_interruptible_timeout(&fm->seek_done,
++						msecs_to_jiffies(20000));
++		if (ret <= 0) {
++			qcom_fm_command(fm, FM_CANCEL, NULL, 0);
++			ret = ret < 0 ? ret : -ENODATA;
++		} else if (fm->removed) {
++			ret = -ENODEV;
++		} else {
++			ret = qcom_fm_command(fm, FM_STATION, NULL, 0);
++			if (!ret && fm->response_len != sizeof(fm->station))
++				ret = -EPROTO;
++			if (!ret && !fm->response[5])
++				ret = -ENODATA;
++			if (!ret) {
++				u32 khz = get_unaligned_le32(fm->response + 1);
++
++				if (khz < FM_LOW_KHZ || khz > FM_HIGH_KHZ)
++					ret = -EPROTO;
++				else
++					fm->frequency = khz;
++			}
++		}
++	}
++	spin_lock_irqsave(&fm->rx_lock, flags);
++	fm->seeking = false;
++	spin_unlock_irqrestore(&fm->rx_lock, flags);
++	return ret;
++}
++
++static const struct v4l2_ioctl_ops qcom_fm_ioctl_ops = {
++	.vidioc_querycap = qcom_fm_querycap,
++	.vidioc_g_tuner = qcom_fm_g_tuner,
++	.vidioc_s_tuner = qcom_fm_s_tuner,
++	.vidioc_enum_freq_bands = qcom_fm_enum_bands,
++	.vidioc_g_frequency = qcom_fm_g_frequency,
++	.vidioc_s_frequency = qcom_fm_s_frequency,
++	.vidioc_s_hw_freq_seek = qcom_fm_seek,
++	.vidioc_subscribe_event = v4l2_ctrl_subscribe_event,
++	.vidioc_unsubscribe_event = v4l2_event_unsubscribe,
++};
++
++static int qcom_fm_open(struct file *file)
++{
++	struct qcom_fm *fm = video_drvdata(file);
++	int ret;
++
++	if (mutex_lock_interruptible(&fm->lock))
++		return -ERESTARTSYS;
++	if (fm->removed || fm->suspended) {
++		ret = fm->removed ? -ENODEV : -EHOSTDOWN;
++		goto unlock;
++	}
++	ret = v4l2_fh_open(file);
++	if (ret)
++		goto unlock;
++	if (!fm->users) {
++		ret = qcom_fm_start(fm);
++		if (ret) {
++			v4l2_fh_release(file);
++			goto unlock;
++		}
++	}
++	fm->users++;
++unlock:
++	mutex_unlock(&fm->lock);
++	return ret;
++}
++
++static int qcom_fm_release(struct file *file)
++{
++	struct qcom_fm *fm = video_drvdata(file);
++
++	mutex_lock(&fm->lock);
++	if (!--fm->users)
++		qcom_fm_stop(fm);
++	v4l2_fh_release(file);
++	mutex_unlock(&fm->lock);
++	return 0;
++}
++
++static ssize_t qcom_fm_read(struct file *file, char __user *buffer,
++			   size_t count, loff_t *offset)
++{
++	struct qcom_fm *fm = video_drvdata(file);
++	unsigned long flags;
++	u8 block[3];
++	size_t done = 0;
++	int ret;
++
++	count = round_down(count, sizeof(block));
++	if (!count)
++		return 0;
++	/* The device mutex serializes FIFO readers, not the IRQ producer. */
++	ret = mutex_lock_interruptible(&fm->lock);
++	if (ret)
++		return ret;
++	while (done < count) {
++		if (fm->removed) {
++			ret = -ENODEV;
++			break;
++		}
++		if (fm->suspended) {
++			ret = -EHOSTDOWN;
++			break;
++		}
++		spin_lock_irqsave(&fm->rx_lock, flags);
++		ret = kfifo_out(&fm->rds, block, sizeof(block));
++		spin_unlock_irqrestore(&fm->rx_lock, flags);
++		if (ret) {
++			if (copy_to_user(buffer + done, block, sizeof(block))) {
++				ret = -EFAULT;
++				break;
++			}
++			done += sizeof(block);
++			continue;
++		}
++		if (done)
++			break;
++		if (file->f_flags & O_NONBLOCK) {
++			ret = -EAGAIN;
++			break;
++		}
++		mutex_unlock(&fm->lock);
++		ret = wait_event_interruptible(fm->read_queue,
++			READ_ONCE(fm->removed) || READ_ONCE(fm->suspended) ||
++			!kfifo_is_empty(&fm->rds));
++		if (ret)
++			return ret;
++		if (mutex_lock_interruptible(&fm->lock))
++			return -ERESTARTSYS;
++	}
++	mutex_unlock(&fm->lock);
++	return done ? done : ret;
++}
++
++static __poll_t qcom_fm_poll(struct file *file, struct poll_table_struct *wait)
++{
++	struct qcom_fm *fm = video_drvdata(file);
++	__poll_t mask = v4l2_ctrl_poll(file, wait);
++
++	poll_wait(file, &fm->read_queue, wait);
++	if (READ_ONCE(fm->removed))
++		return mask | EPOLLHUP | EPOLLERR;
++	if (!kfifo_is_empty(&fm->rds))
++		mask |= EPOLLIN | EPOLLRDNORM;
++	return mask;
++}
++
++static const struct v4l2_file_operations qcom_fm_fops = {
++	.owner = THIS_MODULE,
++	.open = qcom_fm_open,
++	.release = qcom_fm_release,
++	.read = qcom_fm_read,
++	.poll = qcom_fm_poll,
++	.unlocked_ioctl = video_ioctl2,
++};
++
++static void qcom_fm_video_release(struct video_device *video)
++{
++	struct qcom_fm *fm = container_of(video, struct qcom_fm, video);
++
++	v4l2_ctrl_handler_free(&fm->ctrls);
++	v4l2_device_unregister(&fm->v4l2);
++	kfifo_free(&fm->rds);
++	kfree(fm);
++}
++
++static int qcom_fm_probe(struct rpmsg_device *rpdev)
++{
++	struct qcom_fm *fm;
++	int ret;
++
++	fm = kzalloc_obj(*fm);
++	if (!fm)
++		return -ENOMEM;
++	fm->rpdev = rpdev;
++	fm->frequency = FM_LOW_KHZ;
++	fm->audmode = V4L2_TUNER_MODE_STEREO;
++	mutex_init(&fm->lock);
++	spin_lock_init(&fm->rx_lock);
++	init_completion(&fm->command_done);
++	init_completion(&fm->tune_done);
++	init_completion(&fm->seek_done);
++	init_waitqueue_head(&fm->read_queue);
++	ret = kfifo_alloc(&fm->rds, roundup_pow_of_two(FM_RDS_BYTES), GFP_KERNEL);
++	if (ret)
++		goto free;
++	ret = v4l2_device_register(&rpdev->dev, &fm->v4l2);
++	if (ret)
++		goto fifo;
++	v4l2_ctrl_handler_init(&fm->ctrls, 3);
++	fm->mute = v4l2_ctrl_new_std(&fm->ctrls, &qcom_fm_ctrl_ops,
++				   V4L2_CID_AUDIO_MUTE, 0, 1, 1, 1);
++	fm->deemphasis = v4l2_ctrl_new_std_menu(&fm->ctrls, &qcom_fm_ctrl_ops,
++		V4L2_CID_TUNE_DEEMPHASIS, V4L2_DEEMPHASIS_75_uS,
++		BIT(V4L2_DEEMPHASIS_DISABLED), V4L2_DEEMPHASIS_50_uS);
++	fm->rds_enable = v4l2_ctrl_new_std(&fm->ctrls, &qcom_fm_ctrl_ops,
++					 V4L2_CID_RDS_RECEPTION, 0, 1, 1, 1);
++	ret = fm->ctrls.error;
++	if (ret)
++		goto controls;
++	strscpy(fm->video.name, "Qualcomm WCNSS FM", sizeof(fm->video.name));
++	fm->video.v4l2_dev = &fm->v4l2;
++	fm->video.fops = &qcom_fm_fops;
++	fm->video.ioctl_ops = &qcom_fm_ioctl_ops;
++	fm->video.release = qcom_fm_video_release;
++	fm->video.lock = &fm->lock;
++	fm->video.ctrl_handler = &fm->ctrls;
++	fm->video.device_caps = V4L2_CAP_RADIO | V4L2_CAP_TUNER |
++		V4L2_CAP_RDS_CAPTURE | V4L2_CAP_HW_FREQ_SEEK | V4L2_CAP_READWRITE;
++	video_set_drvdata(&fm->video, fm);
++	dev_set_drvdata(&rpdev->dev, fm);
++	ret = video_register_device(&fm->video, VFL_TYPE_RADIO, -1);
++	if (ret)
++		goto controls;
++	dev_info(&rpdev->dev, "registered %s\n", video_device_node_name(&fm->video));
++	return 0;
++controls:
++	dev_set_drvdata(&rpdev->dev, NULL);
++	v4l2_ctrl_handler_free(&fm->ctrls);
++	v4l2_device_unregister(&fm->v4l2);
++fifo:
++	kfifo_free(&fm->rds);
++free:
++	kfree(fm);
++	return ret;
++}
++
++static void qcom_fm_remove(struct rpmsg_device *rpdev)
++{
++	struct qcom_fm *fm = dev_get_drvdata(&rpdev->dev);
++	unsigned long flags;
++
++	spin_lock_irqsave(&fm->rx_lock, flags);
++	fm->removed = true;
++	fm->command_error = -ENODEV;
++	complete_all(&fm->command_done);
++	complete_all(&fm->tune_done);
++	complete_all(&fm->seek_done);
++	spin_unlock_irqrestore(&fm->rx_lock, flags);
++	wake_up_interruptible(&fm->read_queue);
++	mutex_lock(&fm->lock);
++	qcom_fm_transport_close(fm);
++	v4l2_device_disconnect(&fm->v4l2);
++	dev_set_drvdata(&rpdev->dev, NULL);
++	mutex_unlock(&fm->lock);
++	/* Open files hold the video device and therefore the surrounding object. */
++	video_unregister_device(&fm->video);
++}
++
++static int qcom_fm_suspend(struct device *dev)
++{
++	struct qcom_fm *fm = dev_get_drvdata(dev);
++
++	mutex_lock(&fm->lock);
++	fm->suspended = true;
++	qcom_fm_stop(fm);
++	mutex_unlock(&fm->lock);
++	wake_up_interruptible(&fm->read_queue);
++	return 0;
++}
++
++static int qcom_fm_resume(struct device *dev)
++{
++	struct qcom_fm *fm = dev_get_drvdata(dev);
++	int ret = 0;
++
++	mutex_lock(&fm->lock);
++	if (fm->users)
++		ret = qcom_fm_start(fm);
++	fm->suspended = false;
++	mutex_unlock(&fm->lock);
++	return ret;
++}
++
++static DEFINE_SIMPLE_DEV_PM_OPS(qcom_fm_pm_ops, qcom_fm_suspend, qcom_fm_resume);
++static const struct rpmsg_device_id qcom_fm_ids[] = {
++	{ .name = "APPS_FM" },
++	{ }
++};
++MODULE_DEVICE_TABLE(rpmsg, qcom_fm_ids);
++
++static struct rpmsg_driver qcom_fm_driver = {
++	.drv.name = "qcom-smd-fm",
++	.drv.pm = pm_sleep_ptr(&qcom_fm_pm_ops),
++	.id_table = qcom_fm_ids,
++	.probe = qcom_fm_probe,
++	.remove = qcom_fm_remove,
++};
++module_rpmsg_driver(qcom_fm_driver);
++
++MODULE_DESCRIPTION("Qualcomm WCNSS SMD FM receiver");
++MODULE_AUTHOR("BlackF1re");
++MODULE_LICENSE("GPL");

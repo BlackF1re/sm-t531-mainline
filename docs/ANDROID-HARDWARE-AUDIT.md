@@ -105,3 +105,8 @@ The protected-offset behavior was checked against lk2nd 23.1
 [partition splitting](https://github.com/msm8916-mainline/lk2nd/blob/23.1/lk2nd/device/2nd/partition.c)
 and [partition reading](https://github.com/msm8916-mainline/lk2nd/blob/23.1/lk2nd/fastboot/fetch.c).
 This report records one controlled trial; it is not a generic flashing guide.
+
+A subsequent [FM investigation](FM.md) tested actual receiver commands under
+this preserved Android kernel, including DSP capture and process calibration.
+Control operations worked after retry, but no RF reception was accepted. That
+follow-up performed a separate verified BOOT backup/restoration.
