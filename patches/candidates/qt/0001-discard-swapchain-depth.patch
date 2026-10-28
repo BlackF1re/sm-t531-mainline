@@ -1,0 +1,29 @@
+Subject: [PATCH] rhi: discard transient default framebuffer depth before swap
+
+Diagnostic candidate for Qt 6.11.2; live acceptance pending.
+
+--- a/src/gui/rhi/qrhigles2.cpp
++++ b/src/gui/rhi/qrhigles2.cpp
+@@ -2387,6 +2387,22 @@
+     executeCommandBuffer(&swapChainD->cb);
+ 
+     if (swapChainD->surface && !flags.testFlag(QRhi::SkipPresent)) {
++        // beginPass clears the swapchain depth/stencil each frame. Discard
++        // these transient attachments before swapBuffers flushes tiled GPUs.
++        // Respect applications opting out of automatic clears and non-default
++        // platform framebuffers. Color and offscreen targets are preserved.
++        static const bool clearsBuffers = qEnvironmentVariableIntValue("QT_GL_NO_CLEAR_BUFFERS") == 0;
++        const bool canInvalidate = caps.gles ? caps.ctxMajor >= 3
++            : (caps.ctxMajor > 4 || (caps.ctxMajor == 4 && caps.ctxMinor >= 3)
++               || ctx->hasExtension(QByteArrayLiteral("GL_ARB_invalidate_subdata")));
++        if (clearsBuffers && canInvalidate && ctx->defaultFramebufferObject() == 0) {
++            GLint previousDrawFbo = 0;
++            f->glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &previousDrawFbo);
++            f->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
++            const GLenum attachments[] = { GL_DEPTH, GL_STENCIL };
++            f->glInvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, 2, attachments);
++            f->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GLuint(previousDrawFbo));
++        }
+         ctx->swapBuffers(swapChainD->surface);
+         needsMakeCurrentDueToSwap = true;
+     } else {

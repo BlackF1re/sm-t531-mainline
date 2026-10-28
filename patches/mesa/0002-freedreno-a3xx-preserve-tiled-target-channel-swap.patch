@@ -1,0 +1,26 @@
+Subject: [PATCH 2/2] freedreno/a3xx: retain the target format channel swap
+
+The GMEM target channel order must match the color format for tiled
+resources as well. Always use fd3_pipe2swap(), matching the resolve format,
+instead of forcing WZYX when the eventual resource is tiled. With the pitch
+fix alone, a BGRA upload returns red and blue interchanged when sampled.
+
+Tested on SM-T531/Adreno305b together with patch1 using complete pixel
+checks for RGBA, BGRA, A8 and L8 textures, 257x131 and 1280x800, including
+unaligned overlapping partial uploads. The linear-resource path retains
+its previous swap. Other GPU models/workloads remain unverified.
+
+Base: Mesa25.0.7 plus patch1.
+---
+diff --git a/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c b/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
+--- a/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
++++ b/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
+@@ -86,7 +86,7 @@
+ 
+          offset = fd_resource_offset(rsc, psurf->u.tex.level,
+                                      psurf->u.tex.first_layer);
+-         swap = rsc->layout.tile_mode ? WZYX : fd3_pipe2swap(pformat);
++         swap = fd3_pipe2swap(pformat);
+ 
+          if (bin_w) {
+             stride = bin_w << fdl_cpp_shift(&rsc->layout);

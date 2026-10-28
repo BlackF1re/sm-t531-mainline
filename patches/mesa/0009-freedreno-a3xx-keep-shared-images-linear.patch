@@ -1,0 +1,40 @@
+Subject: [PATCH] freedreno/a3xx: keep shared images linear; retain Wayland share intent
+
+A3xx TILE_4X4 exports DRM_FORMAT_MOD_INVALID, which the importer treats
+as linear. Preserve SHARE for split render/display devices and reject
+tiling of externally visible a3xx allocations. Private textures retain
+tiling. This fixes the observed Wayland allocation path, not arbitrary
+late export of a previously private resource.
+
+--- a/src/gallium/drivers/freedreno/a3xx/fd3_resource.c
++++ b/src/gallium/drivers/freedreno/a3xx/fd3_resource.c
+@@ -93,6 +93,14 @@
+ unsigned
+ fd3_tile_mode(const struct pipe_resource *tmpl)
+ {
++   /* TILE_4X4 has no interoperable dma-buf modifier.  An implicit
++    * modifier is imported as linear, so keep externally visible images
++    * linear while allowing tiling for private textures.
++    */
++   if (tmpl->bind & (PIPE_BIND_SHARED | PIPE_BIND_SCANOUT |
++                     PIPE_BIND_DISPLAY_TARGET))
++      return LINEAR;
++
+    if (ok_format(tmpl->format))
+       return TILE_4X4;
+    return LINEAR;
+--- a/src/egl/drivers/dri2/platform_wayland.c
++++ b/src/egl/drivers/dri2/platform_wayland.c
+@@ -1082,7 +1082,11 @@
+    dri2_surf->back->dri_image = dri_create_image_with_modifiers(
+       dri2_dpy->dri_screen_render_gpu, dri2_surf->base.Width,
+       dri2_surf->base.Height, pipe_format,
+-      (dri2_dpy->fd_render_gpu != dri2_dpy->fd_display_gpu) ? 0 : use_flags,
++      /* The render GPU need not support scanout, but this image is still
++       * shared with the compositor and must use an exportable layout.
++       */
++      (dri2_dpy->fd_render_gpu != dri2_dpy->fd_display_gpu)
++         ? (use_flags & __DRI_IMAGE_USE_SHARE) : use_flags,
+       modifiers, num_modifiers, NULL);
+ 
+    if (surf_modifiers_count > 0) {
