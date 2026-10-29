@@ -1,0 +1,7 @@
+[Unit]
+Description=Restore golden graphics configuration and reboot
+ConditionPathExists=/var/lib/t531/graphics-ab/pending
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/t531-graphics-ab rollback
+TimeoutStartSec=120

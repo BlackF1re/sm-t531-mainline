@@ -1,0 +1,30 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] drm/msm: retain the MSM self-import callback in split drivers
+
+MSM exports buffers with private dma_buf_ops. The generic DRM importer
+cannot use its generic-ops self-import shortcut for them. Register the
+existing MSM importer on every MSM DRM driver, as already done by the
+combined driver. Same-device imports then retain the original GEM object;
+real cross-device imports still take the normal attachment/map path. No
+cache synchronization, pinning or memory initialization is bypassed.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+--- a/drivers/gpu/drm/msm/msm_drv.c
++++ b/drivers/gpu/drm/msm/msm_drv.c
+@@ -868,6 +868,7 @@
+ 	.postclose          = msm_postclose,
+ 	.dumb_create        = msm_gem_dumb_create,
+ 	.dumb_map_offset    = drm_gem_dumb_map_offset,
++	.gem_prime_import   = msm_gem_prime_import,
+ 	.gem_prime_import_sg_table = msm_gem_prime_import_sg_table,
+ #ifdef CONFIG_DEBUG_FS
+ 	.debugfs_init       = msm_debugfs_init,
+@@ -886,6 +887,7 @@
+ 	.driver_features    = DRIVER_FEATURES_GPU,
+ 	.open               = msm_open,
+ 	.postclose          = msm_postclose,
++	.gem_prime_import   = msm_gem_prime_import,
+ 	.gem_prime_import_sg_table = msm_gem_prime_import_sg_table,
+ #ifdef CONFIG_DEBUG_FS
+ 	.debugfs_init       = msm_debugfs_init,

@@ -1,0 +1,2 @@
+# On-demand evidence for the remaining GPU fault; no idle polling.
+ACTION=="add", SUBSYSTEM=="devcoredump", KERNEL=="devcd*", KERNELS=="fdb00000.gpu", TAG+="systemd", ENV{SYSTEMD_WANTS}+="t531-gpu-coredump@%k.service"

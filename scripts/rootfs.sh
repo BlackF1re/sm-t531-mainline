@@ -32,16 +32,14 @@ case "${ROOTFS_PROFILE:-base}" in
         sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
             --no-install-recommends libgl1-mesa-dri libegl-mesa0 libgbm1 \
             mesa-utils libdrm-tests glmark2-es2-drm glmark2-es2-wayland weston
-        if [ "$native_kms" = 1 ]; then
-            ./scripts/build-mesa-msm-kms.sh
-            mesa_package=t531-mesa-msm-kms_0.20261014-1_armhf.deb
-        else
-            ./scripts/mesa-simpledrm.sh
-            mesa_package=t531-mesa-simpledrm_0.20261012-1_armhf.deb
-        fi
-        sudo cp ".work/artifacts/current/$mesa_package" "$root/tmp/"
-        sudo chroot "$root" dpkg -i "/tmp/$mesa_package"
-        sudo rm -f "$root/tmp/$mesa_package"
+        [[ $native_kms == 1 ]] || { echo 'Production graphics requires native unified DRM'; exit 1; }
+        sudo install -D -m644 config/msm.conf "$root/etc/modprobe.d/msm.conf"
+        sudo install -D -m644 config/t531-graphics.conf "$root/etc/environment.d/60-t531-graphics.conf"
+        sudo install -D -m644 config/t531-sddm-graphics.conf "$root/etc/systemd/system/sddm.service.d/20-t531-graphics.conf"
+        [[ -x .work/artifacts/tools/t531-drm-probe ]] || {
+            echo 'Build the ARM DRM capability probe with scripts/graphics/build-probe.sh first'; exit 1;
+        }
+        sudo install -D -m755 .work/artifacts/tools/t531-drm-probe "$root/usr/local/libexec/t531-drm-probe"
         if [ "${ROOTFS_PROFILE}" = mobile ]; then
             sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
                 plasma-mobile-full sddm xwayland
@@ -52,10 +50,20 @@ case "${ROOTFS_PROFILE:-base}" in
             sudo install -m 755 scripts/configure-plasma.sh "$root/tmp/t531-configure-plasma.sh"
             sudo chroot "$root" env INSTALL_ONLY=1 NATIVE_KMS="$native_kms" /tmp/t531-configure-plasma.sh
             sudo rm -f "$root/tmp/t531-configure-plasma.sh"
+            sudo install -D -m644 -o 1000 -g 1000 config/t531-kwin-graphics.conf "$root/home/t531/.config/systemd/user/plasma-kwin_wayland.service.d/10-t531-graphics.conf"
             if [ "$native_kms" = 1 ]; then
                 sudo install -D -m755 scripts/start-native-graphics.sh "$root/usr/local/sbin/t531-start-native-graphics"
                 sudo install -D -m644 config/t531-native-graphics.service "$root/etc/systemd/system/t531-native-graphics.service"
-                sudo systemctl --root="$root" enable t531-native-graphics.service
+                sudo install -D -m755 scripts/graphics/ab.sh "$root/usr/local/sbin/t531-graphics-ab"
+                sudo install -D -m755 scripts/graphics/save-gpu-coredump.sh "$root/usr/local/libexec/t531-save-gpu-coredump"
+                sudo install -D -m644 config/90-t531-gpu-coredump.rules "$root/etc/udev/rules.d/90-t531-gpu-coredump.rules"
+                sudo install -D -m644 config/t531-gpu-coredump@.service "$root/etc/systemd/system/t531-gpu-coredump@.service"
+                sudo install -D -m755 scripts/graphics/rollback-compat.sh "$root/usr/local/sbin/t531-graphics-rollback"
+                sudo install -D -m644 tools/graphics-ab/slots.py "$root/usr/local/lib/t531-graphics-ab/slots.py"
+                for unit in t531-native-kms-recovery.service t531-graphics-ab-guard.service t531-graphics-ab-timeout.service t531-graphics-ab-timeout.timer; do
+                    sudo install -D -m644 "config/$unit" "$root/etc/systemd/system/$unit"
+                done
+                sudo systemctl --root="$root" enable t531-native-graphics.service t531-graphics-ab-guard.service
             fi
         fi
         ;;

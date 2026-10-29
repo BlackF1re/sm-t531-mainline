@@ -108,7 +108,9 @@ int main(int argc, char **argv)
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
         if (i && linear) {
-            gpu=open("/dev/dri/by-path/platform-fdb00000.gpu-render",O_RDWR|O_CLOEXEC);
+            const char *node=getenv("FD2D_RENDER_NODE");
+            require(node != NULL, "set FD2D_RENDER_NODE from DRM capability probe");
+            gpu=open(node,O_RDWR|O_CLOEXEC);
             require(gpu>=0,"GPU fd");
             gbm=gbm_create_device(gpu);
             require(gbm!=NULL,"GBM");

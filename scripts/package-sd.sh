@@ -3,8 +3,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 a=${ARTIFACTS_DIR:-$PWD/.work/artifacts/current}
 a=$(realpath "$a")
-work=$PWD/.work
-NATIVE_KMS=${NATIVE_KMS:-1}
+work=${WORK_DIR:-$PWD/.work}
+[[ ${NATIVE_KMS:-1} == 1 ]] || { echo "SD production supports only native unified DRM" >&2; exit 1; }
+NATIVE_KMS=1
 # The installed bootstrap passes its live DT to kexec. An Android v0
 # container preserves the appended DT through kexec-tools' zImage loader.
 # ARM's decompressor then selects the appended, updated board DT.
@@ -18,10 +19,14 @@ if fdtget "$work/sd-kernel.dtb" "$bt_node" compatible >/dev/null 2>&1; then
 fi
 # RAM banks verified from the SM-T531 bootloader's live device tree.
 fdtput -t x "$work/sd-kernel.dtb" /memory@0 reg 0 40000000 40000000 20000000
-cmdline='console=tty0 loglevel=7 sysctl.kernel.sysrq=0 clk_ignore_unused msm.separate_gpu_kms=1 root=LABEL=T531_ROOT rootwait rw t531.stage=second'
+cmdline='console=tty0 loglevel=7 sysctl.kernel.sysrq=0 clk_ignore_unused root=LABEL=T531_ROOT rootwait rw t531.stage=second'
 if [ "${NATIVE_KMS:-0}" = 1 ]; then
-    cmdline=${cmdline/ msm.separate_gpu_kms=1/}
-    cmdline+=' tc358764.firmware_power=1 t531.native_kms=1 msm.separate_gpu_kms=1 drm_kms_helper.fbdev_emulation=0 systemd.unit=multi-user.target modprobe.blacklist=msm,arm_smmu'
+    cmdline+=' tc358764.firmware_power=1 t531.native_kms=1 drm_kms_helper.fbdev_emulation=0 systemd.unit=multi-user.target modprobe.blacklist=msm,arm_smmu'
+fi
+if [[ -n ${GRAPHICS_TRIAL_ID:-} ]]; then
+    [[ $GRAPHICS_TRIAL_ID =~ ^[a-zA-Z0-9_-]+$ ]]
+    cmdline=${cmdline/t531.native_kms=1/t531.native_kms=0}
+    cmdline+=" t531.graphics_trial=$GRAPHICS_TRIAL_ID"
 fi
 fdtput -t s "$work/sd-kernel.dtb" /chosen bootargs "$cmdline"
 # The immutable bootstrap uses --image-size=0x04000000, loading the

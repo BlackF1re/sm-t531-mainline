@@ -1,3 +1,7 @@
+> Historical bring-up record. The supported architecture and current acceptance
+> state are documented in [UNIFIED_DRM.md](UNIFIED_DRM.md). Split-mode commands
+> below are historical and must not be used for current deployment.
+
 # SM-T531 native display bring-up
 
 > [!NOTE]

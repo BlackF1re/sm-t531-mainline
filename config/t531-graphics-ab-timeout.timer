@@ -1,0 +1,6 @@
+[Unit]
+Description=Roll back an unconfirmed graphics trial
+[Timer]
+OnActiveSec=15min
+AccuracySec=1s
+Unit=t531-graphics-ab-timeout.service

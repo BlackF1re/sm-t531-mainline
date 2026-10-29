@@ -1,6 +1,8 @@
 # SM-T531 graphics investigation (2026-10-13–14)
 
 > [!NOTE]
+> Unified DRM migration and current validation limits: [Unified DRM](UNIFIED_DRM.md).
+>
 > These are **historical Plasma and framebuffer measurements**. The installed native Phosh profile and later IOMMU/DSI/MDP fixes are described in [Graphics stability](GRAPHICS-STABILITY.md). Its latest drawer regression is about 33 presentations/s; the older figures below are not a new benchmark of the installed build.
 
 This investigation targets output latency and frame pacing with Debian 13,

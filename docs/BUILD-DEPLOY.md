@@ -23,7 +23,7 @@ ROOTFS_PROFILE=mobile make rootfs
 - `ROOTFS_PROFILE=mobile`: Debian armhf with **Plasma Mobile**, SDDM, the native Mesa entry and activation service. Phosh requires the separate [Phosh build/install workflow](PHOSH.md).
 - Outputs: `.work/artifacts/current/`; kernel source: `.work/linux/`; build output: `.work/out/`.
 - Default kernel build uses **native MDP5 / DSI + interconnect** (`NATIVE_KMS=1`, `NATIVE_ICC=1`).
-- Older firmware-framebuffer recovery build: `NATIVE_KMS=0 NATIVE_ICC=0 make build` — **different graphics path**, not a drop-in guarantee.
+- Older firmware-framebuffer recovery build: `make build` — **different graphics path**, not a drop-in guarantee.
 
 Run these commands from the repository root, in order. `rootfs.sh` copies the module tree from `.work/artifacts/current/modules/` **if it exists**; build the matching kernel first. A fresh rootfs does not automatically reproduce the tablet's manually deployed Phosh runtime, device-local GPU power hold or private Wi-Fi configuration. WCNSS also needs the device firmware/calibration at the DT paths `qcom/matisse3g/wcnss.mdt` and `qcom/matisse3g/WCNSS_qcom_wlan_nv.bin`; the script does not import the owner's private copies.
 

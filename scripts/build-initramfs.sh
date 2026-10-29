@@ -2,9 +2,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 project=$PWD
-work=$project/.work
-out=$work/out
-artifacts=$work/artifacts/current
+work=${WORK_DIR:-$project/.work}
+out=${KERNEL_OUT:-$work/out}
+artifacts=${ARTIFACTS_DIR:-$work/artifacts/current}
 cross=${CROSS_COMPILE:-arm-linux-gnueabihf-}
 profile=${1:-main}
 case "$profile" in main) prefix=;; bootstrap) prefix=bootstrap-;; *) echo 'Usage: build-initramfs.sh [main|bootstrap]'; exit 1;; esac

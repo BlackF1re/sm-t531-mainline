@@ -2,10 +2,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 project=$PWD
-work=$project/.work
-linux=$work/linux
-out=$work/out
-artifacts=$work/artifacts/current
+work=${WORK_DIR:-$project/.work}
+linux=${KERNEL_SRC:-$work/linux}
+out=${KERNEL_OUT:-$work/out}
+artifacts=${ARTIFACTS_DIR:-$work/artifacts/current}
 commit=5fce161649b4d779d1b76d9fcd52dc77779774b8
 tag=v7.2.9
 cross=${CROSS_COMPILE:-arm-linux-gnueabihf-}
@@ -13,7 +13,8 @@ profile=${1:-main}
 case "$profile" in
     main)
         defconfig=multi_v7_defconfig; prefix=; required=config/kernel.fragment
-        export NATIVE_KMS=${NATIVE_KMS:-1}
+        [[ ${NATIVE_KMS:-1} == 1 ]] || { echo "Main supports only native unified DRM" >&2; exit 1; }
+        export NATIVE_KMS=1
         export NATIVE_ICC=${NATIVE_ICC:-$NATIVE_KMS}
         ;;
     bootstrap) defconfig=qcom_defconfig; prefix=bootstrap-; required=config/bootstrap.fragment;;
@@ -24,7 +25,7 @@ export KBUILD_BUILD_TIMESTAMP='2026-10-03 00:00:00 UTC' KBUILD_BUILD_VERSION=1
 export SOURCE_DATE_EPOCH=1790985600
 export LC_ALL=C TZ=UTC
 mkdir -p "$work" "$artifacts"
-if [ ! -d "$linux/.git" ]; then
+if [ ! -e "$linux/.git" ]; then
     git clone --depth 1 --branch "$tag" https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git "$linux"
 fi
 [ "$(git -C "$linux" rev-parse HEAD)" = "$commit" ] || { echo 'Wrong Linux base'; exit 1; }
@@ -34,7 +35,12 @@ fi
 patches=("$project"/patches/linux/*.patch)
 export GIT_INDEX_FILE="$work/source-check.index"
 applied_prefix=-1
-for ((candidate=${#patches[@]}; candidate>=0; candidate--)); do
+git -C "$linux" read-tree HEAD
+if git -C "$linux" diff --quiet &&
+   [ -z "$(git -C "$linux" ls-files --others --exclude-standard)" ]; then
+    applied_prefix=0
+fi
+for ((candidate=${#patches[@]}; applied_prefix<0 && candidate>=0; candidate--)); do
     git -C "$linux" read-tree HEAD
     for ((i=0; i<candidate; i++)); do
         git -C "$linux" apply --cached "${patches[i]}"
@@ -54,6 +60,7 @@ done
 git -C "$linux" diff --quiet || { echo 'Source changes outside the recorded patches'; exit 1; }
 unset GIT_INDEX_FILE
 km=(make -C "$linux" O="$out" ARCH=arm CROSS_COMPILE="$cross")
+[[ -z ${KERNEL_LOCALVERSION:-} ]] || km+=(LOCALVERSION="$KERNEL_LOCALVERSION")
 "${km[@]}" "$defconfig"
 "$linux/scripts/kconfig/merge_config.sh" -m -O "$out" "$out/.config" "$project/config/kernel.fragment"
 if [ "$profile" = bootstrap ]; then
@@ -115,7 +122,7 @@ if [ "${NATIVE_KMS:-0}" = 1 ]; then
 fi
 targets=(zImage "qcom/$dtb")
 [ "$profile" = bootstrap ] || targets+=(modules)
-"${km[@]}" -j"${JOBS:-8}" "${targets[@]}"
+"${km[@]}" -j"${JOBS:-$(nproc)}" "${targets[@]}"
 python3 "$project/tools/check-boot-layout.py" "$out/System.map" "$out/.config" \
     "$out/arch/arm/boot/zImage" \
     "$out/arch/arm/boot/dts/qcom/$dtb"
@@ -147,6 +154,13 @@ if [ "$profile" = bootstrap ]; then
     (cd "$artifacts"; sha256sum bootstrap-zImage bootstrap-initramfs.cpio.gz \
         bootstrap-boot.ext2 qcom-msm8226-samsung-matisse3g.dtb > bootstrap-SHA256SUMS)
     printf 'Bootstrap artifacts: %s\n' "$artifacts"
+    exit 0
+fi
+if [[ ${SD_ONLY:-0} == 1 ]]; then
+    "$project/scripts/package-sd.sh"
+    make -s -C "$linux" O="$out" ARCH=arm CROSS_COMPILE="$cross" ${KERNEL_LOCALVERSION:+LOCALVERSION="$KERNEL_LOCALVERSION"} kernelrelease > "$artifacts/kernel.release"
+    (cd "$artifacts"; sha256sum sd-kernel.img sd-kernel.sha256 initramfs.cpio.gz kexec.cmdline kernel.release kernel.config qcom-msm8226-samsung-matisse3g.dtb > SHA256SUMS)
+    printf 'SD-only artifacts (no bootloader image): %s\n' "$artifacts"
     exit 0
 fi
 url='https://github.com/msm8916-mainline/lk2nd/releases/download/23.1/lk2nd-msm8226.img'

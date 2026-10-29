@@ -20,27 +20,8 @@ User=t531
 Session=plasma-mobile.desktop
 Relogin=false
 CONFIG
-# MDP5 KMS and the Adreno render node are separate devices.
-# Historical framebuffer recovery must be selected explicitly.
-graphics_device=/dev/dri/by-path/platform-fd900100.display-controller-card
-if [ "${NATIVE_KMS:-1}" = 0 ]; then
-    graphics_device=/dev/dri/by-path/platform-3200000.framebuffer-card
-fi
-# Disable Freedreno batch reordering: native Qt scrolling otherwise loses glyphs.
-cat > /etc/environment.d/60-t531-graphics.conf <<CONFIG
-KWIN_DRM_DEVICES=$graphics_device
-QSG_RHI_BACKEND=opengl
-FD_MESA_DEBUG=inorder
-CONFIG
-cat > /etc/systemd/system/sddm.service.d/20-t531-graphics.conf <<CONFIG
-[Service]
-Environment=KWIN_DRM_DEVICES=$graphics_device
-Environment=QSG_RHI_BACKEND=opengl
-Environment=FD_MESA_DEBUG=inorder
-CONFIG
-chmod 644 /etc/sddm.conf.d/20-t531.conf \
-    /etc/environment.d/60-t531-graphics.conf \
-    /etc/systemd/system/sddm.service.d/20-t531-graphics.conf
+# Graphics files are installed by rootfs.sh from the canonical config/ sources.
+# KWin discovers the single GPU/KMS device through ordinary libdrm/GBM.
 # Use systemd for sleep and PowerDevil for the graphical power-key policy.
 install -d /etc/systemd/sleep.conf.d
 cat > /etc/systemd/sleep.conf.d/20-t531-bringup.conf <<'CONFIG'

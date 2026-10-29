@@ -1,0 +1,14 @@
+[Unit]
+Description=Restore golden SD boot before testing unified DRM
+After=local-fs.target
+Before=t531-native-graphics.service display-manager.service
+ConditionPathExists=/var/lib/t531/graphics-ab/pending
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/t531-graphics-ab guard
+RemainAfterExit=yes
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+[Unit]
+Description=Save bounded private Adreno fault evidence (%I)
+ConditionPathExists=/sys/class/devcoredump/%I/data
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/t531-save-gpu-coredump %I
+TimeoutStartSec=45
+Nice=19
+UMask=0077

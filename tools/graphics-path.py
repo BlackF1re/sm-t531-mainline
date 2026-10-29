@@ -33,7 +33,13 @@ def inspect_path(pid=None, require_unlocked=False):
     card = Path(cards[0])
     minor = os.minor(card.stat().st_rdev)
     name = Path(f"/sys/kernel/debug/dri/{minor}/name").read_text().strip()
-    if name.startswith("msm-kms dev=fd900100.display-controller "):
+    if name.startswith("msm "):
+        capability = json.loads(subprocess.check_output(
+            ["/usr/local/libexec/t531-drm-probe", "--require-unified"], text=True))
+        if Path(capability["card"]) != card:
+            raise SystemExit("Compositor is not using the verified unified KMS device")
+        presentation = "native-kms"
+    elif name.startswith("msm-kms dev=fd900100.display-controller "):
         presentation = "native-kms"
         expected = Path("/dev/dri/by-path/platform-fd900100.display-controller-card")
         gpu = Path("/dev/dri/by-path/platform-fdb00000.gpu-render")

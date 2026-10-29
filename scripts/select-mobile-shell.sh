@@ -9,8 +9,7 @@ case $shell in
     plasma) [[ -r /usr/share/wayland-sessions/plasma-mobile.desktop ]] ;;
     *) exit 2 ;;
 esac
-[[ -c /dev/dri/by-path/platform-fd900100.display-controller-card ]]
-[[ -c /dev/dri/by-path/platform-fdb00000.gpu-render ]]
+/usr/local/libexec/t531-drm-probe --require-unified >/dev/null
 exec 9>/run/lock/t531-mobile-shell.lock
 flock -n 9 || { echo 'Another session switch is active'; exit 1; }
 project=$(realpath "$(dirname "$0")/..")

@@ -36,7 +36,12 @@
 > [!NOTE]
 > **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](docs/GRAPHICS-STABILITY.md), [battery evidence](docs/BATTERY.md), and [patch review](docs/PATCH-REVIEW.md).
 
-Evidence spans several kernel and display profiles. **Latest installed profile**, rechecked on **2026-10-22**: kernel `7.2.9-t531-dirty #19`, native split GPU/KMS, Mesa **25.0.7**, Phoc **0.46.0**, Phosh **0.58.0-1~t5313**, Debian **13.7**. This check confirmed processes, DRM ownership, module hash and battery interfaces; it adds no new physical display, FPS or suspend acceptance. Firmware bridge power, `FD_MESA_DEBUG=inorder` and a device-local GPU runtime hold remain in use.
+**Current graphics architecture (2026-10-29):** unified Adreno 305 / MDP5 MSM
+DRM, hardware Mesa 25.0.7 and Plasma Mobile. The split-only loader is removed;
+early framebuffer console and verified recovery remain. PRIME import overhead
+was eliminated, but stock drawer animation measured 35.5 FPS and a residual GPU
+recovery remains under investigation. See [unified DRM evidence and deployment](docs/UNIFIED_DRM.md).
+Production cold-boot acceptance is pending; this is not a flawless-stack claim.
 
 On **2026-10-22**, kernel #16 consolidates [WCN3660 support](docs/WIFI.md) into one kernel patch, selects software scanning without the known HAL208 timeout, clears stale scan state and excludes the unsupported channel 144 through standard OF limits. Managed, WPA2 AP, raw monitor, probe/data injection and hcxdumptool handshake capture passed short tests. Configuration/MSM module are unchanged; DTB adds only the frequency limit. Monitor is exclusive; firmware hot restart, PMF and advanced RF controls remain incomplete or unvalidated.
 
