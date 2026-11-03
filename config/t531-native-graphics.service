@@ -3,13 +3,13 @@ Description=SM-T531 unified Adreno / MDP5 graphics activation
 OnFailure=t531-native-kms-recovery.service
 ConditionKernelCommandLine=t531.native_kms=1
 Requires=t531-graphics-ab-guard.service
+Wants=display-manager.service
 After=t531-graphics-ab-guard.service systemd-udev-trigger.service ssh.service t531-ssh-wifi.service
 Before=display-manager.service
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/t531-start-native-graphics
-ExecStartPost=/usr/bin/systemctl --no-block start display-manager.service
 RemainAfterExit=yes
 TimeoutStartSec=60
 

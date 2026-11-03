@@ -1,0 +1,56 @@
+Subject: [CANDIDATE] freedreno/a3xx: minimize aligned GMEM tile count
+
+The alternating-axis heuristic can miss layouts with fewer actual tiles
+after device alignment. Search legal column counts and the smallest
+fitting row count, using the existing GMEM size and alignment checks.
+Retain the old shape on ties. Layouts remain cached per framebuffer key.
+
+For 1280x800 RGBA plus packed depth/stencil in 128 KiB GMEM, the
+heuristic produces 8x9 tiles; a 5x13 layout uses 65 rather than 72.
+This is a candidate, not a claim of device correctness or 60 FPS.
+
+--- a/src/gallium/drivers/freedreno/freedreno_gmem.c
++++ b/src/gallium/drivers/freedreno/freedreno_gmem.c
+@@ -254,6 +254,42 @@
+    }
+ 
+    layout_gmem(key, nbins_x, nbins_y, gmem);
++
++   /* A3xx has little GMEM, so a near-square search can miss a layout
++    * with fewer actual tiles after alignment.  Keep the existing layout
++    * on ties, and use the same checked layout function for every choice.
++    */
++   if (screen->gen == 3) {
++      unsigned best_x = nbins_x, best_y = nbins_y;
++      unsigned best_count = gmem->nbins_x * gmem->nbins_y;
++      unsigned max_x = DIV_ROUND_UP(key->width, screen->info->tile_align_w);
++      unsigned max_y = DIV_ROUND_UP(key->height, screen->info->tile_align_h);
++      unsigned min_y = DIV_ROUND_UP(key->height, max_height);
++
++      for (unsigned x = DIV_ROUND_UP(key->width, max_width);
++           x <= max_x && x <= best_count; x++) {
++         /* At fixed width, storage decreases monotonically with y. */
++         if (!layout_gmem(key, x, max_y, gmem))
++            continue;
++         unsigned lo = MAX2(1, min_y), hi = max_y;
++         while (lo < hi) {
++            unsigned mid = lo + (hi - lo) / 2;
++            if (layout_gmem(key, x, mid, gmem))
++               hi = mid;
++            else
++               lo = mid + 1;
++         }
++         if (!layout_gmem(key, x, lo, gmem))
++            continue;
++         unsigned count = gmem->nbins_x * gmem->nbins_y;
++         if (count < best_count) {
++            best_count = count;
++            best_x = x;
++            best_y = lo;
++         }
++      }
++      layout_gmem(key, best_x, best_y, gmem);
++   }
+ }
+ 
+ static struct fd_gmem_stateobj *

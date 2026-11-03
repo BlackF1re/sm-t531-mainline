@@ -1,0 +1,134 @@
+{
+  "limitation": "Retirement-derived service intervals include scheduling/notification; not exact hardware elapsed time. Correlation is not causal intervention.",
+  "ioctl_links": 2186,
+  "ioctl_match_counts": {
+    "0": 834,
+    "1": 1352
+  },
+  "matched_jobs": 1352,
+  "batch_count": 6276,
+  "presentation_groups": {
+    "normal": {
+      "frames": 501,
+      "with_square": 0,
+      "square_service_ms": {
+        "n": 501,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    "late": {
+      "frames": 106,
+      "with_square": 0,
+      "square_service_ms": {
+        "n": 106,
+        "mean": 0,
+        "p50": 0.0,
+        "p95": 0,
+        "max": 0
+      }
+    }
+  },
+  "summary": {
+    "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+    "idle_gap_threshold_ms": 100,
+    "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+    "active_fps": 50.311667540504864,
+    "frame_interval": {
+      "samples": 608,
+      "p50_ms": 16.670999999405467,
+      "p95_ms": 33.343999999488005,
+      "p99_ms": 50.00100000142993,
+      "over_25ms_percent": 17.598684210526315
+    },
+    "bursts": [
+      {
+        "start": 8604.655675,
+        "seconds": 1.3835540000000037,
+        "frames": 70,
+        "fps": 49.87156265675197
+      },
+      {
+        "start": 8606.405966,
+        "seconds": 1.3667960000002495,
+        "frames": 71,
+        "fps": 51.21466553895916
+      },
+      {
+        "start": 8608.13942,
+        "seconds": 0.5167209999999614,
+        "frames": 28,
+        "fps": 52.25256956849445
+      },
+      {
+        "start": 8609.039541,
+        "seconds": 0.5000359999994544,
+        "frames": 28,
+        "fps": 53.99611227997477
+      },
+      {
+        "start": 8609.872958,
+        "seconds": 1.366823000000295,
+        "frames": 65,
+        "fps": 46.823912093947925
+      },
+      {
+        "start": 8611.623169,
+        "seconds": 1.4002110000001267,
+        "frames": 72,
+        "fps": 50.70664349872525
+      },
+      {
+        "start": 8613.35671,
+        "seconds": 1.4001489999991463,
+        "frames": 72,
+        "fps": 50.708888839718696
+      },
+      {
+        "start": 8615.106913,
+        "seconds": 1.3834879999994882,
+        "frames": 72,
+        "fps": 51.31956330667578
+      },
+      {
+        "start": 8616.840511,
+        "seconds": 1.3834310000002006,
+        "frames": 70,
+        "fps": 49.87599670673131
+      },
+      {
+        "start": 8618.590742,
+        "seconds": 1.3834630000001198,
+        "frames": 70,
+        "fps": 49.87484305687541
+      }
+    ],
+    "gpu_busy_percent_recording": 35.1072319284399,
+    "cpu_busy_percent_recording_all_cores": 22.753086419753085,
+    "cpu_khz_median": 1190400.0,
+    "gpu_hz_median": 450000000.0,
+    "axi_hz_median": 266666666.0
+  },
+  "selected_jobs": {
+    "1280x800_5_draws": {
+      "n": 434,
+      "mean_service_ms": 7.923375576094326,
+      "median_service_ms": 7.845000000088476,
+      "p95_service_ms": 8.426000000326894,
+      "max_service_ms": 9.778000001460896,
+      "attachments": "clear=7, restore=0, resolve=4; no depth/stencil writeback",
+      "coalescing": "91-draw jobs may also include several tiny 79x14 passes; whole-job timing cannot separate those"
+    },
+    "1280x800_91_draws": {
+      "n": 127,
+      "mean_service_ms": 22.39981102350676,
+      "median_service_ms": 21.79499999874679,
+      "p95_service_ms": 23.82000000034168,
+      "max_service_ms": 31.101000000489876,
+      "attachments": "clear=7, restore=0, resolve=4; no depth/stencil writeback",
+      "coalescing": "91-draw jobs may also include several tiny 79x14 passes; whole-job timing cannot separate those"
+    }
+  }
+}

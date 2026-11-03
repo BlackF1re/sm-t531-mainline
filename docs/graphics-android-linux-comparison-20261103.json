@@ -1,0 +1,1386 @@
+{
+  "date": "2026-11-03",
+  "kernel": "7.2.9-t531-unified2-dirty",
+  "mesa": "25.0.7 FD305, /opt/t531-graphics-shared-20261028/mesa",
+  "method": "Private RGBA8 texture FBO, no depth, no scanout, identical shader text/fullscreen blend draws to Android Java benchmark; 5 warmups, 40 samples, glFinish; blue pixel tolerance 2",
+  "controls": {
+    "gpu_min_hz": 450000000,
+    "cpu_min_khz": 1190400,
+    "restored_gpu_min_hz": 19000000,
+    "restored_cpu_min_khz": 300000
+  },
+  "limits": [
+    "GPU/CPU frequencies read before and after each case, no physical frequency measurement per sample",
+    "Android Java JNI versus Linux C host overhead",
+    "Android 1x1 EGL pbuffer versus Mesa EGL surfaceless; both render into private FBO",
+    "Compositor remains active in both systems",
+    "Only blue pixel checked, not full-frame image equality",
+    "Android internal resource layout and command stream not captured; no claim tiling alone equals Android layout"
+  ],
+  "android_fixed": [
+    {
+      "phase": "before",
+      "gpu_hz": 450000000,
+      "cpu_khz": 1190400
+    },
+    {
+      "renderer": "Adreno (TM) 305",
+      "version": "OpenGL ES 3.0 V@84.0 AU@  (CL@)",
+      "offscreen": true,
+      "host": "Android Java GLES20 JNI"
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "shader_mode": "solid",
+      "layers": 1,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 2.8418,
+      "p50_ms": 2.8067,
+      "p95_ms": 3.0083,
+      "blue": 89
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "shader_mode": "solid",
+      "layers": 2,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 4.0903,
+      "p50_ms": 4.031,
+      "p95_ms": 4.1886,
+      "blue": 116
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "shader_mode": "solid",
+      "layers": 4,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 6.3684,
+      "p50_ms": 6.3574,
+      "p95_ms": 6.4693,
+      "blue": 126
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "shader_mode": "solid",
+      "layers": 8,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 11.1033,
+      "p50_ms": 10.9937,
+      "p95_ms": 11.0962,
+      "blue": 127
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "shader_mode": "solid",
+      "layers": 16,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 20.2741,
+      "p50_ms": 20.2686,
+      "p95_ms": 20.3591,
+      "blue": 127
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "shader_mode": "sample",
+      "layers": 1,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 3.5706,
+      "p50_ms": 3.5548,
+      "p95_ms": 3.7197,
+      "blue": 89
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "shader_mode": "sample",
+      "layers": 2,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 5.0116,
+      "p50_ms": 4.9528,
+      "p95_ms": 5.3326,
+      "blue": 116
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "shader_mode": "sample",
+      "layers": 4,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 8.1979,
+      "p50_ms": 8.2122,
+      "p95_ms": 8.392,
+      "blue": 126
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "shader_mode": "sample",
+      "layers": 8,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 14.3342,
+      "p50_ms": 14.3454,
+      "p95_ms": 14.798,
+      "blue": 127
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "shader_mode": "sample",
+      "layers": 16,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 26.2982,
+      "p50_ms": 26.2722,
+      "p95_ms": 27.0071,
+      "blue": 127
+    },
+    {
+      "width": 640,
+      "height": 400,
+      "shader_mode": "solid",
+      "layers": 1,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 0.9854,
+      "p50_ms": 0.9445,
+      "p95_ms": 1.3323,
+      "blue": 89
+    },
+    {
+      "width": 640,
+      "height": 400,
+      "shader_mode": "solid",
+      "layers": 2,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 1.3261,
+      "p50_ms": 1.2664,
+      "p95_ms": 1.5758,
+      "blue": 116
+    },
+    {
+      "width": 640,
+      "height": 400,
+      "shader_mode": "solid",
+      "layers": 4,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 1.8791,
+      "p50_ms": 1.8689,
+      "p95_ms": 1.966,
+      "blue": 126
+    },
+    {
+      "width": 640,
+      "height": 400,
+      "shader_mode": "solid",
+      "layers": 8,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 3.0619,
+      "p50_ms": 3.0544,
+      "p95_ms": 3.1415,
+      "blue": 127
+    },
+    {
+      "width": 640,
+      "height": 400,
+      "shader_mode": "solid",
+      "layers": 16,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 5.6302,
+      "p50_ms": 5.5446,
+      "p95_ms": 5.9201,
+      "blue": 127
+    },
+    {
+      "width": 640,
+      "height": 400,
+      "shader_mode": "sample",
+      "layers": 1,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 1.3505,
+      "p50_ms": 1.2041,
+      "p95_ms": 1.6986,
+      "blue": 89
+    },
+    {
+      "width": 640,
+      "height": 400,
+      "shader_mode": "sample",
+      "layers": 2,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 1.6783,
+      "p50_ms": 1.6603,
+      "p95_ms": 1.7421,
+      "blue": 116
+    },
+    {
+      "width": 640,
+      "height": 400,
+      "shader_mode": "sample",
+      "layers": 4,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 2.7778,
+      "p50_ms": 2.7661,
+      "p95_ms": 2.9768,
+      "blue": 126
+    },
+    {
+      "width": 640,
+      "height": 400,
+      "shader_mode": "sample",
+      "layers": 8,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 4.3985,
+      "p50_ms": 4.2179,
+      "p95_ms": 5.2538,
+      "blue": 127
+    },
+    {
+      "width": 640,
+      "height": 400,
+      "shader_mode": "sample",
+      "layers": 16,
+      "blend": 1,
+      "clear_quad": 0,
+      "frames": 40,
+      "mean_ms": 8.3253,
+      "p50_ms": 8.7107,
+      "p95_ms": 10.0556,
+      "blue": 127
+    },
+    {
+      "phase": "after",
+      "gpu_hz": 450000000,
+      "cpu_khz": 1190400
+    }
+  ],
+  "linux": {
+    "A": [
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 1,
+        "mean_ms": 7.4122,
+        "p50_ms": 7.4151,
+        "p95_ms": 7.493,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "c1eec12c87401c3b79ee2e092c3dee46d681118ae700bdcfa6c191d1ac2a01ea"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 2,
+        "mean_ms": 9.7499,
+        "p50_ms": 9.753,
+        "p95_ms": 9.8289,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "39159d3e8c0f9a07d330024dbf7a1a1e13dc7dd9a2eb997414806dbeb0a346b7"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 4,
+        "mean_ms": 14.3809,
+        "p50_ms": 14.3847,
+        "p95_ms": 14.4745,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "de6c7ab818deeab6fc3c62e00dc0221c32142b72af9aa69419418443515b476c"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 8,
+        "mean_ms": 23.6269,
+        "p50_ms": 23.6378,
+        "p95_ms": 23.6899,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "1f97157d6de44f80ee682c70d39bc280ba317604ccf9b026b1e3add933c4e2f1"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 16,
+        "mean_ms": 41.3405,
+        "p50_ms": 41.3345,
+        "p95_ms": 41.4407,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "945f49b00ffb4209ee5548561b84c2f30447bd7a7bbd44f77722b3d6fe880b06"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 1,
+        "mean_ms": 11.2765,
+        "p50_ms": 11.2864,
+        "p95_ms": 11.3715,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "9cad0c97495ce44ecc6fffc4cab8a66f4f615922a6f9de08aca1973218a12ce5"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 2,
+        "mean_ms": 15.9596,
+        "p50_ms": 15.9599,
+        "p95_ms": 16.0721,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "0322dc4c962ac4795f07ac4cbf60da5cb8917cd6c66df5465582ed0cca7349be"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 4,
+        "mean_ms": 25.6056,
+        "p50_ms": 25.5909,
+        "p95_ms": 25.7833,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "8bd05fbfeca31b31e3e4306180d8290107ac8eb34fd59b0bd442497170179631"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 8,
+        "mean_ms": 44.7478,
+        "p50_ms": 44.7481,
+        "p95_ms": 44.9009,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "ae3447eb8de62ff99c369ad025d693949d97373b1091cc337e133a55656cd7b7"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 16,
+        "mean_ms": 82.2508,
+        "p50_ms": 82.2503,
+        "p95_ms": 82.4501,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "f1b0cafbcb046e8ca8581a7e4bafa63a281434b50759980ab3a2a2d521e89f4e"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 1,
+        "mean_ms": 2.034,
+        "p50_ms": 2.0163,
+        "p95_ms": 2.1585,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "217d033c08155b1b49c10a68e9935944d281a9b81e74b599db9e0940629b3618"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 2,
+        "mean_ms": 2.6102,
+        "p50_ms": 2.5951,
+        "p95_ms": 2.7093,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "3a19d21b1640b603bb9913a279c8f5054c0f0e6488ef885c767433f884f4e3a9"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 4,
+        "mean_ms": 3.8143,
+        "p50_ms": 3.8073,
+        "p95_ms": 3.9132,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "26e4e87aa29c36c93f5a8049e76bc3638ea18e3c42099a4a379bd7b439a9ac03"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 8,
+        "mean_ms": 6.2369,
+        "p50_ms": 6.2346,
+        "p95_ms": 6.3211,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "3977ac7f4a2f1ea8d5366d851d3ead5f83e183cc4cdc1dcc8591b99b1ecf562b"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 16,
+        "mean_ms": 10.7845,
+        "p50_ms": 10.7722,
+        "p95_ms": 10.868,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "6893db91c08507ef2f88d83309ba497dab87a5cc5b78d8afe97ec95a08151c4f"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 1,
+        "mean_ms": 2.1553,
+        "p50_ms": 2.1562,
+        "p95_ms": 2.2601,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "c10f7f9ddcb71608c3bfb103636f8213a4bce6d79241d535af5aedd79a04dc8b"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 2,
+        "mean_ms": 2.8869,
+        "p50_ms": 2.8869,
+        "p95_ms": 2.9811,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "aecdae11bede7f27a719e54c30d771cd3e86a9666f29fe871e99a09808d02bca"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 4,
+        "mean_ms": 4.1532,
+        "p50_ms": 4.1626,
+        "p95_ms": 4.2594,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "b495c1617aefabcce60d3b363af5346be48d08ac4133bd68e9d16234c0857f5d"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 8,
+        "mean_ms": 6.6492,
+        "p50_ms": 6.648,
+        "p95_ms": 6.7437,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "eb01f3c8eccef62aa477f7e1838bcb233d214c4a4315ed522cd6eff5a35f4b31"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 16,
+        "mean_ms": 11.6246,
+        "p50_ms": 11.6246,
+        "p95_ms": 11.7005,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "10c50941c34a28a8d326fa3445774c1aa549a007f27ac726ee0f694232422881"
+      }
+    ],
+    "B_ttile": [
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 1,
+        "mean_ms": 7.2307,
+        "p50_ms": 7.2365,
+        "p95_ms": 7.3305,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "ce3a4c4c0b0937fd3436997bc6da95a285e0571b9d59a2405f76fa6d46e6a770"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 2,
+        "mean_ms": 9.5653,
+        "p50_ms": 9.556,
+        "p95_ms": 9.7062,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "26dcca02d0d27bef3d1227d171c7caa3ae7ae7600dde58ab0c5b2770e9651a74"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 4,
+        "mean_ms": 14.289,
+        "p50_ms": 14.2924,
+        "p95_ms": 14.4456,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "ae5513f6eab920c8e45c02850c5f2cc64784be6ee18f5a589d03af763006e914"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 8,
+        "mean_ms": 23.4763,
+        "p50_ms": 23.4714,
+        "p95_ms": 23.608,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "4bd2dba5c5e93c50d72b0a07015174e7148d0009a2d9a180175ae7289485997f"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 16,
+        "mean_ms": 41.7686,
+        "p50_ms": 41.6697,
+        "p95_ms": 42.2009,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "f1d0711ec4396ad0d1cc77175df1eb82173475c5a61e45e42fd3ebebc60e7763"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 1,
+        "mean_ms": 7.6013,
+        "p50_ms": 7.616,
+        "p95_ms": 7.6873,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "ceea63e5bf4e704de007ff3c956682bbe52ce1d9a1c3c4194cac4a48bbf9a9d5"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 2,
+        "mean_ms": 9.9913,
+        "p50_ms": 9.9855,
+        "p95_ms": 10.0589,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "01bfb3197de5148db774632ab58e0ede1201c641acb8e15e1aaf403aaf4e0b3a"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 4,
+        "mean_ms": 15.0277,
+        "p50_ms": 14.9826,
+        "p95_ms": 15.2832,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "09e9be8e71865ad2c504bc5456dc02b9890d693ff1b116219095eed1ec00b3bc"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 8,
+        "mean_ms": 24.7327,
+        "p50_ms": 24.7153,
+        "p95_ms": 24.8515,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "dff29f3b01f4a74a8881d30e0ff3efa58a1db2efe035ba9e416a335e2788c474"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 16,
+        "mean_ms": 44.4195,
+        "p50_ms": 44.407,
+        "p95_ms": 44.6125,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "230f5cdc8e2156be94b604da2b698420d8f50877a4f646b06c57252041d1ff77"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 1,
+        "mean_ms": 2.4725,
+        "p50_ms": 2.4718,
+        "p95_ms": 2.7526,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "d1fbc964a821d454a238dd772d43497a717ac40a812fad2de60cc1c1ca3fe404"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 2,
+        "mean_ms": 3.2233,
+        "p50_ms": 3.0503,
+        "p95_ms": 3.7381,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "70a1de2d5b878e8f5a27040545cc5576d0117e95b202199f0b0dc90f2f3388d2"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 4,
+        "mean_ms": 4.1717,
+        "p50_ms": 4.1878,
+        "p95_ms": 4.292,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "a853119f7d35311be006bbeb54bc3f9863afaa8f58b9923c8347851e5233aa59"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 8,
+        "mean_ms": 6.4631,
+        "p50_ms": 6.4598,
+        "p95_ms": 6.5693,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "7402ddcba70a62914694e7825b3c82dc22cfd3b3de4eb25b500add6dcaf73b89"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 16,
+        "mean_ms": 11.1862,
+        "p50_ms": 11.1225,
+        "p95_ms": 11.5259,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "56ecaab015f3632482acde45243ebe32dd242f5afbfd129e507343b39d2ed843"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 1,
+        "mean_ms": 2.2553,
+        "p50_ms": 2.2298,
+        "p95_ms": 2.3958,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "08fe329a45b01330fe2d7aff951a30ce0a487137d8114ed041b63160eee98277"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 2,
+        "mean_ms": 3.2134,
+        "p50_ms": 3.1974,
+        "p95_ms": 3.3771,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "bc91d232f2856fc2e5e37517fb0e66c9d1caf03e5c39b58b2c1748f968a0d75d"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 4,
+        "mean_ms": 4.447,
+        "p50_ms": 4.4504,
+        "p95_ms": 4.5842,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "c6f99bd3787cf5f9e95e66b46995657d6efac18f033f051e1fe714cceec1d1e3"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 8,
+        "mean_ms": 7.1727,
+        "p50_ms": 7.1752,
+        "p95_ms": 7.3705,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "3cad95a6e1033754aaf48d481c74987ac8ad490092e662105d62fceef8be1b86"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 16,
+        "mean_ms": 12.1983,
+        "p50_ms": 12.2063,
+        "p95_ms": 12.3437,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "ade26a02776de827e354fa63a3a0aa25256d0accf1a636cbe8b5375bddfcac12"
+      }
+    ],
+    "A_repeat": [
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 1,
+        "mean_ms": 7.205,
+        "p50_ms": 7.1981,
+        "p95_ms": 7.3105,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "0ab262fcc3f89edae231641eaf0d19c4dd6f48bed068c47aa8e5b6a5b2b99858"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 2,
+        "mean_ms": 9.756,
+        "p50_ms": 9.7637,
+        "p95_ms": 9.8391,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "66f9c265873d76f74c7ebaaf6a0cd6aced02b6d20922b95aa39ddb3264eea023"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 4,
+        "mean_ms": 14.377,
+        "p50_ms": 14.3795,
+        "p95_ms": 14.4391,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "62be1ef9728b573caa5cffbcb5eee4e11b7a0ab5b60aa23ffdfe019bed72a992"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 8,
+        "mean_ms": 23.156,
+        "p50_ms": 23.1634,
+        "p95_ms": 23.2424,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "5c5d79f3dd41d84e0a99018f7b16f66d6e45d67fef0aee46df770a731f9f31be"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "solid",
+        "layers": 16,
+        "mean_ms": 42.0866,
+        "p50_ms": 42.0965,
+        "p95_ms": 42.168,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "d6c3a38f55c494d8741631e00050fc8ab57051fa9a92f75f741d6dc8cbc7ec70"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 1,
+        "mean_ms": 11.1925,
+        "p50_ms": 11.195,
+        "p95_ms": 11.2802,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "26e687d8a08796572b36840484686fb51915eb4f8406098d2cbfaff913ec97c9"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 2,
+        "mean_ms": 15.9258,
+        "p50_ms": 15.9264,
+        "p95_ms": 16.0155,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "f08068008db6dad6c549b9945990859a07fb32bb48b5c48408d1a1a24beb8674"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 4,
+        "mean_ms": 25.3895,
+        "p50_ms": 25.3974,
+        "p95_ms": 25.5035,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "a6a513eea7d6188cca6ceabc2460f3f92df9c042738624c9d81db8a4797329ac"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 8,
+        "mean_ms": 44.0714,
+        "p50_ms": 44.0652,
+        "p95_ms": 44.2036,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "4a7719c8c1d482de71fd8a2fbe9d0b37826023fc7be563fd0038eb3d32a2e47a"
+      },
+      {
+        "width": 1280,
+        "height": 800,
+        "shader_mode": "sample",
+        "layers": 16,
+        "mean_ms": 82.8428,
+        "p50_ms": 82.8393,
+        "p95_ms": 82.9807,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "d3d8261325fa4dc11069f1097fe8c66b16cf83427b26078953a3fd4c1551c09a"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 1,
+        "mean_ms": 2.0376,
+        "p50_ms": 2.0263,
+        "p95_ms": 2.1426,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "cb48063b86e6c2c5577a9c595841c8349457133298c53be5b5f6f836e2cdac0d"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 2,
+        "mean_ms": 2.6295,
+        "p50_ms": 2.6218,
+        "p95_ms": 2.7497,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "a5ba1f20e91ee481cf981bf3ef139745c1e2e629026a7e2ca2c8f3c9dde00733"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 4,
+        "mean_ms": 3.8315,
+        "p50_ms": 3.8459,
+        "p95_ms": 3.9208,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "ebd5f3d44c611e6f16b3039e66f5400936c50f6865b95d0fb28b8449804a9aa8"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 8,
+        "mean_ms": 6.1924,
+        "p50_ms": 6.1909,
+        "p95_ms": 6.2552,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "a792d5cac4dcc0a4fd3df4c883ce670288c2dba09c5f243870ab2b8e60cddfe7"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "solid",
+        "layers": 16,
+        "mean_ms": 10.8725,
+        "p50_ms": 10.8566,
+        "p95_ms": 11.0234,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "49538ebdda95be923b10778b761a2eecbd6c3a59359584dc551ad3950c5006a1"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 1,
+        "mean_ms": 2.1617,
+        "p50_ms": 2.1843,
+        "p95_ms": 2.2313,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "3a6cd5a307ecd476d8fafdab8d15501ddfb6f9e6bde3b0bf1fd2e5cce460e23f"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 2,
+        "mean_ms": 2.8253,
+        "p50_ms": 2.8331,
+        "p95_ms": 2.9151,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "8a58871ff8878f04132392590833065402d3ead34699424683f528d74ae86937"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 4,
+        "mean_ms": 4.2316,
+        "p50_ms": 4.2019,
+        "p95_ms": 4.5293,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "3a21a7d75b95fea7efe8836b8eea06075d6a571af22c2d87ee9de181676303aa"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 8,
+        "mean_ms": 6.6601,
+        "p50_ms": 6.6554,
+        "p95_ms": 6.7417,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "5a3e72a49898e8d550a741de2d71af8974fdbd31741c0075148edc38b955d90f"
+      },
+      {
+        "width": 640,
+        "height": 400,
+        "shader_mode": "sample",
+        "layers": 16,
+        "mean_ms": 11.7085,
+        "p50_ms": 11.6929,
+        "p95_ms": 11.8187,
+        "frequency_before": [
+          450000000,
+          1190400
+        ],
+        "frequency_after": [
+          450000000,
+          1190400
+        ],
+        "raw_sha256": "9de296176bfc15ea22219978af2d98740e71d42300a4c14ecf31cef694d71ff8"
+      }
+    ]
+  }
+}

@@ -19,6 +19,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <xf86drm.h>
+#include <xf86drmMode.h>
 
 static EGLDisplay display;
 static struct gbm_device *gbm;
@@ -63,12 +64,16 @@ static void kms_write(struct kms_source *source, int x, int y, int width,
 
 static void kms_create(struct kms_source *source, int width, int height)
 {
-    source->fd = open("/dev/dri/by-path/platform-fd900100.display-controller-card",
-                      O_RDWR | O_CLOEXEC);
+    const char *node = getenv("FD_TEXTURE_KMS_NODE");
+    require(node != NULL, "set FD_TEXTURE_KMS_NODE from DRM capability probe");
+    source->fd = open(node, O_RDWR | O_CLOEXEC);
     require(source->fd >= 0, "native KMS fd");
     drmVersion *version = drmGetVersion(source->fd);
-    require(version && !strcmp(version->name, "msm-kms"), "native KMS driver");
+    require(version && !strcmp(version->name, "msm"), "unified MSM driver");
     drmFreeVersion(version);
+    drmModeRes *resources = drmModeGetResources(source->fd);
+    require(resources && resources->count_crtcs > 0, "KMS resources");
+    drmModeFreeResources(resources);
     struct drm_mode_create_dumb bo = {.width = width, .height = height, .bpp = 32};
     require(drmIoctl(source->fd, DRM_IOCTL_MODE_CREATE_DUMB, &bo) == 0, "KMS dumb BO");
     source->handle = bo.handle;
@@ -346,7 +351,9 @@ int main(int argc, char **argv)
     require(renderer && strstr(renderer, "FD305"), "FD305");
     int gpu = -1;
     if (getenv("FD_TEXTURE_LINEAR_SOURCE") || getenv("FD_TEXTURE_LINEAR_TARGET")) {
-        gpu = open("/dev/dri/by-path/platform-fdb00000.gpu-render", O_RDWR | O_CLOEXEC);
+        const char *node = getenv("FD_TEXTURE_RENDER_NODE");
+        require(node != NULL, "set FD_TEXTURE_RENDER_NODE from DRM capability probe");
+        gpu = open(node, O_RDWR | O_CLOEXEC);
         require(gpu >= 0, "GPU fd");
         gbm = gbm_create_device(gpu);
         require(gbm != NULL, "GBM");

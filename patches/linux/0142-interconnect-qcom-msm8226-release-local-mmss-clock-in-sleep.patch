@@ -1,0 +1,59 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] interconnect: qcom: gate MSM8226 local MMSS clock in sleep
+
+The MMSS provider holds a prepare reference to a local clock, outside
+the RPM active/sleep voting scheme. Release it in suspend_late after
+consumers suspend, and restore it in resume_early. BIMC and OCMEM have
+RPM clock descriptors and no local bus clock, so their requests and
+keepalive floors remain unchanged.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/interconnect/qcom/msm8226.c b/drivers/interconnect/qcom/msm8226.c
+index ddd9c2775..8985eafb8 100644
+--- a/drivers/interconnect/qcom/msm8226.c
++++ b/drivers/interconnect/qcom/msm8226.c
+@@ -4,6 +4,7 @@
+  */
+ #include <linux/interconnect-provider.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
+ #include <linux/platform_device.h>
+ #include <dt-bindings/interconnect/qcom,msm8226.h>
+ #include "icc-rpm.h"
+@@ -103,6 +104,27 @@ static const struct qcom_icc_desc ocmem_desc = {
+ 	.bus_clk_desc = &gpu_mem_2_clk, .type = QCOM_ICC_NOC,
+ 	.keep_alive = true, .get_bw = msm8226_get_bw,
+ };
++/* Only MMSS has a local bus clock; BIMC/OCMEM are RPM-voted. */
++static int msm8226_noc_suspend_late(struct device *dev)
++{
++	struct qcom_icc_provider *qp = dev_get_drvdata(dev);
++
++	clk_disable_unprepare(qp->bus_clk);
++	return 0;
++}
++
++static int msm8226_noc_resume_early(struct device *dev)
++{
++	struct qcom_icc_provider *qp = dev_get_drvdata(dev);
++
++	return clk_prepare_enable(qp->bus_clk);
++}
++
++static const struct dev_pm_ops msm8226_noc_pm_ops = {
++	LATE_SYSTEM_SLEEP_PM_OPS(msm8226_noc_suspend_late,
++				msm8226_noc_resume_early)
++};
++
+ static const struct of_device_id msm8226_noc_match[] = {
+ 	{ .compatible = "qcom,msm8226-bimc", .data = &bimc_desc },
+ 	{ .compatible = "qcom,msm8226-mmssnoc", .data = &mmss_desc },
+@@ -117,6 +139,7 @@ static struct platform_driver msm8226_noc_driver = {
+ 		.name = "qnoc-msm8226",
+ 		.of_match_table = msm8226_noc_match,
+ 		.sync_state = icc_sync_state,
++		.pm = pm_sleep_ptr(&msm8226_noc_pm_ops),
+ 	},
+ };
+ module_platform_driver(msm8226_noc_driver);

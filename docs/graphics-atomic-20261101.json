@@ -1,0 +1,34 @@
+{
+  "evidence": "Single CRTC, unique active flushed atomic tail at presentation; not optical timing.",
+  "commit_prepare": {
+    "samples": 670,
+    "p50_ms": 0.09299999999257125,
+    "p95_ms": 0.13500000000021828,
+    "maximum_ms": 0.1929999999674692
+  },
+  "flush_to_presentation": {
+    "samples": 670,
+    "p50_ms": 1.6985000000317996,
+    "p95_ms": 16.09100000007402,
+    "maximum_ms": 16.660000000001673
+  },
+  "fence_waits": {
+    "detached-driver": {
+      "samples": 713,
+      "p50_ms": 0.009999999974752427,
+      "p95_ms": 0.020000000063191692,
+      "maximum_ms": 0.03400000002784509
+    },
+    "drm_sched": {
+      "samples": 103,
+      "p50_ms": 4.81400000001031,
+      "p95_ms": 13.870999999994638,
+      "maximum_ms": 21.46899999991092
+    }
+  },
+  "matched_presents": 670,
+  "unmatched_presents": 1,
+  "incomplete_atomic_tails": 0,
+  "incomplete_fence_waits": 0,
+  "limitation": "Initial modesets are included. Fence waits include scheduling and are not CPU execution or pure GPU execution."
+}

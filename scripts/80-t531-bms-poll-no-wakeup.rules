@@ -1,0 +1,2 @@
+# Poll-only BMS: battery refreshes must not abort suspend.
+ACTION=="add", SUBSYSTEM=="power_supply", KERNEL=="pm8226-bms", TEST=="power/wakeup", ATTR{power/wakeup}="disabled"

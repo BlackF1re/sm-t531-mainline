@@ -1,0 +1,127 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] soc: qcom: ocmem: restore the graphics allocation on resume
+
+On MSM8226, APSS RPM-assisted collapse returns successfully but subsequent
+GMEM rendering produces zero pixels. The same workload using sysmem
+renders correctly. Restoring the OCMEM clock vote or secure configuration
+alone does not recover it; replaying the SCM graphics lock for the existing
+128-KiB allocation restores GMEM readback without rebooting.
+
+Keep the active graphics allocation and restore its security, bank policy
+and range during early system resume, before the GPU's regular resume.
+Release the firmware lock in late suspend after the GPU is quiescent,
+so shallow sleep also gets a balanced unlock/lock rather than a duplicate
+lock rejected by firmware. Reuse the original allocation rather than
+changing its ownership or allocating a second range. Restore the MPU
+directly on non-SCM systems.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+--- a/drivers/soc/qcom/ocmem.c
++++ b/drivers/soc/qcom/ocmem.c
+@@ -19,6 +19,7 @@
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include <linux/platform_device.h>
++#include <linux/pm.h>
+ #include <linux/firmware/qcom/qcom_scm.h>
+ #include <linux/sizes.h>
+ #include <linux/slab.h>
+@@ -65,6 +66,7 @@
+ 	bool interleaved;
+ 	struct ocmem_region *regions;
+ 	unsigned long active_allocations;
++	struct ocmem_buf *graphics_buf;
+ };
+ 
+ #define OCMEM_MIN_ALIGN				SZ_64K
+@@ -256,6 +258,7 @@
+ 	dev_dbg(ocmem->dev, "using %ldK of OCMEM at 0x%08lx for client %d\n",
+ 		size / 1024, buf->addr, client);
+ 
++	ocmem->graphics_buf = buf;
+ 	return_ptr(buf);
+ 
+ err_unlock:
+@@ -286,6 +289,7 @@
+ 		ocmem_write(ocmem, OCMEM_REG_GFX_MPU_END, 0x0);
+ 	}
+ 
++	ocmem->graphics_buf = NULL;
+ 	kfree(buf);
+ 
+ 	clear_bit_unlock(BIT(client), &ocmem->active_allocations);
+@@ -432,6 +436,65 @@
+ 	clk_disable_unprepare(ocmem->iface_clk);
+ }
+ 
++static int ocmem_suspend_late(struct device *dev)
++{
++	struct ocmem *ocmem = dev_get_drvdata(dev);
++	struct ocmem_buf *buf = ocmem->graphics_buf;
++	int ret;
++
++	if (!buf || !qcom_scm_ocmem_lock_available())
++		return 0;
++
++	/* The GPU has already stopped using GMEM in its regular suspend. */
++	ret = qcom_scm_ocmem_unlock(QCOM_SCM_OCMEM_GRAPHICS_ID,
++				    buf->offset, buf->len);
++	if (ret)
++		return dev_err_probe(dev, ret,
++				     "Failed to release graphics lock for sleep\n");
++
++	return 0;
++}
++
++static int ocmem_resume_early(struct device *dev)
++{
++	struct ocmem *ocmem = dev_get_drvdata(dev);
++	struct ocmem_buf *buf = ocmem->graphics_buf;
++	int ret;
++
++	if (!buf)
++		return 0;
++
++	if (qcom_scm_restore_sec_cfg_available()) {
++		ret = qcom_scm_restore_sec_cfg(QCOM_SCM_OCMEM_DEV_ID, 0);
++		if (ret)
++			return dev_err_probe(dev, ret,
++					     "Failed to restore secure configuration\n");
++	}
++
++	/*
++	 * RPM collapse can discard the hardware allocation while its software
++	 * owner survives. Restore it before the GPU resumes using GMEM.
++	 */
++	update_ocmem(ocmem);
++	if (qcom_scm_ocmem_lock_available()) {
++		ret = qcom_scm_ocmem_lock(QCOM_SCM_OCMEM_GRAPHICS_ID,
++					  buf->offset, buf->len, WIDE_MODE);
++		if (ret)
++			return dev_err_probe(dev, ret,
++					     "Failed to restore graphics allocation\n");
++	} else {
++		ocmem_write(ocmem, OCMEM_REG_GFX_MPU_START, buf->offset);
++		ocmem_write(ocmem, OCMEM_REG_GFX_MPU_END,
++			    buf->offset + buf->len);
++	}
++
++	return 0;
++}
++
++static const struct dev_pm_ops ocmem_pm_ops = {
++	LATE_SYSTEM_SLEEP_PM_OPS(ocmem_suspend_late, ocmem_resume_early)
++};
++
+ static const struct ocmem_config ocmem_8226_config = {
+ 	.num_regions = 1,
+ 	.macro_size = SZ_128K,
+@@ -456,6 +519,7 @@
+ 	.driver = {
+ 		.name = "ocmem",
+ 		.of_match_table = ocmem_of_match,
++		.pm = pm_sleep_ptr(&ocmem_pm_ops),
+ 	},
+ };
+ 

@@ -1,0 +1,47 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] drm/msm/a3xx: reconcile the ring before suspending an uninitialized GPU
+
+msm_gpu_pm_resume() enables power and marks needs_hw_init. CP
+initialization is deferred until the next submit. If another system
+suspend happens before that submit, A3xx can compare the reset hardware
+RPTR (zero) with the software WPTR from before power collapse. Its idle
+check then fails with -EBUSY even though all previous submissions
+retired before suspend. SM-T531 reproduces this after repeated display-
+off/s2idle cycles: RPTR/WPTR are 0/528, and adreno_system_suspend aborts
+the system transition.
+
+When hardware initialization is pending, reconcile the software ring
+cursor with the actual hardware WPTR before testing idle. Reading WPTR
+rather than assuming zero also covers retained hardware state. Keep the
+normal ring-drain, GPU-busy and VBIF-halt checks; no fences or
+submitted-job state are reset. An invalid hardware pointer remains an
+error. Initialized/active command streams keep the existing path.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/adreno/a3xx_gpu.c b/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
+--- a/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/a3xx_gpu.c
+@@ -538,6 +538,22 @@ static int a3xx_pm_suspend(struct msm_gpu *gpu)
+ {
+ 	int ret;
+ 
++	/*
++	 * Resume defers CP initialization until the next submit. A second
++	 * suspend can therefore see reset hardware pointers alongside the
++	 * software cursor from before power collapse. Preserve the real idle
++	 * checks by using the hardware producer position in this state.
++	 */
++	if (gpu->needs_hw_init) {
++		struct msm_ringbuffer *ring = gpu->rb[0];
++		u32 wptr = gpu_read(gpu, REG_AXXX_CP_RB_WPTR);
++
++		if (WARN_ON_ONCE(wptr >= MSM_GPU_RINGBUFFER_SZ / sizeof(u32)))
++			return -EINVAL;
++
++		ring->cur = ring->next = ring->start + wptr;
++	}
++
+ 	if (!a3xx_idle(gpu))
+ 		return -EBUSY;
+ 

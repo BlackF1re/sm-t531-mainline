@@ -1,0 +1,3364 @@
+{
+  "date": "2026-11-03",
+  "energy_or_battery_test": false,
+  "android_reference": "Preserved Dirty Unicorns Android 6.0.1; not factory Samsung ROM",
+  "runtime_android_recheck": "Completed: full boot, PM DT cross-check, connected and unplugged suspend; XO/VMIN shutdown not observed",
+  "topology": {
+    "linux-running": {
+      "dtb_sha256": "66b86fe2e0a5f8893a2e64d986b559d1e225f2309465836e609f148df78f260e",
+      "configuration_only": true,
+      "nodes": {
+        "/chosen/framebuffer@3200000": {
+          "compatible": [
+            "simple-framebuffer"
+          ],
+          "reg": [
+            52428800,
+            8388608
+          ],
+          "power-domains": [
+            3,
+            1
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/soc/clock-controller@fd8c0000",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "vdda-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l4"
+          ],
+          "vddio-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l5"
+          ],
+          "vddiol8-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l8"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/cpus/cpu@0": {
+          "compatible": [
+            "arm,cortex-a7"
+          ],
+          "enable-method": [
+            "qcom,msm8226-smp"
+          ],
+          "reg": [
+            0
+          ],
+          "operating-points-v2": [
+            9
+          ],
+          "operating-points-v2:references": [
+            "/opp-table-cpu"
+          ],
+          "power-domains": [
+            12,
+            0
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "cpu-supply:references": [
+            "/soc/power-manager@f9012000/regulator"
+          ],
+          "cpu-idle-states": [
+            14
+          ],
+          "cpu-idle-states:references": [
+            "/cpus/idle-states/cpu-spc"
+          ]
+        },
+        "/cpus/cpu@1": {
+          "compatible": [
+            "arm,cortex-a7"
+          ],
+          "enable-method": [
+            "qcom,msm8226-smp"
+          ],
+          "reg": [
+            1
+          ],
+          "operating-points-v2": [
+            9
+          ],
+          "operating-points-v2:references": [
+            "/opp-table-cpu"
+          ],
+          "power-domains": [
+            12,
+            0
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "cpu-idle-states": [
+            14
+          ],
+          "cpu-idle-states:references": [
+            "/cpus/idle-states/cpu-spc"
+          ]
+        },
+        "/cpus/cpu@2": {
+          "compatible": [
+            "arm,cortex-a7"
+          ],
+          "enable-method": [
+            "qcom,msm8226-smp"
+          ],
+          "reg": [
+            2
+          ],
+          "operating-points-v2": [
+            9
+          ],
+          "operating-points-v2:references": [
+            "/opp-table-cpu"
+          ],
+          "power-domains": [
+            12,
+            0
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "cpu-idle-states": [
+            14
+          ],
+          "cpu-idle-states:references": [
+            "/cpus/idle-states/cpu-spc"
+          ]
+        },
+        "/cpus/cpu@3": {
+          "compatible": [
+            "arm,cortex-a7"
+          ],
+          "enable-method": [
+            "qcom,msm8226-smp"
+          ],
+          "reg": [
+            3
+          ],
+          "operating-points-v2": [
+            9
+          ],
+          "operating-points-v2:references": [
+            "/opp-table-cpu"
+          ],
+          "power-domains": [
+            12,
+            0
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "cpu-idle-states": [
+            14
+          ],
+          "cpu-idle-states:references": [
+            "/cpus/idle-states/cpu-spc"
+          ]
+        },
+        "/cpus/l2-cache": {
+          "compatible": [
+            "cache"
+          ]
+        },
+        "/cpus/idle-states/cpu-spc": {
+          "compatible": [
+            "qcom,idle-state-spc",
+            "arm,idle-state"
+          ]
+        },
+        "/opp-table-cpu": {
+          "compatible": [
+            "operating-points-v2"
+          ]
+        },
+        "/opp-table-cpu/opp-300000000": {
+          "opp-hz": [
+            0,
+            300000000
+          ],
+          "required-opps": [
+            23
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp3"
+          ],
+          "opp-suspend": true
+        },
+        "/opp-table-cpu/opp-384000000": {
+          "opp-hz": [
+            0,
+            384000000
+          ],
+          "required-opps": [
+            23
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp3"
+          ]
+        },
+        "/opp-table-cpu/opp-600000000": {
+          "opp-hz": [
+            0,
+            600000000
+          ],
+          "required-opps": [
+            23
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp3"
+          ]
+        },
+        "/opp-table-cpu/opp-787200000": {
+          "opp-hz": [
+            0,
+            787200000
+          ],
+          "required-opps": [
+            23
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp3"
+          ]
+        },
+        "/opp-table-cpu/opp-998400000": {
+          "required-opps": [
+            23
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp3"
+          ],
+          "opp-hz": [
+            0,
+            998400000
+          ]
+        },
+        "/opp-table-cpu/opp-1094400000": {
+          "required-opps": [
+            24
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp4"
+          ],
+          "opp-hz": [
+            0,
+            1094400000
+          ]
+        },
+        "/opp-table-cpu/opp-1190400000": {
+          "required-opps": [
+            24
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp4"
+          ],
+          "opp-hz": [
+            0,
+            1190400000
+          ]
+        },
+        "/remoteproc/smd-edge/rpm-requests/power-controller": {
+          "compatible": [
+            "qcom,msm8226-rpmpd"
+          ],
+          "#power-domain-cells": [
+            1
+          ],
+          "operating-points-v2": [
+            30
+          ],
+          "operating-points-v2:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table"
+          ]
+        },
+        "/soc/power-manager@f9012000": {
+          "compatible": [
+            "qcom,msm8226-saw2-v2.1-l2",
+            "qcom,saw2"
+          ],
+          "reg": [
+            4177600512,
+            4096
+          ],
+          "vdd-mx-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l3"
+          ]
+        },
+        "/soc/power-manager@f9089000": {
+          "compatible": [
+            "qcom,msm8226-saw2-v2.1-cpu",
+            "qcom,saw2"
+          ],
+          "reg": [
+            4178087936,
+            4096
+          ]
+        },
+        "/soc/power-manager@f9099000": {
+          "compatible": [
+            "qcom,msm8226-saw2-v2.1-cpu",
+            "qcom,saw2"
+          ],
+          "reg": [
+            4178153472,
+            4096
+          ]
+        },
+        "/soc/power-manager@f90a9000": {
+          "compatible": [
+            "qcom,msm8226-saw2-v2.1-cpu",
+            "qcom,saw2"
+          ],
+          "reg": [
+            4178219008,
+            4096
+          ]
+        },
+        "/soc/power-manager@f90b9000": {
+          "compatible": [
+            "qcom,msm8226-saw2-v2.1-cpu",
+            "qcom,saw2"
+          ],
+          "reg": [
+            4178284544,
+            4096
+          ]
+        },
+        "/soc/spmi@fc4cf000": {
+          "compatible": [
+            "qcom,spmi-pmic-arb"
+          ],
+          "reg": [
+            4232900608,
+            4096,
+            4232884224,
+            4096,
+            4232880128,
+            4096
+          ],
+          "interrupts": [
+            0,
+            190,
+            4
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0": {
+          "compatible": [
+            "qcom,pm8226",
+            "qcom,spmi-pmic"
+          ],
+          "reg": [
+            0,
+            0
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0/temp-alarm@2400": {
+          "compatible": [
+            "qcom,spmi-temp-alarm"
+          ],
+          "reg": [
+            9216
+          ],
+          "interrupts": [
+            0,
+            36,
+            0,
+            1
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0/adc@3100": {
+          "compatible": [
+            "qcom,spmi-vadc"
+          ],
+          "reg": [
+            12544
+          ],
+          "interrupts": [
+            0,
+            49,
+            0,
+            1
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0/adc@3600": {
+          "compatible": [
+            "qcom,pm8226-iadc",
+            "qcom,spmi-iadc"
+          ],
+          "reg": [
+            13824
+          ],
+          "interrupts": [
+            0,
+            54,
+            0,
+            1
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0/mpps@a000": {
+          "compatible": [
+            "qcom,pm8226-mpp",
+            "qcom,spmi-mpp"
+          ],
+          "reg": [
+            40960
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0/gpio@c000": {
+          "compatible": [
+            "qcom,pm8226-gpio",
+            "qcom,spmi-gpio"
+          ],
+          "reg": [
+            49152
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@1": {
+          "compatible": [
+            "qcom,pm8226",
+            "qcom,spmi-pmic"
+          ],
+          "reg": [
+            1,
+            0
+          ]
+        },
+        "/soc/remoteproc@fc880000": {
+          "compatible": [
+            "qcom,msm8226-mss-pil"
+          ],
+          "reg": [
+            4236771328,
+            16448,
+            4236378112,
+            65536
+          ],
+          "power-domains": [
+            12,
+            0
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "status": [
+            "disabled"
+          ],
+          "mx-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l3"
+          ],
+          "pll-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l8"
+          ]
+        },
+        "/soc/iommu@fd92a000": {
+          "compatible": [
+            "qcom,msm8226-iommu",
+            "qcom,msm-iommu-v1"
+          ],
+          "reg": [
+            4254244864,
+            4096
+          ],
+          "power-domains": [
+            3,
+            1
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/soc/clock-controller@fd8c0000",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/display-subsystem@fd900000": {
+          "compatible": [
+            "qcom,mdss"
+          ],
+          "reg": [
+            4254072832,
+            256,
+            4254220288,
+            4096
+          ],
+          "power-domains": [
+            3,
+            1
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/soc/clock-controller@fd8c0000",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "interrupts": [
+            0,
+            72,
+            4
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/gpu@fdb00000": {
+          "compatible": [
+            "qcom,adreno-305.18",
+            "qcom,adreno"
+          ],
+          "reg": [
+            4256169984,
+            65536
+          ],
+          "interrupts": [
+            0,
+            33,
+            4
+          ],
+          "power-domains": [
+            3,
+            5
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/soc/clock-controller@fd8c0000",
+              "args": [
+                5
+              ]
+            }
+          ],
+          "operating-points-v2": [
+            109
+          ],
+          "operating-points-v2:references": [
+            "/soc/gpu@fdb00000/opp-table"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/remoteproc@fe200000": {
+          "compatible": [
+            "qcom,msm8226-adsp-pil"
+          ],
+          "reg": [
+            4263510016,
+            256
+          ],
+          "power-domains": [
+            12,
+            0
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/iommu@fdb10000": {
+          "compatible": [
+            "qcom,msm8226-smmu",
+            "arm,smmu-v1"
+          ],
+          "reg": [
+            4256235520,
+            65536
+          ],
+          "interrupts": [
+            0,
+            38,
+            4,
+            0,
+            241,
+            4,
+            0,
+            241,
+            4,
+            0,
+            241,
+            4
+          ],
+          "power-domains": [
+            3,
+            5
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/soc/clock-controller@fd8c0000",
+              "args": [
+                5
+              ]
+            }
+          ]
+        },
+        "/soc/remoteproc@fb204000": {
+          "compatible": [
+            "qcom,pronto-v1-pil",
+            "qcom,pronto"
+          ],
+          "reg": [
+            4213194752,
+            8192,
+            4213186560,
+            4096,
+            4213288960,
+            12288
+          ],
+          "power-domains": [
+            12,
+            0
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "vddmx-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l3"
+          ],
+          "vddpx-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l6"
+          ]
+        }
+      }
+    },
+    "linux-candidate": {
+      "dtb_sha256": "0f89d9e26bf1c2817c0f76892b7dd7667e4fafda47323c6587d57e3c98f63b83",
+      "configuration_only": true,
+      "nodes": {
+        "/chosen/framebuffer@3200000": {
+          "compatible": [
+            "simple-framebuffer"
+          ],
+          "reg": [
+            52428800,
+            8388608
+          ],
+          "power-domains": [
+            3,
+            1
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/soc/clock-controller@fd8c0000",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "vdda-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l4"
+          ],
+          "vddio-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l5"
+          ],
+          "vddiol8-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l8"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/cpus/cpu@0": {
+          "compatible": [
+            "arm,cortex-a7"
+          ],
+          "enable-method": [
+            "qcom,msm8226-smp"
+          ],
+          "reg": [
+            0
+          ],
+          "operating-points-v2": [
+            9
+          ],
+          "operating-points-v2:references": [
+            "/opp-table-cpu"
+          ],
+          "power-domains": [
+            12,
+            1
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "cpu-supply:references": [
+            "/soc/power-manager@f9012000/regulator"
+          ],
+          "cpu-idle-states": [
+            14
+          ],
+          "cpu-idle-states:references": [
+            "/cpus/idle-states/cpu-spc"
+          ]
+        },
+        "/cpus/cpu@1": {
+          "compatible": [
+            "arm,cortex-a7"
+          ],
+          "enable-method": [
+            "qcom,msm8226-smp"
+          ],
+          "reg": [
+            1
+          ],
+          "operating-points-v2": [
+            9
+          ],
+          "operating-points-v2:references": [
+            "/opp-table-cpu"
+          ],
+          "power-domains": [
+            12,
+            1
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "cpu-idle-states": [
+            14
+          ],
+          "cpu-idle-states:references": [
+            "/cpus/idle-states/cpu-spc"
+          ]
+        },
+        "/cpus/cpu@2": {
+          "compatible": [
+            "arm,cortex-a7"
+          ],
+          "enable-method": [
+            "qcom,msm8226-smp"
+          ],
+          "reg": [
+            2
+          ],
+          "operating-points-v2": [
+            9
+          ],
+          "operating-points-v2:references": [
+            "/opp-table-cpu"
+          ],
+          "power-domains": [
+            12,
+            1
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "cpu-idle-states": [
+            14
+          ],
+          "cpu-idle-states:references": [
+            "/cpus/idle-states/cpu-spc"
+          ]
+        },
+        "/cpus/cpu@3": {
+          "compatible": [
+            "arm,cortex-a7"
+          ],
+          "enable-method": [
+            "qcom,msm8226-smp"
+          ],
+          "reg": [
+            3
+          ],
+          "operating-points-v2": [
+            9
+          ],
+          "operating-points-v2:references": [
+            "/opp-table-cpu"
+          ],
+          "power-domains": [
+            12,
+            1
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "cpu-idle-states": [
+            14
+          ],
+          "cpu-idle-states:references": [
+            "/cpus/idle-states/cpu-spc"
+          ]
+        },
+        "/cpus/l2-cache": {
+          "compatible": [
+            "cache"
+          ]
+        },
+        "/cpus/idle-states/cpu-spc": {
+          "compatible": [
+            "qcom,idle-state-spc",
+            "arm,idle-state"
+          ]
+        },
+        "/opp-table-cpu": {
+          "compatible": [
+            "operating-points-v2"
+          ]
+        },
+        "/opp-table-cpu/opp-300000000": {
+          "opp-hz": [
+            0,
+            300000000
+          ],
+          "required-opps": [
+            23
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp3"
+          ],
+          "opp-suspend": true
+        },
+        "/opp-table-cpu/opp-384000000": {
+          "opp-hz": [
+            0,
+            384000000
+          ],
+          "required-opps": [
+            23
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp3"
+          ]
+        },
+        "/opp-table-cpu/opp-600000000": {
+          "opp-hz": [
+            0,
+            600000000
+          ],
+          "required-opps": [
+            23
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp3"
+          ]
+        },
+        "/opp-table-cpu/opp-787200000": {
+          "opp-hz": [
+            0,
+            787200000
+          ],
+          "required-opps": [
+            23
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp3"
+          ]
+        },
+        "/opp-table-cpu/opp-998400000": {
+          "required-opps": [
+            23
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp3"
+          ],
+          "opp-hz": [
+            0,
+            998400000
+          ]
+        },
+        "/opp-table-cpu/opp-1094400000": {
+          "required-opps": [
+            24
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp4"
+          ],
+          "opp-hz": [
+            0,
+            1094400000
+          ]
+        },
+        "/opp-table-cpu/opp-1190400000": {
+          "required-opps": [
+            24
+          ],
+          "required-opps:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table/opp4"
+          ],
+          "opp-hz": [
+            0,
+            1190400000
+          ]
+        },
+        "/remoteproc/interrupt-controller": {
+          "#power-domain-cells": [
+            0
+          ],
+          "qcom,mpm-pin-map": [
+            2,
+            184,
+            47,
+            140,
+            53,
+            72,
+            62,
+            190
+          ],
+          "qcom,mpm-pin-count": [
+            64
+          ],
+          "mboxes": [
+            8,
+            1
+          ],
+          "interrupts": [
+            0,
+            171,
+            1
+          ],
+          "qcom,rpm-msg-ram": [
+            135
+          ],
+          "compatible": [
+            "qcom,msm8226-mpm",
+            "qcom,mpm"
+          ]
+        },
+        "/remoteproc/smd-edge/rpm-requests/power-controller": {
+          "compatible": [
+            "qcom,msm8226-rpmpd"
+          ],
+          "#power-domain-cells": [
+            1
+          ],
+          "operating-points-v2": [
+            30
+          ],
+          "operating-points-v2:references": [
+            "/remoteproc/smd-edge/rpm-requests/power-controller/opp-table"
+          ]
+        },
+        "/soc/power-manager@f9012000": {
+          "compatible": [
+            "qcom,msm8226-saw2-v2.1-l2",
+            "qcom,saw2"
+          ],
+          "reg": [
+            4177600512,
+            4096
+          ],
+          "vdd-mx-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l3"
+          ]
+        },
+        "/soc/power-manager@f9089000": {
+          "compatible": [
+            "qcom,msm8226-saw2-v2.1-cpu",
+            "qcom,saw2"
+          ],
+          "reg": [
+            4178087936,
+            4096
+          ]
+        },
+        "/soc/power-manager@f9099000": {
+          "compatible": [
+            "qcom,msm8226-saw2-v2.1-cpu",
+            "qcom,saw2"
+          ],
+          "reg": [
+            4178153472,
+            4096
+          ]
+        },
+        "/soc/power-manager@f90a9000": {
+          "compatible": [
+            "qcom,msm8226-saw2-v2.1-cpu",
+            "qcom,saw2"
+          ],
+          "reg": [
+            4178219008,
+            4096
+          ]
+        },
+        "/soc/power-manager@f90b9000": {
+          "compatible": [
+            "qcom,msm8226-saw2-v2.1-cpu",
+            "qcom,saw2"
+          ],
+          "reg": [
+            4178284544,
+            4096
+          ]
+        },
+        "/soc/spmi@fc4cf000": {
+          "interrupt-parent": [
+            136
+          ],
+          "compatible": [
+            "qcom,spmi-pmic-arb"
+          ],
+          "reg": [
+            4232900608,
+            4096,
+            4232884224,
+            4096,
+            4232880128,
+            4096
+          ],
+          "interrupts": [
+            62,
+            4
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0": {
+          "compatible": [
+            "qcom,pm8226",
+            "qcom,spmi-pmic"
+          ],
+          "reg": [
+            0,
+            0
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0/temp-alarm@2400": {
+          "compatible": [
+            "qcom,spmi-temp-alarm"
+          ],
+          "reg": [
+            9216
+          ],
+          "interrupts": [
+            0,
+            36,
+            0,
+            1
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0/adc@3100": {
+          "compatible": [
+            "qcom,spmi-vadc"
+          ],
+          "reg": [
+            12544
+          ],
+          "interrupts": [
+            0,
+            49,
+            0,
+            1
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0/adc@3600": {
+          "compatible": [
+            "qcom,pm8226-iadc",
+            "qcom,spmi-iadc"
+          ],
+          "reg": [
+            13824
+          ],
+          "interrupts": [
+            0,
+            54,
+            0,
+            1
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0/mpps@a000": {
+          "compatible": [
+            "qcom,pm8226-mpp",
+            "qcom,spmi-mpp"
+          ],
+          "reg": [
+            40960
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@0/gpio@c000": {
+          "compatible": [
+            "qcom,pm8226-gpio",
+            "qcom,spmi-gpio"
+          ],
+          "reg": [
+            49152
+          ]
+        },
+        "/soc/spmi@fc4cf000/pm8226@1": {
+          "compatible": [
+            "qcom,pm8226",
+            "qcom,spmi-pmic"
+          ],
+          "reg": [
+            1,
+            0
+          ]
+        },
+        "/soc/remoteproc@fc880000": {
+          "compatible": [
+            "qcom,msm8226-mss-pil"
+          ],
+          "reg": [
+            4236771328,
+            16448,
+            4236378112,
+            65536
+          ],
+          "power-domains": [
+            12,
+            0
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "status": [
+            "disabled"
+          ],
+          "mx-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l3"
+          ],
+          "pll-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l8"
+          ]
+        },
+        "/soc/iommu@fd92a000": {
+          "compatible": [
+            "qcom,msm8226-iommu",
+            "qcom,msm-iommu-v1"
+          ],
+          "reg": [
+            4254244864,
+            4096
+          ],
+          "power-domains": [
+            3,
+            1
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/soc/clock-controller@fd8c0000",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/display-subsystem@fd900000": {
+          "compatible": [
+            "qcom,mdss"
+          ],
+          "reg": [
+            4254072832,
+            256,
+            4254220288,
+            4096
+          ],
+          "power-domains": [
+            3,
+            1
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/soc/clock-controller@fd8c0000",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "interrupts": [
+            0,
+            72,
+            4
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/gpu@fdb00000": {
+          "compatible": [
+            "qcom,adreno-305.18",
+            "qcom,adreno"
+          ],
+          "reg": [
+            4256169984,
+            65536
+          ],
+          "interrupts": [
+            0,
+            33,
+            4
+          ],
+          "power-domains": [
+            3,
+            5
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/soc/clock-controller@fd8c0000",
+              "args": [
+                5
+              ]
+            }
+          ],
+          "operating-points-v2": [
+            109
+          ],
+          "operating-points-v2:references": [
+            "/soc/gpu@fdb00000/opp-table"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/remoteproc@fe200000": {
+          "compatible": [
+            "qcom,msm8226-adsp-pil"
+          ],
+          "reg": [
+            4263510016,
+            256
+          ],
+          "power-domains": [
+            12,
+            0
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/iommu@fdb10000": {
+          "compatible": [
+            "qcom,msm8226-smmu",
+            "arm,smmu-v1"
+          ],
+          "reg": [
+            4256235520,
+            65536
+          ],
+          "interrupts": [
+            0,
+            38,
+            4,
+            0,
+            241,
+            4,
+            0,
+            241,
+            4,
+            0,
+            241,
+            4
+          ],
+          "power-domains": [
+            3,
+            5
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/soc/clock-controller@fd8c0000",
+              "args": [
+                5
+              ]
+            }
+          ]
+        },
+        "/soc/remoteproc@fb204000": {
+          "compatible": [
+            "qcom,pronto-v1-pil",
+            "qcom,pronto"
+          ],
+          "reg": [
+            4213194752,
+            8192,
+            4213186560,
+            4096,
+            4213288960,
+            12288
+          ],
+          "power-domains": [
+            12,
+            0
+          ],
+          "power-domains:references": [
+            {
+              "provider": "/remoteproc/smd-edge/rpm-requests/power-controller",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "vddmx-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l3"
+          ],
+          "vddpx-supply:references": [
+            "/remoteproc/smd-edge/rpm-requests/regulators/l6"
+          ]
+        }
+      }
+    },
+    "android-preserved": {
+      "dtb_sha256": "d23191f203a7f3f69c8f637a1cb14dc9b0775a8e2ecd2e45b864c6ecd138c7b5",
+      "configuration_only": true,
+      "nodes": {
+        "/soc/qcom,gdsc@fd8c36a4": {
+          "regulator-name": [
+            "gdsc_vfe"
+          ],
+          "reg": [
+            4253824676,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "ok"
+          ]
+        },
+        "/soc/qcom,gdsc@fd8c1044": {
+          "regulator-name": [
+            "gdsc_venus_core1"
+          ],
+          "reg": [
+            4253814852,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "disabled"
+          ]
+        },
+        "/soc/qcom,mpm2-sleep-counter@fc4a3000": {
+          "reg": [
+            4232720384,
+            4096
+          ],
+          "compatible": [
+            "qcom,mpm2-sleep-counter"
+          ]
+        },
+        "/soc/qcom,spm@f90a9000": {
+          "qcom,core-id": [
+            2
+          ],
+          "reg": [
+            4178219008,
+            4096
+          ],
+          "qcom,saw2-spm-ctl": [
+            8
+          ],
+          "qcom,saw2-spm-cmd-pc": {
+            "bytes_hex": "20108030905b6003603b76760b945b801026300f"
+          },
+          "qcom,saw2-cfg": [
+            0
+          ],
+          "qcom,saw2-ver-reg": [
+            4048
+          ],
+          "qcom,saw2-spm-cmd-spc": {
+            "bytes_hex": "20108030905b6003603b76760b945b801026300f"
+          },
+          "qcom,saw2-spm-cmd-wfi": {
+            "bytes_hex": "6003600b0f"
+          },
+          "compatible": [
+            "qcom,spm-v2"
+          ],
+          "qcom,saw2-spm-dly": [
+            1007691776
+          ]
+        },
+        "/soc/qcom,gdsc@fd8c4024": {
+          "regulator-name": [
+            "gdsc_oxili_gx"
+          ],
+          "reg": [
+            4253827108,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "disabled"
+          ]
+        },
+        "/soc/qcom,lpm-levels": {
+          "qcom,default-l2-state": [
+            "l2_cache_active"
+          ],
+          "compatible": [
+            "qcom,lpm-levels"
+          ]
+        },
+        "/soc/qcom,lpm-levels/qcom,system-modes": {
+          "compatible": [
+            "qcom,system-modes"
+          ]
+        },
+        "/soc/qcom,lpm-levels/qcom,system-modes/qcom,system-modes@2": {
+          "qcom,sync-cpus": true,
+          "qcom,l2": [
+            "l2_cache_pc"
+          ],
+          "qcom,send-rpm-sleep-set": true,
+          "qcom,energy-overhead": [
+            1027150
+          ],
+          "qcom,min-cpu-mode": [
+            "pc"
+          ],
+          "qcom,time-overhead": [
+            2400
+          ],
+          "qcom,latency-us": [
+            12700
+          ]
+        },
+        "/soc/qcom,lpm-levels/qcom,system-modes/qcom,system-modes@0": {
+          "qcom,sync-cpus": true,
+          "qcom,l2": [
+            "l2_cache_gdhs"
+          ],
+          "qcom,energy-overhead": [
+            738750
+          ],
+          "qcom,min-cpu-mode": [
+            "standalone_pc"
+          ],
+          "qcom,time-overhead": [
+            1410
+          ],
+          "qcom,latency-us": [
+            700
+          ]
+        },
+        "/soc/qcom,lpm-levels/qcom,system-modes/qcom,system-modes@1": {
+          "qcom,sync-cpus": true,
+          "qcom,l2": [
+            "l2_cache_pc_no_rpm"
+          ],
+          "qcom,energy-overhead": [
+            1027150
+          ],
+          "qcom,min-cpu-mode": [
+            "standalone_pc"
+          ],
+          "qcom,time-overhead": [
+            2400
+          ],
+          "qcom,latency-us": [
+            1000
+          ]
+        },
+        "/soc/qcom,lpm-levels/qcm,cpu-modes": {
+          "compatible": [
+            "qcom,cpu-modes"
+          ]
+        },
+        "/soc/qcom,lpm-levels/qcm,cpu-modes/qcom,cpu-modes@1": {
+          "qcom,mode": [
+            "standalone_pc"
+          ],
+          "qcom,energy-overhead": [
+            603400
+          ],
+          "qcom,use-broadcast-timer": true,
+          "qcom,time-overhead": [
+            1200
+          ],
+          "qcom,latency-us": [
+            500
+          ]
+        },
+        "/soc/qcom,lpm-levels/qcm,cpu-modes/qcom,cpu-modes@2": {
+          "qcom,mode": [
+            "pc"
+          ],
+          "qcom,energy-overhead": [
+            700000
+          ],
+          "qcom,use-broadcast-timer": true,
+          "qcom,time-overhead": [
+            1410
+          ],
+          "qcom,latency-us": [
+            550
+          ]
+        },
+        "/soc/qcom,lpm-levels/qcm,cpu-modes/qcom,cpu-modes@0": {
+          "qcom,mode": [
+            "wfi"
+          ],
+          "qcom,energy-overhead": [
+            52800
+          ],
+          "qcom,time-overhead": [
+            100
+          ],
+          "qcom,latency-us": [
+            1
+          ]
+        },
+        "/soc/qcom,gdsc@fc401ac4": {
+          "regulator-name": [
+            "gdsc_pcie_0"
+          ],
+          "reg": [
+            4232059588,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "disabled"
+          ]
+        },
+        "/soc/qcom,spm@f9089000": {
+          "qcom,core-id": [
+            0
+          ],
+          "reg": [
+            4178087936,
+            4096
+          ],
+          "qcom,saw2-spm-ctl": [
+            8
+          ],
+          "qcom,saw2-spm-cmd-pc": {
+            "bytes_hex": "20108030905b6003603b76760b945b801026300f"
+          },
+          "qcom,saw2-cfg": [
+            0
+          ],
+          "qcom,saw2-ver-reg": [
+            4048
+          ],
+          "qcom,saw2-spm-cmd-spc": {
+            "bytes_hex": "20108030905b6003603b76760b945b801026300f"
+          },
+          "qcom,saw2-spm-cmd-wfi": {
+            "bytes_hex": "6003600b0f"
+          },
+          "compatible": [
+            "qcom,spm-v2"
+          ],
+          "qcom,saw2-spm-dly": [
+            1007691776
+          ]
+        },
+        "/soc/qcom,gdsc@fd8c1024": {
+          "regulator-name": [
+            "gdsc_venus"
+          ],
+          "reg": [
+            4253814820,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "ok"
+          ]
+        },
+        "/soc/qcom,pm-boot": {
+          "qcom,mode": [
+            "tz"
+          ],
+          "compatible": [
+            "qcom,pm-boot"
+          ]
+        },
+        "/soc/qcom,gdsc@fc401ec0": {
+          "regulator-name": [
+            "gdsc_usb30_sec"
+          ],
+          "reg": [
+            4232060608,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "disabled"
+          ]
+        },
+        "/soc/qcom,spm@f9099000": {
+          "qcom,core-id": [
+            1
+          ],
+          "reg": [
+            4178153472,
+            4096
+          ],
+          "qcom,saw2-spm-ctl": [
+            8
+          ],
+          "qcom,saw2-spm-cmd-pc": {
+            "bytes_hex": "20108030905b6003603b76760b945b801026300f"
+          },
+          "qcom,saw2-cfg": [
+            0
+          ],
+          "qcom,saw2-ver-reg": [
+            4048
+          ],
+          "qcom,saw2-spm-cmd-spc": {
+            "bytes_hex": "20108030905b6003603b76760b945b801026300f"
+          },
+          "qcom,saw2-spm-cmd-wfi": {
+            "bytes_hex": "6003600b0f"
+          },
+          "compatible": [
+            "qcom,spm-v2"
+          ],
+          "qcom,saw2-spm-dly": [
+            1007691776
+          ]
+        },
+        "/soc/qcom,gdsc@fd8c1040": {
+          "regulator-name": [
+            "gdsc_venus_core0"
+          ],
+          "reg": [
+            4253814848,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "disabled"
+          ]
+        },
+        "/soc/qcom,gdsc@fc401b44": {
+          "regulator-name": [
+            "gdsc_pcie_1"
+          ],
+          "reg": [
+            4232059716,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "disabled"
+          ]
+        },
+        "/soc/regulator@f9018000": {
+          "vdd-apc-supply:references": [
+            "/soc/qcom,spmi@fc4c0000/qcom,pm8226@1/spm-regulator@1700"
+          ],
+          "vdd-mx-supply:references": [
+            "/soc/qcom,rpm-smd/rpm-regulator-ldoa3/regulator-3-ao"
+          ],
+          "regulator-name": [
+            "apc_corner"
+          ],
+          "reg": [
+            4177625088,
+            4096,
+            4177596516,
+            4,
+            4232806400,
+            4096
+          ],
+          "compatible": [
+            "qti,cpr-regulator"
+          ],
+          "status": [
+            "okay"
+          ],
+          "interrupts": [
+            0,
+            15,
+            0
+          ]
+        },
+        "/soc/qcom,spm@f9012000": {
+          "qcom,core-id": [
+            65535
+          ],
+          "qcom,L2-spm-is-apcs-master": true,
+          "qcom,saw2-spm-cmd-ret": {
+            "bytes_hex": "0003000f"
+          },
+          "reg": [
+            4177600512,
+            4096
+          ],
+          "qcom,saw2-spm-ctl": [
+            0
+          ],
+          "qcom,saw2-pmic-data1": [
+            196608
+          ],
+          "qcom,saw2-spm-cmd-pc": {
+            "bytes_hex": "0032b010e0d06bc042f0110701b0504e0202c0d012e06b023250f00f"
+          },
+          "qcom,saw2-cfg": [
+            20
+          ],
+          "qcom,saw2-ver-reg": [
+            4048
+          ],
+          "qcom,phase-port": [
+            1
+          ],
+          "qcom,vctl-timeout-us": [
+            50
+          ],
+          "qcom,saw2-spm-cmd-pc-no-rpm": {
+            "bytes_hex": "0032b010e0d06bc042f0110301b0504e0202c0d012e06b023250f00f"
+          },
+          "compatible": [
+            "qcom,spm-v2"
+          ],
+          "qcom,saw2-pmic-data0": [
+            33751168
+          ],
+          "qcom,vctl-port": [
+            0
+          ],
+          "qcom,saw2-spm-cmd-gdhs": {
+            "bytes_hex": "0020326bc0e0d04203504e0202d0e0c0226b0232500f"
+          },
+          "qcom,saw2-spm-dly": [
+            1007691776
+          ],
+          "qcom,pfm-port": [
+            2
+          ]
+        },
+        "/soc/qcom,gdsc@fd8c4034": {
+          "regulator-name": [
+            "gdsc_oxili_cx"
+          ],
+          "reg": [
+            4253827124,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "ok"
+          ]
+        },
+        "/soc/qcom,spm@f90b9000": {
+          "qcom,core-id": [
+            3
+          ],
+          "reg": [
+            4178284544,
+            4096
+          ],
+          "qcom,saw2-spm-ctl": [
+            8
+          ],
+          "qcom,saw2-spm-cmd-pc": {
+            "bytes_hex": "20108030905b6003603b76760b945b801026300f"
+          },
+          "qcom,saw2-cfg": [
+            0
+          ],
+          "qcom,saw2-ver-reg": [
+            4048
+          ],
+          "qcom,saw2-spm-cmd-spc": {
+            "bytes_hex": "20108030905b6003603b76760b945b801026300f"
+          },
+          "qcom,saw2-spm-cmd-wfi": {
+            "bytes_hex": "6003600b0f"
+          },
+          "compatible": [
+            "qcom,spm-v2"
+          ],
+          "qcom,saw2-spm-dly": [
+            1007691776
+          ]
+        },
+        "/soc/qcom,gdsc@fd8c35a4": {
+          "regulator-name": [
+            "gdsc_jpeg"
+          ],
+          "reg": [
+            4253824420,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "ok"
+          ]
+        },
+        "/soc/qcom,gdsc@fc400404": {
+          "regulator-name": [
+            "gdsc_usb_hsic"
+          ],
+          "reg": [
+            4232053764,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "ok"
+          ]
+        },
+        "/soc/qcom,spmi@fc4c0000": {
+          "reg": [
+            4232900608,
+            4096,
+            4232884224,
+            4096,
+            4232880128,
+            4096
+          ],
+          "compatible": [
+            "qcom,spmi-pmic-arb"
+          ],
+          "interrupts": [
+            0,
+            190,
+            0,
+            0,
+            187,
+            0
+          ]
+        },
+        "/soc/qcom,spmi@fc4c0000/qcom,pm8226@1/spm-regulator@1700": {
+          "regulator-name": [
+            "8226_s2"
+          ],
+          "qcom,mode": [
+            "auto"
+          ],
+          "reg": [
+            5888,
+            256
+          ],
+          "compatible": [
+            "qcom,spm-regulator"
+          ]
+        },
+        "/soc/qcom,gdsc@fd8c2304": {
+          "regulator-name": [
+            "gdsc_mdss"
+          ],
+          "reg": [
+            4253819652,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "ok"
+          ]
+        },
+        "/soc/qcom,gdsc@fd8c1804": {
+          "regulator-name": [
+            "gdsc_vcap"
+          ],
+          "reg": [
+            4253816836,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "disabled"
+          ]
+        },
+        "/soc/qcom,gdsc@fc401e84": {
+          "regulator-name": [
+            "gdsc_usb30"
+          ],
+          "reg": [
+            4232060548,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "disabled"
+          ]
+        },
+        "/soc/qcom,gdsc@fd8c1404": {
+          "regulator-name": [
+            "gdsc_vpu"
+          ],
+          "reg": [
+            4253815812,
+            4
+          ],
+          "compatible": [
+            "qcom,gdsc"
+          ],
+          "status": [
+            "disabled"
+          ]
+        },
+        "/soc/qcom,mpm@fc4281d0": {
+          "reg": [
+            4232217040,
+            4096,
+            4177596424,
+            4
+          ],
+          "qcom,ipc-bit-offset": [
+            1
+          ],
+          "compatible": [
+            "qcom,mpm-v2"
+          ],
+          "qcom,gpio-map": [
+            3,
+            1,
+            4,
+            4,
+            5,
+            5,
+            6,
+            9,
+            7,
+            13,
+            8,
+            17,
+            9,
+            21,
+            10,
+            27,
+            11,
+            29,
+            12,
+            31,
+            13,
+            33,
+            14,
+            35,
+            15,
+            37,
+            16,
+            38,
+            17,
+            39,
+            18,
+            41,
+            19,
+            46,
+            20,
+            48,
+            21,
+            49,
+            22,
+            50,
+            23,
+            51,
+            24,
+            52,
+            25,
+            54,
+            26,
+            62,
+            27,
+            63,
+            28,
+            64,
+            29,
+            65,
+            30,
+            66,
+            31,
+            67,
+            32,
+            68,
+            33,
+            69,
+            34,
+            71,
+            35,
+            72,
+            36,
+            106,
+            37,
+            107,
+            38,
+            108,
+            39,
+            109,
+            40,
+            110,
+            41,
+            115,
+            54,
+            111,
+            55,
+            113
+          ],
+          "interrupts": [
+            0,
+            171,
+            1
+          ],
+          "qcom,gic-map": [
+            47,
+            172,
+            53,
+            104,
+            62,
+            222,
+            2,
+            216,
+            255,
+            18,
+            255,
+            19,
+            255,
+            35,
+            255,
+            40,
+            255,
+            47,
+            255,
+            56,
+            255,
+            57,
+            255,
+            58,
+            255,
+            59,
+            255,
+            60,
+            255,
+            61,
+            255,
+            65,
+            255,
+            74,
+            255,
+            75,
+            255,
+            78,
+            255,
+            79,
+            255,
+            97,
+            255,
+            102,
+            255,
+            109,
+            255,
+            131,
+            255,
+            141,
+            255,
+            155,
+            255,
+            157,
+            255,
+            161,
+            255,
+            162,
+            255,
+            170,
+            255,
+            173,
+            255,
+            174,
+            255,
+            175,
+            255,
+            176,
+            255,
+            177,
+            255,
+            178,
+            255,
+            179,
+            255,
+            181,
+            255,
+            188,
+            255,
+            189,
+            255,
+            190,
+            255,
+            191,
+            255,
+            192,
+            255,
+            194,
+            255,
+            200,
+            255,
+            201,
+            255,
+            202,
+            255,
+            203,
+            255,
+            204,
+            255,
+            205,
+            255,
+            206,
+            255,
+            207,
+            255,
+            234,
+            255,
+            235,
+            255,
+            240,
+            255,
+            253,
+            255,
+            258,
+            255,
+            259,
+            255,
+            269,
+            255,
+            270,
+            255,
+            275,
+            255,
+            276
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa1": {
+          "qcom,resource-name": [
+            "smpa"
+          ],
+          "qcom,resource-id": [
+            1
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa1/regulator-s1-floor-corner": {
+          "qcom,use-voltage-floor-corner": true,
+          "qcom,always-send-voltage": true,
+          "regulator-name": [
+            "8226_s1_floor_corner"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa1/regulator-s1-corner-ao": {
+          "qcom,use-voltage-corner": true,
+          "regulator-name": [
+            "8226_s1_corner_ao"
+          ],
+          "qcom,set": [
+            1
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "qcom,consumer-supplies": [
+            "vdd_sr2_dig",
+            ""
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa1/regulator-s1": {
+          "regulator-name": [
+            "8226_s1"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa1/regulator-s1-corner": {
+          "qcom,use-voltage-corner": true,
+          "regulator-name": [
+            "8226_s1_corner"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "qcom,consumer-supplies": [
+            "vdd_dig",
+            ""
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa25": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            25
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa25/regulator-l25": {
+          "qcom,init-voltage": [
+            1775000
+          ],
+          "regulator-name": [
+            "8226_l25"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa23": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            23
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa23/regulator-l23": {
+          "qcom,init-voltage": [
+            3300000
+          ],
+          "regulator-name": [
+            "8226_l23"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa3": {
+          "qcom,resource-name": [
+            "smpa"
+          ],
+          "qcom,resource-id": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa3/regulator-s3": {
+          "qcom,init-voltage": [
+            1200000
+          ],
+          "regulator-name": [
+            "8226_s3"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa26": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            26
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa26/regulator-l26": {
+          "qcom,init-voltage": [
+            1225000
+          ],
+          "regulator-name": [
+            "8226_l26"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa8": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            8
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa8/regulator-l8-so": {
+          "qcom,init-voltage": [
+            1800000
+          ],
+          "regulator-name": [
+            "8226_l8_so"
+          ],
+          "qcom,set": [
+            2
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa8/regulator-l8-ao": {
+          "qcom,init-voltage": [
+            1800000
+          ],
+          "regulator-name": [
+            "8226_l8_ao"
+          ],
+          "qcom,set": [
+            1
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "qcom,consumer-supplies": [
+            "vdd_sr2_pll",
+            ""
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa8/regulator-l8": {
+          "qcom,init-voltage": [
+            1800000
+          ],
+          "regulator-name": [
+            "8226_l8"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa1": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            1
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa1/regulator-l1": {
+          "qcom,init-voltage": [
+            1225000
+          ],
+          "regulator-name": [
+            "8226_l1"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-vsa1": {
+          "qcom,resource-name": [
+            "vsa"
+          ],
+          "qcom,resource-id": [
+            1
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-vsa1/regulator-lvs1": {
+          "regulator-name": [
+            "8226_lvs1"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa5": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            5
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa5/regulator-l5": {
+          "qcom,init-voltage": [
+            1200000
+          ],
+          "regulator-name": [
+            "8226_l5"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa24": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            24
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa24/regulator-l24": {
+          "qcom,init-voltage": [
+            1300000
+          ],
+          "regulator-name": [
+            "8226_l24"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa12": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            12
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa12/regulator-l12": {
+          "qcom,init-voltage": [
+            1800000
+          ],
+          "regulator-name": [
+            "8226_l12"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa20": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            20
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa20/regulator-l20": {
+          "qcom,init-voltage": [
+            3075000
+          ],
+          "regulator-name": [
+            "8226_l20"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa16": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            16
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa16/regulator-l16": {
+          "qcom,init-voltage": [
+            3300000
+          ],
+          "regulator-name": [
+            "8226_l16"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa14": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            14
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa14/regulator-l14": {
+          "qcom,init-voltage": [
+            2750000
+          ],
+          "regulator-name": [
+            "8226_l14"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa4": {
+          "qcom,resource-name": [
+            "smpa"
+          ],
+          "qcom,resource-id": [
+            4
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa4/regulator-s4": {
+          "qcom,init-voltage": [
+            1800000
+          ],
+          "regulator-name": [
+            "8226_s4"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa5": {
+          "qcom,resource-name": [
+            "smpa"
+          ],
+          "qcom,resource-id": [
+            5
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-smpa5/regulator-s5": {
+          "qcom,init-voltage": [
+            1150000
+          ],
+          "regulator-name": [
+            "8226_s5"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa21": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            21
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa21/regulator-l21": {
+          "qcom,init-voltage": [
+            2950000
+          ],
+          "regulator-name": [
+            "8226_l21"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa17": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            17
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa17/regulator-l17": {
+          "qcom,init-voltage": [
+            2950000
+          ],
+          "regulator-name": [
+            "8226_l17"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa10": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            10
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa10/regulator-l10": {
+          "qcom,init-voltage": [
+            1800000
+          ],
+          "regulator-name": [
+            "8226_l10"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa4": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            4
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa4/regulator-l4": {
+          "qcom,init-voltage": [
+            1200000
+          ],
+          "regulator-name": [
+            "8226_l4"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa15": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            15
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa15/regulator-l15": {
+          "qcom,init-voltage": [
+            3300000
+          ],
+          "regulator-name": [
+            "8226_l15"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa27": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            27
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa27/regulator-l27": {
+          "qcom,init-voltage": [
+            1800000
+          ],
+          "regulator-name": [
+            "8226_l27"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa9": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            9
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa9/regulator-l9": {
+          "qcom,init-voltage": [
+            2050000
+          ],
+          "regulator-name": [
+            "8226_l9"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa18": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            18
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa18/regulator-l18": {
+          "qcom,init-voltage": [
+            2950000
+          ],
+          "regulator-name": [
+            "8226_l18"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa6": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            6
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa6/regulator-l6": {
+          "qcom,init-voltage": [
+            1800000
+          ],
+          "regulator-name": [
+            "8226_l6"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa22": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            22
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa22/regulator-l22": {
+          "qcom,init-voltage": [
+            2950000
+          ],
+          "regulator-name": [
+            "8226_l22"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa19": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            19
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa19/regulator-l19": {
+          "qcom,init-voltage": [
+            2850000
+          ],
+          "regulator-name": [
+            "8226_l19"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa7": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            7
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa7/regulator-l7": {
+          "qcom,init-voltage": [
+            1850000
+          ],
+          "regulator-name": [
+            "8226_l7"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa3": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa3/regulator-3-ao": {
+          "regulator-name": [
+            "8226_l3_ao"
+          ],
+          "qcom,set": [
+            1
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa3/regulator-l3": {
+          "regulator-name": [
+            "8226_l3"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa3/regulator-l3-so": {
+          "qcom,init-voltage": [
+            750000
+          ],
+          "regulator-name": [
+            "8226_l3_so"
+          ],
+          "qcom,set": [
+            2
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa28": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            28
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa28/regulator-l28": {
+          "qcom,init-voltage": [
+            2800000
+          ],
+          "regulator-name": [
+            "8226_l28"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa2": {
+          "qcom,resource-name": [
+            "ldoa"
+          ],
+          "qcom,resource-id": [
+            2
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd-resource"
+          ],
+          "status": [
+            "okay"
+          ]
+        },
+        "/soc/qcom,rpm-smd/rpm-regulator-ldoa2/regulator-l2": {
+          "qcom,init-voltage": [
+            1200000
+          ],
+          "regulator-name": [
+            "8226_l2"
+          ],
+          "qcom,set": [
+            3
+          ],
+          "compatible": [
+            "qcom,rpm-regulator-smd"
+          ],
+          "status": [
+            "okay"
+          ]
+        }
+      }
+    }
+  },
+  "boot_backup": {
+    "full_size": 10485760,
+    "protected_lk2nd_prefix": 524288,
+    "writable_boot_payload": 9961472,
+    "sha256": "f2e67d637182e79193912952f45341ceac4e621aeb7cefab4a8e55a6663192fc",
+    "verified_against_previous": true
+  },
+  "boot_transition": {
+    "linux_reboot_bootloader": "Returned to Linux; CONFIG_SYSCON_REBOOT_MODE disabled",
+    "kernel_fragment_fix": "CONFIG_SYSCON_REBOOT_MODE=y; not yet built or deployed",
+    "android_candidate_prefix_unchanged": true
+  },
+  "native_graphics_startup": {
+    "previous_ready_seconds": 30.339,
+    "previous_active_seconds": 236.976,
+    "after_dependency_fix_main_exit_seconds": 31.496194,
+    "after_dependency_fix_active_seconds": 31.496708,
+    "sddm": "active",
+    "sleep_stack_accepted": false
+  },
+  "android_kernel": "3.4.0-cyanogenmod-g6be37d8-00011-gcee6fdf-dirty",
+  "android_policy": {
+    "l2_maximum": 4,
+    "autosleep": "off",
+    "cpu0_power_collapse_idle_enabled": true,
+    "cpu1_3_power_collapse_idle_enabled": false,
+    "cpu_standalone_idle_enabled": true,
+    "cpu_retention_idle_enabled": false,
+    "cpuidle_states": [
+      "C0",
+      "C1",
+      "C2"
+    ],
+    "wfi_spc_pc_in_runtime_dt": true,
+    "xo_vmin_before_connected_test": 0,
+    "xo_vmin_after_connected_test": 0,
+    "connected_test_kernel_error": "f9a55000.usb failed to suspend: error -16",
+    "framework_blockers": [
+      "DreamManagerService",
+      "MediaScannerService"
+    ],
+    "temporary_media_service_stop": true,
+    "stock_equivalent_deep_sleep_accepted": false
+  },
+  "mpm_map_check": {
+    "gpio_pairs": 41,
+    "exact_match_to_android_runtime_dt": true,
+    "gic_map": "Candidate uses four physical MPM sources with GIC SPI numbers translated by minus 32; Android 255 bypass entries are not physical MPM pins"
+  },
+  "android_unplugged_suspend": {
+    "return_code": 0,
+    "mpm_timer_seconds": 8,
+    "rtc_backup_seconds": 45,
+    "apss_shutdown_count_before": 38,
+    "apss_shutdown_count_after": 40,
+    "last_apss_shutdown_to_wakeup_seconds": 8.136559583333334,
+    "xo_count_after": 0,
+    "vmin_count_after": 0,
+    "sleep_time_override_restored": 0,
+    "limitation": "Direct kernel suspend with screen off; does not prove normal Android autosuspend, XO shutdown, VMIN or energy savings",
+    "enabled_clocks_at_entry": [
+      "mdss_ahb_clk",
+      "mdss_axi_clk",
+      "mdss_mdp_clk",
+      "mdss_mdp_lut_clk",
+      "gpll0",
+      "xo"
+    ],
+    "cpu_safe_clock_at_entry": {
+      "source": "gpll0_ao",
+      "parent_hz": 600000000,
+      "cpu_hz": 300000000
+    },
+    "fresh_pm_dt_properties_equal_to_prior_capture": 137
+  },
+  "boot_restore_verification": {
+    "method": "heimdall flash BOOT from Samsung Download Mode; no repartition",
+    "full_partition_bytes": 10485760,
+    "sha256_expected": "f2e67d637182e79193912952f45341ceac4e621aeb7cefab4a8e55a6663192fc",
+    "sha256_readback_linux": "f2e67d637182e79193912952f45341ceac4e621aeb7cefab4a8e55a6663192fc",
+    "kernel": "7.2.9-t531-unified2-dirty",
+    "display_manager": "active"
+  }
+}

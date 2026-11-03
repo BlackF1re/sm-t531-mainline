@@ -1,0 +1,30 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] ARM: dts: qcom: matisse3g: poll the noisy SD card-detect line
+
+GPIO38 generates continuous spurious card-detect edges on SM-T531. Each
+edge reports a five-second MMC wakeup event, and a new event during the
+pre-suspend filesystem sync aborts system sleep with -EBUSY. A captured
+failure turns the display off and immediately back on without suspending.
+
+Use the existing broken-cd fallback instead of the GPIO IRQ. SDHCI disables
+native card-detect interrupts, and MMC polls card presence/liveness once a
+second while awake. This does not mark the socket non-removable, change
+SD data/power IRQs, or suppress real system wakeup sources. Remove cd-gpios
+so an unstable level cannot override the polling fallback. Keep the other
+Matisse variants unchanged.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -108,6 +108,9 @@
+ };
+ 
+ &sdhc_2 {
++	/* GPIO38 produces spurious card-detect IRQs and aborts suspend. */
++	/delete-property/ cd-gpios;
++	broken-cd;
+ 	/* SDR104 currently fails sustained card I/O during bring-up. */
+ 	max-frequency = <50000000>;
+ 	no-1-8-v;

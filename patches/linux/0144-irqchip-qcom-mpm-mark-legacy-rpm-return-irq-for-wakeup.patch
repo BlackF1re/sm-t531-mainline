@@ -1,0 +1,70 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] irqchip/qcom-mpm: mark legacy RPM return IRQ for wakeup
+
+The Samsung MSM8226 driver explicitly sets irq wake on the RPM return
+interrupt, in addition to IRQF_NO_SUSPEND. Reproduce both properties in
+the legacy SAW path and balance the wake reference on probe rollback.
+Log the bounded enable/polarity words with dynamic debug for wake-route
+validation. Other platforms retain their existing behavior. This corrects
+a parity omission; full clock-gated RPM collapse still needs device
+validation.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/irqchip/irq-qcom-mpm.c b/drivers/irqchip/irq-qcom-mpm.c
+--- a/drivers/irqchip/irq-qcom-mpm.c
++++ b/drivers/irqchip/irq-qcom-mpm.c
+@@ -87,6 +87,7 @@
+ 	struct irq_domain *domain;
+ 	struct generic_pm_domain genpd;
+ 	bool legacy_saw;
++	int wake_irq;
+ };
+ 
+ static struct qcom_mpm_priv *legacy_mpm;
+@@ -308,6 +309,12 @@
+ 		qcom_mpm_write(priv, MPM_REG_STATUS, i, 0);
+ 
+ 	if (priv->legacy_saw) {
++		dev_dbg(priv->mbox_client.dev,
++			"legacy MPM enable=%08x/%08x polarity=%08x/%08x\n",
++			qcom_mpm_read(priv, MPM_REG_ENABLE, 0),
++			qcom_mpm_read(priv, MPM_REG_ENABLE, 1),
++			qcom_mpm_read(priv, MPM_REG_POLARITY, 0),
++			qcom_mpm_read(priv, MPM_REG_POLARITY, 1));
+ 		/* PMIC RTC/key provide the system alarm, not a stale vMPM timer. */
+ 		writel_relaxed(U32_MAX, priv->base);
+ 		writel_relaxed(U32_MAX, priv->base + sizeof(u32));
+@@ -356,6 +363,13 @@
+ 			return true;
+ 
+ 	return false;
++}
++
++static void qcom_mpm_disable_wake_irq(void *data)
++{
++	struct qcom_mpm_priv *priv = data;
++
++	disable_irq_wake(priv->wake_irq);
+ }
+ 
+ static int qcom_mpm_probe(struct platform_device *pdev, struct device_node *parent)
+@@ -508,8 +522,17 @@
+ 		goto remove_domain;
+ 	}
+ 
+-	if (priv->legacy_saw)
++	if (priv->legacy_saw) {
++		/* RPM's return interrupt must also be a system wake source. */
++		ret = enable_irq_wake(irq);
++		if (ret)
++			goto remove_domain;
++		priv->wake_irq = irq;
++		ret = devm_add_action_or_reset(dev, qcom_mpm_disable_wake_irq, priv);
++		if (ret)
++			goto remove_domain;
+ 		legacy_mpm = priv;
++	}
+ 	return 0;
+ 
+ remove_domain:

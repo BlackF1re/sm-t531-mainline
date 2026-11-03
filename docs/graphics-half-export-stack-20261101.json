@@ -1,0 +1,373 @@
+{
+  "scope": "KWin and plasmashell; original Qt paths retained per process",
+  "same_binary_all_phases": true,
+  "shader_disk_cache_disabled_all_phases": true,
+  "phases": [
+    {
+      "phase": 1,
+      "half_color_output": false,
+      "presentation": {
+        "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+        "idle_gap_threshold_ms": 100,
+        "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+        "active_fps": 50.099708874847856,
+        "frame_interval": {
+          "samples": 623,
+          "p50_ms": 16.669999999976426,
+          "p95_ms": 33.347999999932654,
+          "p99_ms": 50.00200000085897,
+          "over_25ms_percent": 17.335473515248797
+        },
+        "bursts": [
+          {
+            "start": 4684.412743,
+            "seconds": 0.4167040000002089,
+            "frames": 26,
+            "fps": 59.99462448161637
+          },
+          {
+            "start": 4685.229503,
+            "seconds": 1.3502140000000509,
+            "frames": 73,
+            "fps": 53.3248803522977
+          },
+          {
+            "start": 4686.946377,
+            "seconds": 1.3834999999999127,
+            "frames": 74,
+            "fps": 52.7647271413116
+          },
+          {
+            "start": 4688.696593,
+            "seconds": 0.5333930000006148,
+            "frames": 28,
+            "fps": 50.61933696161906
+          },
+          {
+            "start": 4689.596701,
+            "seconds": 0.48339799999939714,
+            "frames": 28,
+            "fps": 55.85459600584544
+          },
+          {
+            "start": 4690.430205,
+            "seconds": 1.3835130000006757,
+            "frames": 68,
+            "fps": 48.42744520649049
+          },
+          {
+            "start": 4692.180353,
+            "seconds": 1.3835690000005343,
+            "frames": 63,
+            "fps": 44.81164293213859
+          },
+          {
+            "start": 4693.913905,
+            "seconds": 1.3668979999993098,
+            "frames": 65,
+            "fps": 46.82134292392872
+          },
+          {
+            "start": 4695.664115,
+            "seconds": 1.3835750000007465,
+            "frames": 72,
+            "fps": 51.31633630266642
+          },
+          {
+            "start": 4697.397653,
+            "seconds": 1.3668809999999212,
+            "frames": 69,
+            "fps": 49.748295572185086
+          },
+          {
+            "start": 4699.147859,
+            "seconds": 1.3835570000001098,
+            "frames": 68,
+            "fps": 48.42590511268757
+          }
+        ],
+        "gpu_busy_percent_recording": 35.09351080877688,
+        "cpu_busy_percent_recording_all_cores": 31.876385126816054,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "counter_samples": 2124,
+      "counter_sums": {
+        "axi_beats": 362171770,
+        "ram_wait_cycles": 61521552,
+        "gpu_busy_cycles": 3764344568,
+        "pc_working": 67625696,
+        "pc_stall_vfd": 40107296,
+        "pc_stall_tse": 34656100,
+        "pc_stall_vbif": 1870960,
+        "rb_active": 2897753651,
+        "rb_stall_marb": 2260890427,
+        "sp_alu_active": 967486252,
+        "sp_stall_tp": 679781378,
+        "sp_stall_uche": 0,
+        "sp_stall_rb": 0,
+        "sp_active_any": 2143819141,
+        "sp_fs_full_instructions": 2920151456,
+        "sp_fs_half_instructions": 0,
+        "sp_fs_tex_instructions": 109831452,
+        "tp_l1_requests": 788866528,
+        "tp_l1_misses": 91000030,
+        "tp_latency": 10210428023,
+        "tp_latency_transactions": 0,
+        "tp_active_any": 274593203,
+        "tp_stall_arb": 226754780,
+        "uche_vbif_latency": 571091421,
+        "uche_vbif_transactions": 6719132358,
+        "uche_active": 1502412185,
+        "uche_tp_read_beats": 391796992
+      }
+    },
+    {
+      "phase": 2,
+      "half_color_output": true,
+      "presentation": {
+        "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+        "idle_gap_threshold_ms": 100,
+        "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+        "active_fps": 51.08263657036558,
+        "frame_interval": {
+          "samples": 648,
+          "p50_ms": 16.670000000431173,
+          "p95_ms": 33.343999999488005,
+          "p99_ms": 50.006999999823165,
+          "over_25ms_percent": 14.969135802469136
+        },
+        "bursts": [
+          {
+            "start": 4777.090627,
+            "seconds": 0.4834450000007564,
+            "frames": 29,
+            "fps": 57.91765350754727
+          },
+          {
+            "start": 4777.924059,
+            "seconds": 1.416903000000275,
+            "frames": 69,
+            "fps": 47.991993806200426
+          },
+          {
+            "start": 4779.674271,
+            "seconds": 1.4001720000005662,
+            "frames": 71,
+            "fps": 49.9938578974381
+          },
+          {
+            "start": 4781.424488,
+            "seconds": 1.4002909999999247,
+            "frames": 71,
+            "fps": 49.989609302640496
+          },
+          {
+            "start": 4783.15803,
+            "seconds": 0.6168160000006537,
+            "frames": 30,
+            "fps": 47.01564161754764
+          },
+          {
+            "start": 4784.058136,
+            "seconds": 0.5000600000003033,
+            "frames": 28,
+            "fps": 53.993520777473954
+          },
+          {
+            "start": 4784.891632,
+            "seconds": 1.3834870000000592,
+            "frames": 69,
+            "fps": 49.15116658125236
+          },
+          {
+            "start": 4786.641782,
+            "seconds": 1.3502070000004096,
+            "frames": 69,
+            "fps": 50.36264809764678
+          },
+          {
+            "start": 4788.375315,
+            "seconds": 1.3835559999997713,
+            "frames": 75,
+            "fps": 53.485366692791786
+          },
+          {
+            "start": 4790.125526,
+            "seconds": 1.3834999999999127,
+            "frames": 74,
+            "fps": 52.7647271413116
+          },
+          {
+            "start": 4791.859069,
+            "seconds": 1.3668909999996686,
+            "frames": 74,
+            "fps": 53.40586776854753
+          }
+        ],
+        "gpu_busy_percent_recording": 32.14665818286495,
+        "cpu_busy_percent_recording_all_cores": 29.124060613527167,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 320000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "counter_samples": 2122,
+      "counter_sums": {
+        "axi_beats": 366026150,
+        "ram_wait_cycles": 47666943,
+        "gpu_busy_cycles": 2972346671,
+        "pc_working": 63966249,
+        "pc_stall_vfd": 32464185,
+        "pc_stall_tse": 12459330,
+        "pc_stall_vbif": 1824417,
+        "rb_active": 2144175720,
+        "rb_stall_marb": 1491616453,
+        "sp_alu_active": 1009076485,
+        "sp_stall_tp": 619832491,
+        "sp_stall_uche": 0,
+        "sp_stall_rb": 5801869,
+        "sp_active_any": 1463975958,
+        "sp_fs_full_instructions": 1434786190,
+        "sp_fs_half_instructions": 1757175096,
+        "sp_fs_tex_instructions": 109239516,
+        "tp_l1_requests": 781245746,
+        "tp_l1_misses": 90746278,
+        "tp_latency": 8371568721,
+        "tp_latency_transactions": 0,
+        "tp_active_any": 268384861,
+        "tp_stall_arb": 216488471,
+        "uche_vbif_latency": 545534478,
+        "uche_vbif_transactions": 5042518947,
+        "uche_active": 1396122389,
+        "uche_tp_read_beats": 396600864
+      }
+    },
+    {
+      "phase": 3,
+      "half_color_output": false,
+      "presentation": {
+        "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+        "idle_gap_threshold_ms": 100,
+        "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+        "active_fps": 49.419638872756195,
+        "frame_interval": {
+          "samples": 603,
+          "p50_ms": 16.67100000031496,
+          "p95_ms": 33.343000000058964,
+          "p99_ms": 50.00999999992928,
+          "over_25ms_percent": 18.90547263681592
+        },
+        "bursts": [
+          {
+            "start": 4870.235133,
+            "seconds": 0.11666700000023411,
+            "frames": 8,
+            "fps": 59.99982857179797
+          },
+          {
+            "start": 4870.685172,
+            "seconds": 1.3834879999994882,
+            "frames": 72,
+            "fps": 51.31956330667578
+          },
+          {
+            "start": 4872.435386,
+            "seconds": 1.366903000000093,
+            "frames": 67,
+            "fps": 48.28433327017024
+          },
+          {
+            "start": 4874.1856,
+            "seconds": 1.4168319999998857,
+            "frames": 71,
+            "fps": 49.40599873521042
+          },
+          {
+            "start": 4875.919136,
+            "seconds": 0.5333909999999378,
+            "frames": 28,
+            "fps": 50.619526763674585
+          },
+          {
+            "start": 4876.83591,
+            "seconds": 0.5000630000004094,
+            "frames": 26,
+            "fps": 49.993700793659066
+          },
+          {
+            "start": 4877.669348,
+            "seconds": 1.3668739999993704,
+            "frames": 65,
+            "fps": 46.82216502766859
+          },
+          {
+            "start": 4879.402885,
+            "seconds": 1.3834859999997207,
+            "frames": 68,
+            "fps": 48.42839031259697
+          },
+          {
+            "start": 4881.153088,
+            "seconds": 1.3835479999997915,
+            "frames": 68,
+            "fps": 48.4262201239206
+          },
+          {
+            "start": 4882.886626,
+            "seconds": 1.3668809999999212,
+            "frames": 72,
+            "fps": 51.94307331801678
+          },
+          {
+            "start": 4884.620164,
+            "seconds": 1.3834939999997005,
+            "frames": 69,
+            "fps": 49.1509178934023
+          }
+        ],
+        "gpu_busy_percent_recording": 35.083567593738195,
+        "cpu_busy_percent_recording_all_cores": 29.816344139036115,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      },
+      "counter_samples": 2122,
+      "counter_sums": {
+        "axi_beats": 354087988,
+        "ram_wait_cycles": 46209885,
+        "gpu_busy_cycles": 3663643864,
+        "pc_working": 65841132,
+        "pc_stall_vfd": 38256408,
+        "pc_stall_tse": 33045270,
+        "pc_stall_vbif": 1883100,
+        "rb_active": 2837231039,
+        "rb_stall_marb": 2214567774,
+        "sp_alu_active": 941772375,
+        "sp_stall_tp": 665134847,
+        "sp_stall_uche": 0,
+        "sp_stall_rb": 0,
+        "sp_active_any": 2089939693,
+        "sp_fs_full_instructions": 2844017264,
+        "sp_fs_half_instructions": 0,
+        "sp_fs_tex_instructions": 106908015,
+        "tp_l1_requests": 765409751,
+        "tp_l1_misses": 88863256,
+        "tp_latency": 10034176024,
+        "tp_latency_transactions": 0,
+        "tp_active_any": 267230789,
+        "tp_stall_arb": 222540100,
+        "uche_vbif_latency": 556047372,
+        "uche_vbif_transactions": 6421325265,
+        "uche_active": 1476541987,
+        "uche_tp_read_beats": 383714192
+      }
+    }
+  ],
+  "limitations": [
+    "Forced highp color output lowering is diagnostic only, not an API-correct production policy.",
+    "No optical pixel-perfect GUI validation.",
+    "Recording-wide busy percentages include idle gaps between gestures.",
+    "Presentation events, not optical FPS."
+  ]
+}

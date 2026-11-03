@@ -1,0 +1,168 @@
+{
+  "base": "installed native-icc profile",
+  "existing_properties_unchanged_except": [
+    [
+      "/cpus/cpu@0",
+      "power-domains"
+    ],
+    [
+      "/cpus/cpu@0",
+      "interconnects"
+    ],
+    [
+      "/cpus/cpu@1",
+      "power-domains"
+    ],
+    [
+      "/cpus/cpu@2",
+      "power-domains"
+    ],
+    [
+      "/cpus/cpu@3",
+      "power-domains"
+    ],
+    [
+      "/soc/spmi@fc4cf000",
+      "interrupts"
+    ],
+    [
+      "/soc/display-subsystem@fd900000/display-controller@fd900000",
+      "interconnects"
+    ],
+    [
+      "/soc/gpu@fdb00000",
+      "interconnects"
+    ],
+    [
+      "/soc/sram@fdd00000",
+      "interconnects"
+    ],
+    [
+      "/soc/interconnect@fc380000",
+      "#interconnect-cells"
+    ],
+    [
+      "/soc/interconnect@fc478000",
+      "#interconnect-cells"
+    ],
+    [
+      "/soc/interconnect-ocmem",
+      "#interconnect-cells"
+    ]
+  ],
+  "added_properties": [
+    [
+      "/remoteproc/interrupt-controller",
+      "phandle"
+    ],
+    [
+      "/remoteproc/interrupt-controller",
+      "#power-domain-cells"
+    ],
+    [
+      "/remoteproc/interrupt-controller",
+      "qcom,mpm-pin-map"
+    ],
+    [
+      "/remoteproc/interrupt-controller",
+      "qcom,mpm-pin-count"
+    ],
+    [
+      "/remoteproc/interrupt-controller",
+      "#interrupt-cells"
+    ],
+    [
+      "/remoteproc/interrupt-controller",
+      "interrupt-controller"
+    ],
+    [
+      "/remoteproc/interrupt-controller",
+      "mboxes"
+    ],
+    [
+      "/remoteproc/interrupt-controller",
+      "interrupts"
+    ],
+    [
+      "/remoteproc/interrupt-controller",
+      "qcom,rpm-msg-ram"
+    ],
+    [
+      "/remoteproc/interrupt-controller",
+      "compatible"
+    ],
+    [
+      "/soc/sram@fc428000/sram@1d0",
+      "phandle"
+    ],
+    [
+      "/soc/sram@fc428000/sram@1d0",
+      "reg"
+    ],
+    [
+      "/soc/spmi@fc4cf000",
+      "interrupt-parent"
+    ],
+    [
+      "/soc/pinctrl@fd510000",
+      "wakeup-parent"
+    ],
+    [
+      "/soc/display-subsystem@fd900000/dsi@fd922800/bridge@0",
+      "enable-gpios"
+    ]
+  ],
+  "all_original_phandles_unchanged": true,
+  "all_active_interconnect_bandwidth_values_preserved": true,
+  "APSS_interconnect_requests_active_only": true,
+  "kernel_release": "7.2.9-t531-sleep1-dirty",
+  "kernel_image_sha256": "bac90f22703473f632105895229d1a4dfc4a9b41bf77acf371bfef3f8afc70d3",
+  "msm_module_sha256": "566a65f171c21b98bd2dadf084289d44a45249f25fe425846eb73dbdb42a8771",
+  "unused_clock_gating_enabled": true,
+  "MSM8226_bootstrap_clock_handoff_active_only": true,
+  "system_sleep_clock_pm": [
+    "MDP5",
+    "USB controller",
+    "USB PHY reference",
+    "local MMSS interconnect"
+  ],
+  "msm_module_build_id": "4b42b38133a1dbd9b9a7757724149ad6487ad0e6",
+  "acceptance": "trial-not-accepted",
+  "DSI_PHY_system_pm_phase": "excluded-experimental-candidate",
+  "rejected_phy_normal_pm_module_sha256": "fb203bd828ce75054811d6f2353f12485ba64b115e3b78bfb6502a427cb6f13c",
+  "next_kernel_change": "0145 deployed: last-CPU trace defaults off",
+  "boot_validation": "kernel sleep1, qcom_mpm_disable_wake_irq symbol present, guard boot ID matches, KWin and Plasma Shell running",
+  "source_ahead_of_deployment": false,
+  "diagnostic_candidate": {
+    "module_sha256": "5298434102817758abe98d3ae11ae704a8a6185ee6851b7990c6a9cc4c60847a",
+    "accepted": false,
+    "result": "RPM failed with gating=N; runtime clock handling differs even with parameter off"
+  },
+  "diagnostic_MPM_timer": {
+    "image_sha256": "70c06d2ccd3aca4905205785a205e6bc06694fcbc149dfa396a4273529adb6c9",
+    "patch": "patches/candidates/linux/0146-irqchip-qcom-mpm-diagnostic-physical-counter-wake-timer.patch",
+    "enabled_at_boot": false,
+    "purpose": "Separate MPM timer wake from PMIC RTC wake",
+    "boot_status": "legacy module MPM wake passed at 7.994 s; PHY-gated trial failed before CPU resume and rebooted; previous slot now running"
+  },
+  "diagnostic_early_warm_trace": {
+    "image_sha256": "d2999157123ef52812290f96bb50a983e2ffddee8081bee293c47a8e320311d0",
+    "patch": "patches/candidates/linux/0147-cpuidle-qcom-spm-mark-early-warm-return-in-pstore.patch",
+    "default": "disabled",
+    "IMEM_range": "0xfe805664..0xfe805673",
+    "stock_reference": "msm8226-v2-pm.dtsi pm-8x60 reg=0xfe805664 size=0x40",
+    "validation": "legacy PHY module RTC resume passed; IMEM completed marker verified",
+    "contains_0146_timer": false,
+    "limitation": "IMEM overwritten at reboot; d299 image valid only for live stage inspection",
+    "pstore_revision": {
+      "image_sha256": "1e1618b7a65b8265c5c8c5405f6808167c06b57667d15bb9d372d988d96f4fca",
+      "status": "kernel started; GUI black with backlight and SSH sessions stall; no suspend test run on this revision; physical reboot requested",
+      "console_base": "0x2ffc0000",
+      "console_size": "0x40000",
+      "ECC": 0,
+      "marker": "T531_WARM_ENTRY",
+      "board_and_layout_validation": true
+    }
+  },
+  "early_capture_hook": "removal prepared: it must not run before recovery slot selection"
+}

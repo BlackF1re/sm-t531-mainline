@@ -1,0 +1,71 @@
+{
+  "date": "2026-11-01",
+  "device": "SM-T531",
+  "kernel": "7.2.9-t531-unified2-dirty",
+  "fixes": [
+    "0130 SD CD polling DT deployed and selected",
+    "0131 MSM ring reconciliation module loaded",
+    "0132 BMS no polling wake: source compiled; equivalent live policy persisted by udev"
+  ],
+  "cycles": [
+    {
+      "name": "normal-1",
+      "mode": "logind",
+      "suspended_seconds": 12.979087682,
+      "success_delta": 1,
+      "fail_delta": 0,
+      "display_on_after_power_wake": null
+    },
+    {
+      "name": "normal-2",
+      "mode": "logind",
+      "suspended_seconds": 13.438615528000014,
+      "success_delta": 1,
+      "fail_delta": 0,
+      "display_on_after_power_wake": null
+    },
+    {
+      "name": "normal-3",
+      "mode": "power-key",
+      "suspended_seconds": 13.798337557999957,
+      "success_delta": 1,
+      "fail_delta": 0,
+      "display_on_after_power_wake": true
+    }
+  ],
+  "kernel_stats_before_final_series": {
+    "success": 3,
+    "fail": 1
+  },
+  "kernel_stats_after_final_series": {
+    "success": 6,
+    "fail": 1
+  },
+  "earlier_fail_is_not_cleared": true,
+  "gpu_runtime_control": "auto",
+  "temporary_gpu_hold_removed": true,
+  "mmc1_wakeup_events": 0,
+  "rtc_alarm_cleared": true,
+  "automated_sleep_units_running": 0,
+  "unified_drm": {
+    "card": "/dev/dri/card0",
+    "render": "/dev/dri/renderD128",
+    "driver": "msm",
+    "gpu_id": 305,
+    "atomic": true,
+    "width": 1280,
+    "height": 800,
+    "refresh_millihz": 59999,
+    "unified": true
+  },
+  "gpu_readback": {
+    "cases": 7,
+    "samples_per_case": 21045,
+    "maximum_channel_error": 1
+  },
+  "trace": {
+    "runtime_resume_to_suspend_without_submit": 4,
+    "system_resume_to_next_suspend_without_submit_covered": false
+  },
+  "bms_failed_transition_attribution": "inferred from the sole wakeup_count increment; failed transition itself lacked wake-source tracepoints"
+}

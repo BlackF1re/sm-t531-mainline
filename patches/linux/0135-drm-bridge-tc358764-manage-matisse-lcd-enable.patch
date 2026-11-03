@@ -1,0 +1,142 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] drm: bridge: tc358764: manage the verified Matisse LCD enable
+
+Use PM8226 GPIO2 as in the Samsung driver: enable the LCD board before
+reset, and hold reset before disabling it. Preserve firmware-power fallback
+for older board descriptions and avoid guessing individual supply rails.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/bridge/tc358764.c b/drivers/gpu/drm/bridge/tc358764.c
+--- a/drivers/gpu/drm/bridge/tc358764.c
++++ b/drivers/gpu/drm/bridge/tc358764.c
+@@ -156,6 +156,7 @@
+ 	struct drm_bridge *next_bridge;
+ 	struct regulator_bulk_data supplies[ARRAY_SIZE(tc358764_supplies)];
+ 	struct gpio_desc *gpio_reset;
++	struct gpio_desc *gpio_enable;
+ 	int error;
+ 	bool matisse;
+ 	bool unmanaged_power;
+@@ -303,6 +304,13 @@
+ 	struct tc358764 *ctx = bridge_to_tc358764(bridge);
+ 	int ret;
+ 
++	if (ctx->gpio_enable) {
++		/* Stock Matisse: hold reset low before removing LCD enable. */
++		gpiod_set_value_cansleep(ctx->gpio_reset, 1);
++		gpiod_set_value_cansleep(ctx->gpio_enable, 0);
++		msleep(500);
++		return;
++	}
+ 	tc358764_reset(ctx);
+ 	usleep_range(10000, 15000);
+ 	if (ctx->unmanaged_power)
+@@ -317,8 +325,14 @@
+ 	struct tc358764 *ctx = bridge_to_tc358764(bridge);
+ 	int ret;
+ 
+-	ret = ctx->unmanaged_power ? 0 :
+-		regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
++	if (ctx->gpio_enable) {
++		gpiod_set_value_cansleep(ctx->gpio_enable, 1);
++		usleep_range(1000, 2000);
++		ret = 0;
++	} else {
++		ret = ctx->unmanaged_power ? 0 :
++			regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
++	}
+ 	if (ret < 0) {
+ 		dev_err(ctx->dev, "error enabling regulators (%d)\n", ret);
+ 		return;
+@@ -393,7 +407,14 @@
+ 	ctx->dev = dev;
+ 	ctx->matisse = of_device_is_compatible(dev->of_node,
+ 					     "samsung,matisse-tc358764");
+-	ctx->unmanaged_power = ctx->matisse && firmware_power;
++	if (ctx->matisse) {
++		ctx->gpio_enable = devm_gpiod_get_optional(dev, "enable",
++							 GPIOD_OUT_HIGH);
++		if (IS_ERR(ctx->gpio_enable))
++			return dev_err_probe(dev, PTR_ERR(ctx->gpio_enable),
++					     "LCD enable GPIO unavailable\n");
++	}
++	ctx->unmanaged_power = ctx->matisse && firmware_power && !ctx->gpio_enable;
+ 
+ 	dsi->lanes = 4;
+ 	dsi->format = MIPI_DSI_FMT_RGB888;
+@@ -407,7 +428,9 @@
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (ctx->unmanaged_power) {
++	if (ctx->gpio_enable) {
++		dev_info(dev, "Matisse LCD power managed by board enable GPIO\n");
++	} else if (ctx->unmanaged_power) {
+ 		dev_warn(dev, "DIAGNOSTIC: preserving firmware bridge power; suspend unsupported\n");
+ 	} else {
+ 		ret = tc358764_configure_regulators(ctx);
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native.dts
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+-/* Diagnostic native KMS profile; firmware-powered bridge, no suspend yet. */
++/* Native KMS with the stock PMIC GPIO2 LCD power enable sequence. */
+ #include "qcom-msm8226-samsung-matisse3g.dts"
+ 
+ &framebuffer0 {
+@@ -31,7 +31,7 @@
+ 		compatible = "samsung,matisse-tc358764", "toshiba,tc358764";
+ 		reg = <0>;
+ 		reset-gpios = <&tlmm 51 GPIO_ACTIVE_LOW>;
+-		/* Unknown bridge supply nets: explicit firmware_power diagnostic. */
++		enable-gpios = <&pm8226_gpios 2 GPIO_ACTIVE_HIGH>;
+ 
+ 		ports {
+ 			#address-cells = <1>;
+diff --git a/Documentation/devicetree/bindings/display/bridge/toshiba,tc358764.yaml b/Documentation/devicetree/bindings/display/bridge/toshiba,tc358764.yaml
+--- a/Documentation/devicetree/bindings/display/bridge/toshiba,tc358764.yaml
++++ b/Documentation/devicetree/bindings/display/bridge/toshiba,tc358764.yaml
+@@ -23,6 +23,10 @@
+ 
+   reset-gpios:
+     maxItems: 1
++
++  enable-gpios:
++    maxItems: 1
++    description: Matisse board LCD power enable, managed around reset.
+ 
+   vddc-supply:
+     description: Core voltage supply, 1.2V
+@@ -54,10 +58,27 @@
+   - compatible
+   - reg
+   - reset-gpios
+-  - vddc-supply
+-  - vddio-supply
+-  - vddlvds-supply
+   - ports
++
++allOf:
++  - if:
++      properties:
++        compatible:
++          contains:
++            const: samsung,matisse-tc358764
++    then:
++      anyOf:
++        - required:
++            - enable-gpios
++        - required:
++            - vddc-supply
++            - vddio-supply
++            - vddlvds-supply
++    else:
++      required:
++        - vddc-supply
++        - vddio-supply
++        - vddlvds-supply
+ 
+ additionalProperties: false
+ 

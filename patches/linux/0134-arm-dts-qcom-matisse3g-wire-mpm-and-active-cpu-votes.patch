@@ -1,0 +1,88 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] ARM: dts: qcom: matisse3g: wire MPM and active-only CPU votes
+
+Route the verified MSM8226 vMPM SRAM/mailbox and PMIC wake IRQ. Use
+active-only CPU performance votes so CPU PLL demand is not retained in the
+RPM sleep set. Preserve the WCNSS and peripheral votes.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -214,7 +214,7 @@
+ 				      <&wcnss_smp2p_in 1 IRQ_TYPE_EDGE_RISING>,
+ 				      <&wcnss_smp2p_in 2 IRQ_TYPE_EDGE_RISING>;
+ 		interrupt-names = "wdog", "fatal", "ready", "handover";
+-		power-domains = <&rpmpd MSM8226_VDDCX>;
++		power-domains = <&rpmpd MSM8226_VDDCX_AO>;
+ 		power-domain-names = "cx";
+ 		vddmx-supply = <&pm8226_l3>;
+ 		vddpx-supply = <&pm8226_l6>;
+@@ -362,7 +362,7 @@
+ 
+ /* The stock speed0 plan supports all seven frequencies through 1190.4 MHz. */
+ &cpu0 {
+-	power-domains = <&rpmpd MSM8226_VDDCX>;
++	power-domains = <&rpmpd MSM8226_VDDCX_AO>;
+ 	power-domain-names = "perf";
+ 	cpu-supply = <&vdd_cpu>;
+ };
+@@ -438,19 +438,19 @@
+ };
+ 
+ &cpu1 {
+-	power-domains = <&rpmpd MSM8226_VDDCX>;
++	power-domains = <&rpmpd MSM8226_VDDCX_AO>;
+ 	power-domain-names = "perf";
+ 	cpu-idle-states = <&cpu_spc>;
+ };
+ 
+ &cpu2 {
+-	power-domains = <&rpmpd MSM8226_VDDCX>;
++	power-domains = <&rpmpd MSM8226_VDDCX_AO>;
+ 	power-domain-names = "perf";
+ 	cpu-idle-states = <&cpu_spc>;
+ };
+ 
+ &cpu3 {
+-	power-domains = <&rpmpd MSM8226_VDDCX>;
++	power-domains = <&rpmpd MSM8226_VDDCX_AO>;
+ 	power-domain-names = "perf";
+ 	cpu-idle-states = <&cpu_spc>;
+ };
+@@ -505,3 +505,34 @@
+ };
+ 
+ #include "qcom-msm8226-samsung-matisse-battery.dtsi"
++
++/* MSM8226 vMPM and PMIC wake routing, from the captured stock board DT. */
++&rpm_msg_ram {
++	apss_mpm: sram@1d0 {
++		reg = <0x1d0 0x30>;
++	};
++};
++
++&rpm {
++	mpm: interrupt-controller {
++		compatible = "qcom,msm8226-mpm", "qcom,mpm";
++		qcom,rpm-msg-ram = <&apss_mpm>;
++		interrupts = <GIC_SPI 171 IRQ_TYPE_EDGE_RISING>;
++		mboxes = <&apcs 1>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		qcom,mpm-pin-count = <64>;
++		/* GIC binding SPIs exclude the 32 private interrupts. */
++		qcom,mpm-pin-map = <2 184>, <47 140>, <53 72>, <62 190>;
++		#power-domain-cells = <0>;
++	};
++};
++
++&tlmm {
++	wakeup-parent = <&mpm>;
++};
++
++&spmi_bus {
++	interrupt-parent = <&mpm>;
++	interrupts = <62 IRQ_TYPE_LEVEL_HIGH>;
++};

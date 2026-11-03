@@ -1,0 +1,267 @@
+{
+  "result": "No meaningful GUI gain; original restored. Synthetic speedup does not establish root cause.",
+  "shader_intervention_verified": true,
+  "phases": [
+    {
+      "flag": false,
+      "summary": {
+        "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+        "idle_gap_threshold_ms": 100,
+        "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+        "active_fps": 49.966591358542196,
+        "frame_interval": {
+          "samples": 623,
+          "p50_ms": 16.67100000031496,
+          "p95_ms": 33.34600000016508,
+          "p99_ms": 50.00300000028801,
+          "over_25ms_percent": 17.97752808988764
+        },
+        "bursts": [
+          {
+            "start": 7912.957755,
+            "seconds": 0.28341699999964476,
+            "frames": 18,
+            "fps": 59.98228758338882
+          },
+          {
+            "start": 7913.607831,
+            "seconds": 1.3668149999994057,
+            "frames": 69,
+            "fps": 49.75069779013953
+          },
+          {
+            "start": 7915.341421,
+            "seconds": 0.6333990000002814,
+            "frames": 32,
+            "fps": 48.942293877928805
+          },
+          {
+            "start": 7916.241471,
+            "seconds": 0.4834359999995286,
+            "frames": 29,
+            "fps": 57.91873174531335
+          },
+          {
+            "start": 7917.074967,
+            "seconds": 1.4001450000005207,
+            "frames": 71,
+            "fps": 49.994821964849336
+          },
+          {
+            "start": 7918.825141,
+            "seconds": 1.3668360000001485,
+            "frames": 68,
+            "fps": 49.018316754894315
+          },
+          {
+            "start": 7920.558634,
+            "seconds": 1.3834859999997207,
+            "frames": 64,
+            "fps": 45.53714312975536
+          },
+          {
+            "start": 7922.308832,
+            "seconds": 1.3835440000002563,
+            "frames": 71,
+            "fps": 50.59470461364946
+          },
+          {
+            "start": 7924.042367,
+            "seconds": 1.383546000000024,
+            "frames": 69,
+            "fps": 49.14907057661894
+          },
+          {
+            "start": 7925.79257,
+            "seconds": 1.3834870000000592,
+            "frames": 70,
+            "fps": 49.87397785450607
+          },
+          {
+            "start": 7927.5261,
+            "seconds": 1.4002199999995355,
+            "frames": 73,
+            "fps": 51.420491065706734
+          }
+        ],
+        "gpu_busy_percent_recording": 36.34605502147151,
+        "cpu_busy_percent_recording_all_cores": 17.435265104808877,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 385000000.0,
+        "axi_hz_median": 266666666.0
+      }
+    },
+    {
+      "flag": true,
+      "summary": {
+        "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+        "idle_gap_threshold_ms": 100,
+        "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+        "active_fps": 50.20550441692015,
+        "frame_interval": {
+          "samples": 631,
+          "p50_ms": 16.669999999976426,
+          "p95_ms": 33.390999999937776,
+          "p99_ms": 50.00399999971705,
+          "over_25ms_percent": 17.591125198098258
+        },
+        "bursts": [
+          {
+            "start": 7981.899042,
+            "seconds": 0.5000380000001314,
+            "frames": 29,
+            "fps": 55.9957443234167
+          },
+          {
+            "start": 7982.715863,
+            "seconds": 1.3834139999999024,
+            "frames": 69,
+            "fps": 49.153760190373085
+          },
+          {
+            "start": 7984.465996,
+            "seconds": 1.3835429999999178,
+            "frames": 68,
+            "fps": 48.42639513192144
+          },
+          {
+            "start": 7986.199528,
+            "seconds": 1.3835380000000441,
+            "frames": 68,
+            "fps": 48.426570141187206
+          },
+          {
+            "start": 7987.949726,
+            "seconds": 0.5167760000003909,
+            "frames": 27,
+            "fps": 50.311933990704546
+          },
+          {
+            "start": 7988.833164,
+            "seconds": 0.483447999999953,
+            "frames": 27,
+            "fps": 53.78034452516615
+          },
+          {
+            "start": 7989.683261,
+            "seconds": 1.3834820000001855,
+            "frames": 72,
+            "fps": 51.319785873607664
+          },
+          {
+            "start": 7991.433469,
+            "seconds": 1.400205000000824,
+            "frames": 67,
+            "fps": 47.13595509226232
+          },
+          {
+            "start": 7993.166994,
+            "seconds": 1.38354900000013,
+            "frames": 72,
+            "fps": 51.317300652158565
+          },
+          {
+            "start": 7994.917202,
+            "seconds": 1.383537000000615,
+            "frames": 74,
+            "fps": 52.76331605151691
+          },
+          {
+            "start": 7996.650731,
+            "seconds": 1.3668130000005476,
+            "frames": 69,
+            "fps": 49.75077058820245
+          }
+        ],
+        "gpu_busy_percent_recording": 37.205550507005526,
+        "cpu_busy_percent_recording_all_cores": 15.661610556172155,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      }
+    },
+    {
+      "flag": false,
+      "summary": {
+        "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+        "idle_gap_threshold_ms": 100,
+        "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+        "active_fps": 50.32881881509175,
+        "frame_interval": {
+          "samples": 651,
+          "p50_ms": 16.670999999405467,
+          "p95_ms": 33.39200000027631,
+          "p99_ms": 50.00300000028801,
+          "over_25ms_percent": 17.51152073732719
+        },
+        "bursts": [
+          {
+            "start": 8049.190119,
+            "seconds": 0.5000420000005761,
+            "frames": 28,
+            "fps": 53.99546438092979
+          },
+          {
+            "start": 8050.073547,
+            "seconds": 1.3835410000001502,
+            "frames": 67,
+            "fps": 47.70368207374616
+          },
+          {
+            "start": 8051.807079,
+            "seconds": 1.3668729999999414,
+            "frames": 69,
+            "fps": 49.748586737760505
+          },
+          {
+            "start": 8053.557364,
+            "seconds": 1.3667889999996987,
+            "frames": 73,
+            "fps": 52.678211486934615
+          },
+          {
+            "start": 8055.290812,
+            "seconds": 1.3834820000001855,
+            "frames": 69,
+            "fps": 49.151344216976355
+          },
+          {
+            "start": 8057.02441,
+            "seconds": 1.416809999999714,
+            "frames": 71,
+            "fps": 49.40676590369502
+          },
+          {
+            "start": 8058.791214,
+            "seconds": 1.383483999999953,
+            "frames": 72,
+            "fps": 51.31971168441587
+          },
+          {
+            "start": 8060.50808,
+            "seconds": 1.3668850000003658,
+            "frames": 69,
+            "fps": 49.74814999065891
+          },
+          {
+            "start": 8062.258286,
+            "seconds": 1.3835369999997056,
+            "frames": 73,
+            "fps": 52.040530900160476
+          },
+          {
+            "start": 8063.991814,
+            "seconds": 1.3834919999999329,
+            "frames": 70,
+            "fps": 49.87379760779488
+          }
+        ],
+        "gpu_busy_percent_recording": 37.27066028035661,
+        "cpu_busy_percent_recording_all_cores": 17.257128749537095,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0
+      }
+    }
+  ]
+}

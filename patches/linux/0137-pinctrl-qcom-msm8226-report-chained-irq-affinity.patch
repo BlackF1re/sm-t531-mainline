@@ -1,0 +1,40 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] pinctrl: qcom: report MSM8226 chained GPIO effective affinity
+
+MSM8226 GPIO interrupts are demultiplexed by the TLMM summary interrupt.
+Their effective affinity is otherwise empty, so CPU hotplug assumes
+every CPU in the default mask can receive them and attempts impossible
+independent GPIO migrations. System suspend logs repeated set-affinity
+failures.
+
+Accept a requested mask when it already contains the summary IRQ's
+actual target, and report that effective target. Keep rejecting requests
+which would require independent routing, and leave direct-connect IRQs
+unchanged.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
+--- a/drivers/pinctrl/qcom/pinctrl-msm.c
++++ b/drivers/pinctrl/qcom/pinctrl-msm.c
+@@ -1300,6 +1300,20 @@
+ 	if (d->parent_data && test_bit(d->hwirq, pctrl->skip_wake_irqs))
+ 		return irq_chip_set_affinity_parent(d, dest, force);
+ 
++	if (of_device_is_compatible(pctrl->dev->of_node, "qcom,msm8226-pinctrl")) {
++		struct irq_data *parent = irq_get_irq_data(pctrl->irq);
++		const struct cpumask *effective;
++
++		/* Chained GPIOs execute on the summary IRQ's actual target. */
++		if (!parent)
++			return -EINVAL;
++		effective = irq_data_get_effective_affinity_mask(parent);
++		if (!cpumask_empty(effective) && cpumask_subset(effective, dest)) {
++			irq_data_update_effective_affinity(d, effective);
++			return IRQ_SET_MASK_OK_DONE;
++		}
++	}
++
+ 	return -EINVAL;
+ }
+ 

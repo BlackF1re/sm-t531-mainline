@@ -1,0 +1,24 @@
+Subject: [CANDIDATE] freedreno/a3xx: test the BSP resolve packer timer on A305B
+
+Diagnostic A/B candidate only; not enabled in production builds.
+Samsung's MSM8226 BSP sets PACKER_TIMER_ENABLE for its GMEM save resolve
+(adreno_a3xx.c, lines 484-490, commit 3fa1853ed5d6c3a8ef5a2fda9822705243bbc256).
+Mesa's ordinary GMEM resolve does not. Scope the experiment to chip 0x03000512.
+
+RB/MARB stalls are measured, but do not establish that this bit is their
+cause. The BSP code handles context save rather than the complete Android
+userspace pipeline. Correctness and paired measurements remain required.
+
+Source: https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/gpu/msm/adreno_a3xx.c#L484
+
+--- a/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
++++ b/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
+@@ -413,6 +413,8 @@
+    OUT_PKT0(ring, REG_A3XX_RB_MODE_CONTROL, 1);
+    OUT_RING(ring, A3XX_RB_MODE_CONTROL_RENDER_MODE(RB_RESOLVE_PASS) |
+                      A3XX_RB_MODE_CONTROL_MARB_CACHE_SPLIT_MODE |
++                     COND(batch->ctx->screen->chip_id == 0x03000512,
++                          A3XX_RB_MODE_CONTROL_PACKER_TIMER_ENABLE) |
+                      A3XX_RB_MODE_CONTROL_MRT(0));
+ 
+    OUT_PKT0(ring, REG_A3XX_RB_RENDER_CONTROL, 1);

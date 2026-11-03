@@ -1,0 +1,81 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] ARM: dts: qcom: matisse3g: make APSS fabric votes active-only
+
+Untagged RPM interconnect requests vote in both active and sleep
+contexts. The CPU OPP keeps a nonzero BIMC/DDR vote during APSS suspend,
+even after CPU/L2 collapse is acknowledged. GPU, MDP and OCMEM traffic
+also belongs to APSS and stops while the system is suspended.
+
+Use the RPM-specific ACTIVE tag with two-cell endpoints. Preserve every
+active bandwidth value and retain the provider's active keep-alive
+floor; do not reserve APSS working bandwidth in the RPM sleep context.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native-icc.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native-icc.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native-icc.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g-native-icc.dts
+@@ -2,28 +2,30 @@
+ /* Opt-in memory interconnect experiment, separate from display bring-up. */
+ #include "qcom-msm8226-samsung-matisse3g-native.dts"
+ #include <dt-bindings/interconnect/qcom,msm8226.h>
++#include <dt-bindings/interconnect/qcom,rpm-icc.h>
+ 
+ &soc {
+ 	bimc: interconnect@fc380000 {
+ 		compatible = "qcom,msm8226-bimc";
+ 		reg = <0xfc380000 0x6a000>;
+-		#interconnect-cells = <1>;
++		#interconnect-cells = <2>;
+ 	};
+ 	mmssnoc: interconnect@fc478000 {
+ 		compatible = "qcom,msm8226-mmssnoc";
+ 		reg = <0xfc478000 0x4000>;
+-		#interconnect-cells = <1>;
++		#interconnect-cells = <2>;
+ 		clocks = <&mmcc MMSS_AXI_CLK_SRC>;
+ 		clock-names = "bus";
+ 	};
+ 	ocmemnoc: interconnect-ocmem {
+ 		compatible = "qcom,msm8226-ocmem-vnoc";
+-		#interconnect-cells = <1>;
++		#interconnect-cells = <2>;
+ 	};
+ };
+ 
+ &cpu0 {
+-	interconnects = <&bimc BIMC_MAS_CPU &bimc BIMC_SLV_EBI>;
++	interconnects = <&bimc BIMC_MAS_CPU RPM_ACTIVE_TAG
++			 &bimc BIMC_SLV_EBI RPM_ACTIVE_TAG>;
+ };
+ 
+ &cpu_opp_table {
+@@ -51,8 +53,10 @@
+ };
+ 
+ &gpu {
+-	interconnects = <&mmssnoc MMSS_MAS_GFX &bimc BIMC_SLV_EBI>,
+-		       <&ocmemnoc OCMEM_MAS_GFX &ocmemnoc OCMEM_SLV_OCMEM>;
++	interconnects = <&mmssnoc MMSS_MAS_GFX RPM_ACTIVE_TAG
++			 &bimc BIMC_SLV_EBI RPM_ACTIVE_TAG>,
++		       <&ocmemnoc OCMEM_MAS_GFX RPM_ACTIVE_TAG
++			 &ocmemnoc OCMEM_SLV_OCMEM RPM_ACTIVE_TAG>;
+ 	interconnect-names = "gfx-mem", "ocmem";
+ };
+ 
+@@ -76,11 +80,13 @@
+ };
+ 
+ &mdss_mdp {
+-	interconnects = <&mmssnoc MMSS_MAS_MDP &bimc BIMC_SLV_EBI>;
++	interconnects = <&mmssnoc MMSS_MAS_MDP RPM_ACTIVE_TAG
++			 &bimc BIMC_SLV_EBI RPM_ACTIVE_TAG>;
+ 	interconnect-names = "mdp0-mem";
+ };
+ 
+ &{/soc/sram@fdd00000} {
+-	interconnects = <&ocmemnoc OCMEM_MAS_GFX &ocmemnoc OCMEM_SLV_OCMEM>;
++	interconnects = <&ocmemnoc OCMEM_MAS_GFX RPM_ACTIVE_TAG
++			 &ocmemnoc OCMEM_SLV_OCMEM RPM_ACTIVE_TAG>;
+ 	interconnect-names = "memory";
+ };

@@ -1,0 +1,311 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] soc: qcom: coordinate MSM8226 L2 sleep sequences with MPM
+
+Provide the stock retention, GDHS, standalone collapse and RPM-handshake
+sequences with byte-accurate entry offsets. Only the MSM8226 L2 SAW writes
+the extended sequence RAM. Coordinate vMPM after secondary CPU shutdown,
+without changing genpd reference counts in the IRQ-disabled suspend path.
+Keep standalone collapse as the fallback until board policy selects RPM.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/irqchip/irq-qcom-mpm.c b/drivers/irqchip/irq-qcom-mpm.c
+--- a/drivers/irqchip/irq-qcom-mpm.c
++++ b/drivers/irqchip/irq-qcom-mpm.c
+@@ -4,6 +4,7 @@
+  * Copyright (c) 2010-2020, The Linux Foundation. All rights reserved.
+  */
+ 
++#include <linux/cpu.h>
+ #include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+@@ -85,7 +86,10 @@
+ 	unsigned int reg_stride;
+ 	struct irq_domain *domain;
+ 	struct generic_pm_domain genpd;
++	bool legacy_saw;
+ };
++
++static struct qcom_mpm_priv *legacy_mpm;
+ 
+ static u32 qcom_mpm_read(struct qcom_mpm_priv *priv, unsigned int reg,
+ 			 unsigned int index)
+@@ -280,7 +284,11 @@
+ 		for_each_set_bit(j, &pending, 32) {
+ 			unsigned int pin = 32 * i + j;
+ 			struct irq_desc *desc = irq_resolve_mapping(priv->domain, pin);
+-			struct irq_data *d = &desc->irq_data;
++			struct irq_data *d;
++
++			if (!desc)
++				continue;
++			d = &desc->irq_data;
+ 
+ 			if (!irqd_is_level_type(d))
+ 				irq_set_irqchip_state(d->irq,
+@@ -292,14 +300,19 @@
+ 	return ret;
+ }
+ 
+-static int mpm_pd_power_off(struct generic_pm_domain *genpd)
+-{
+-	struct qcom_mpm_priv *priv = container_of(genpd, struct qcom_mpm_priv,
+-						  genpd);
++static int qcom_mpm_notify(struct qcom_mpm_priv *priv)
++{
+ 	int i, ret;
+ 
+ 	for (i = 0; i < priv->reg_stride; i++)
+ 		qcom_mpm_write(priv, MPM_REG_STATUS, i, 0);
++
++	if (priv->legacy_saw) {
++		/* PMIC RTC/key provide the system alarm, not a stale vMPM timer. */
++		writel_relaxed(U32_MAX, priv->base);
++		writel_relaxed(U32_MAX, priv->base + sizeof(u32));
++		wmb();
++	}
+ 
+ 	/* Notify RPM to write vMPM into HW */
+ 	ret = mbox_send_message(priv->mbox_chan, NULL);
+@@ -309,6 +322,29 @@
+ 	mbox_client_txdone(priv->mbox_chan, 0);
+ 
+ 	return 0;
++}
++
++/* Non-PSCI SAW platforms prepare MPM after secondary CPUs are offline. */
++int qcom_mpm_prepare_suspend(void)
++{
++	if (!legacy_mpm)
++		return -ENODEV;
++	if (num_online_cpus() != 1 || !irqs_disabled())
++		return -EBUSY;
++
++	return qcom_mpm_notify(legacy_mpm);
++}
++EXPORT_SYMBOL_GPL(qcom_mpm_prepare_suspend);
++
++static int mpm_pd_power_off(struct generic_pm_domain *genpd)
++{
++	struct qcom_mpm_priv *priv = container_of(genpd, struct qcom_mpm_priv,
++						  genpd);
++
++	/* The legacy SAW entry calls prepare explicitly, never at runtime. */
++	if (priv->legacy_saw)
++		return -EBUSY;
++	return qcom_mpm_notify(priv);
+ }
+ 
+ static bool gic_hwirq_is_mapped(struct mpm_gic_map *maps, int cnt, u32 hwirq)
+@@ -346,6 +382,9 @@
+ 	}
+ 
+ 	priv->reg_stride = DIV_ROUND_UP(pin_cnt, 32);
++	priv->legacy_saw = of_device_is_compatible(np, "qcom,msm8226-mpm");
++	if (priv->legacy_saw && pin_cnt != 64)
++		return -EINVAL;
+ 
+ 	ret = of_property_count_u32_elems(np, "qcom,mpm-pin-map");
+ 	if (ret < 0) {
+@@ -469,6 +508,8 @@
+ 		goto remove_domain;
+ 	}
+ 
++	if (priv->legacy_saw)
++		legacy_mpm = priv;
+ 	return 0;
+ 
+ remove_domain:
+diff --git a/include/linux/soc/qcom/irq.h b/include/linux/soc/qcom/irq.h
+--- a/include/linux/soc/qcom/irq.h
++++ b/include/linux/soc/qcom/irq.h
+@@ -31,4 +31,13 @@
+ 	return (d->flags & IRQ_DOMAIN_FLAG_QCOM_PDC_WAKEUP);
+ }
+ 
++#if IS_ENABLED(CONFIG_QCOM_MPM)
++int qcom_mpm_prepare_suspend(void);
++#else
++static inline int qcom_mpm_prepare_suspend(void)
++{
++	return -ENODEV;
++}
+ #endif
++
++#endif
+diff --git a/drivers/soc/qcom/spm.c b/drivers/soc/qcom/spm.c
+--- a/drivers/soc/qcom/spm.c
++++ b/drivers/soc/qcom/spm.c
+@@ -60,7 +60,7 @@
+ };
+ 
+ #define MAX_PMIC_DATA		2
+-#define MAX_SEQ_DATA		64
++#define MAX_SEQ_DATA		128
+ 
+ struct spm_reg_data {
+ 	const u16 *reg_offset;
+@@ -71,6 +71,7 @@
+ 	u32 avs_ctl;
+ 	u32 avs_limit;
+ 	u8 seq[MAX_SEQ_DATA];
++	u8 seq_len;
+ 	u8 start_index[PM_SLEEP_MODE_NR];
+ 
+ 	smp_call_func_t set_vdd;
+@@ -245,14 +246,28 @@
+ 	.spm_cfg = 0x14,
+ 	.spm_dly = 0x3c102800,
+ 	.pmic_data = { 0x02030080, 0x00030000 },
+-	/* Retention, then standalone APC/L2 collapse without RPM handshake. */
+-	.seq = { 0x00, 0x03, 0x00, 0x0f,
++	/* Stock SAW2-v2 has 32 words of sequence RAM. Indices are bytes. */
++	.seq = { /* retention: [0, 4) */
++		 0x00, 0x03, 0x00, 0x0f,
++		 /* GDHS: [4, 26) */
++		 0x00, 0x20, 0x32, 0x6b, 0xc0, 0xe0, 0xd0, 0x42,
++		 0x03, 0x50, 0x4e, 0x02, 0x02, 0xd0, 0xe0, 0xc0,
++		 0x22, 0x6b, 0x02, 0x32, 0x50, 0x0f,
++		 /* Standalone collapse: [26, 54) */
+ 		 0x00, 0x32, 0xb0, 0x10, 0xe0, 0xd0, 0x6b, 0xc0,
+ 		 0x42, 0xf0, 0x11, 0x03, 0x01, 0xb0, 0x50, 0x4e,
+ 		 0x02, 0x02, 0xc0, 0xd0, 0x12, 0xe0, 0x6b, 0x02,
++		 0x32, 0x50, 0xf0, 0x0f,
++		 /* RPM-assisted collapse: [54, 82) */
++		 0x00, 0x32, 0xb0, 0x10, 0xe0, 0xd0, 0x6b, 0xc0,
++		 0x42, 0xf0, 0x11, 0x07, 0x01, 0xb0, 0x50, 0x4e,
++		 0x02, 0x02, 0xc0, 0xd0, 0x12, 0xe0, 0x6b, 0x02,
+ 		 0x32, 0x50, 0xf0, 0x0f },
++	.seq_len = 84,
+ 	.start_index[PM_SLEEP_MODE_RET] = 0,
+-	.start_index[PM_SLEEP_MODE_PC] = 4,
++	.start_index[PM_SLEEP_MODE_GDHS] = 4,
++	.start_index[PM_SLEEP_MODE_PC] = 26,
++	.start_index[PM_SLEEP_MODE_PC_RPM] = 54,
+ 	.set_vdd = smp_set_vdd_8226,
+ 	.range = &spm_8226_regulator_range,
+ 	.init_uV = 1280000,
+@@ -671,7 +686,7 @@
+ 	if (drv->reg_data->reg_offset[SPM_REG_SEQ_ENTRY]) {
+ 		addr = drv->reg_base + drv->reg_data->reg_offset[SPM_REG_SEQ_ENTRY];
+ 		__iowrite32_copy(addr, drv->reg_data->seq,
+-				ARRAY_SIZE(drv->reg_data->seq) / 4);
++				(drv->reg_data->seq_len ?: 64) / 4);
+ 	}
+ 
+ 	/*
+diff --git a/include/soc/qcom/spm.h b/include/soc/qcom/spm.h
+--- a/include/soc/qcom/spm.h
++++ b/include/soc/qcom/spm.h
+@@ -12,6 +12,8 @@
+ 	PM_SLEEP_MODE_RET,
+ 	PM_SLEEP_MODE_SPC,
+ 	PM_SLEEP_MODE_PC,
++	PM_SLEEP_MODE_GDHS,
++	PM_SLEEP_MODE_PC_RPM,
+ 	PM_SLEEP_MODE_NR,
+ };
+ 
+diff --git a/include/linux/firmware/qcom/qcom_scm.h b/include/linux/firmware/qcom/qcom_scm.h
+--- a/include/linux/firmware/qcom/qcom_scm.h
++++ b/include/linux/firmware/qcom/qcom_scm.h
+@@ -14,6 +14,7 @@
+ #define QCOM_SCM_VERSION(major, minor)	(((major) << 16) | ((minor) & 0xFF))
+ #define QCOM_SCM_CPU_PWR_DOWN_L2_ON	0x0
+ #define QCOM_SCM_CPU_PWR_DOWN_L2_OFF	0x1
++#define QCOM_SCM_CPU_PWR_DOWN_L2_GDHS	0x3
+ #define QCOM_SCM_CPU_PWR_DOWN_HOTPLUG	0x10
+ #define QCOM_SCM_HDCP_MAX_REQ_CNT	5
+ 
+diff --git a/drivers/cpuidle/cpuidle-qcom-spm.c b/drivers/cpuidle/cpuidle-qcom-spm.c
+--- a/drivers/cpuidle/cpuidle-qcom-spm.c
++++ b/drivers/cpuidle/cpuidle-qcom-spm.c
+@@ -17,6 +17,8 @@
+ #include <linux/cpuidle.h>
+ #include <linux/cpu_pm.h>
+ #include <linux/suspend.h>
++#include <linux/module.h>
++#include <linux/soc/qcom/irq.h>
+ #include <linux/firmware/qcom/qcom_scm.h>
+ #include <soc/qcom/spm.h>
+ 
+@@ -131,17 +133,23 @@
+ 
+ #ifdef CONFIG_SUSPEND
+ static struct spm_driver_data *suspend_cpu_spm, *suspend_l2_spm;
+-
+-static int qcom_l2_collapse(unsigned long unused)
++/* Standalone remains the fallback until RPM integration is selected. */
++static unsigned int l2_sleep_mode;
++module_param(l2_sleep_mode, uint, 0644);
++MODULE_PARM_DESC(l2_sleep_mode, "MSM8226 deep: 0 standalone, 1 retention, 2 GDHS, 3 RPM");
++
++static int qcom_l2_collapse(unsigned long scm_flags)
+ {
+ 	flush_cache_all();
+-	qcom_scm_cpu_power_down(QCOM_SCM_CPU_PWR_DOWN_L2_OFF);
++	qcom_scm_cpu_power_down(scm_flags);
+ 	return -EAGAIN;
+ }
+ 
+ static int qcom_spm_suspend_enter(suspend_state_t state)
+ {
+ 	int ret, voltage_ret;
++	enum pm_sleep_mode mode = PM_SLEEP_MODE_PC;
++	u32 scm_flags = QCOM_SCM_CPU_PWR_DOWN_L2_OFF;
+ 
+ 	if (num_online_cpus() != 1 || smp_processor_id() != 0)
+ 		return -EBUSY;
+@@ -153,6 +161,21 @@
+ 		return 0;
+ 	}
+ 
++	if (l2_sleep_mode > 3)
++		return -EINVAL;
++	if (l2_sleep_mode == 1) {
++		mode = PM_SLEEP_MODE_RET;
++		scm_flags = QCOM_SCM_CPU_PWR_DOWN_L2_ON;
++	} else if (l2_sleep_mode == 2) {
++		mode = PM_SLEEP_MODE_GDHS;
++		scm_flags = QCOM_SCM_CPU_PWR_DOWN_L2_GDHS;
++	} else if (l2_sleep_mode == 3) {
++		ret = qcom_mpm_prepare_suspend();
++		if (ret)
++			return ret;
++		mode = PM_SLEEP_MODE_PC_RPM;
++	}
++
+ 	ret = cpu_pm_enter();
+ 	if (ret)
+ 		return ret;
+@@ -160,10 +183,10 @@
+ 	if (ret)
+ 		goto cpu_exit;
+ 
+-	spm_set_low_power_mode(suspend_l2_spm, PM_SLEEP_MODE_PC);
++	spm_set_low_power_mode(suspend_l2_spm, mode);
+ 	spm_set_low_power_mode(suspend_cpu_spm, PM_SLEEP_MODE_SPC);
+-	pr_info("MSM8226: entering standalone L2 collapse\n");
+-	ret = cpu_suspend(0, qcom_l2_collapse);
++	pr_info("MSM8226: entering L2 sleep mode %u\n", l2_sleep_mode);
++	ret = cpu_suspend(scm_flags, qcom_l2_collapse);
+ 	spm_set_low_power_mode(suspend_l2_spm, PM_SLEEP_MODE_STBY);
+ 	spm_set_low_power_mode(suspend_cpu_spm, PM_SLEEP_MODE_STBY);
+ 	voltage_ret = spm_restore_cpu_voltage(suspend_l2_spm);
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/qcom,mpm.yaml b/Documentation/devicetree/bindings/interrupt-controller/qcom,mpm.yaml
+--- a/Documentation/devicetree/bindings/interrupt-controller/qcom,mpm.yaml
++++ b/Documentation/devicetree/bindings/interrupt-controller/qcom,mpm.yaml
+@@ -22,8 +22,11 @@
+ 
+ properties:
+   compatible:
+-    items:
++    oneOf:
+       - const: qcom,mpm
++      - items:
++          - const: qcom,msm8226-mpm
++          - const: qcom,mpm
+ 
+   reg:
+     maxItems: 1

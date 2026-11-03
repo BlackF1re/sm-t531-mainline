@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-03",
+  "workload": "20 horizontal launcher swipes, 300 ms each, alternating direction; not the Linux drawer workload",
+  "clock": "SurfaceFlinger actualPresentTime, second timestamp in --latency triplet",
+  "complete_unique_records": 1481,
+  "complete_unique_presents": 1481,
+  "interval_filter_ms": [
+    8,
+    60
+  ],
+  "in_burst_intervals": 1460,
+  "excluded_intervals": 20,
+  "refresh_period_ns": 16666667,
+  "mean_ms": 16.266799793835617,
+  "p50_ms": 16.211251,
+  "p95_ms": 16.229531,
+  "over_25ms_percent": 0.3424657534246575,
+  "presentation_events_per_second": 61.47490672252295
+}

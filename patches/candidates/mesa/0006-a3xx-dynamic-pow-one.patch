@@ -1,0 +1,118 @@
+Subject: [EXPERIMENT] ir3: test a highp pow-one fast path on A3xx
+
+Private opt-in FD3_DIAG_POW_ONE, disabled by default. Same-binary testing
+requires Mesa/Qt shader disk caches disabled. Mirrors the existing non-exact
+exp2(log2(x)) algebraic identity when the runtime exponent equals one;
+keeps original FP32 expression in the general branch and skips exact ALU.
+This is not a demonstrated 60 FPS fix or a production compiler policy.
+
+--- a/src/freedreno/ir3/ir3_nir.c
++++ b/src/freedreno/ir3/ir3_nir.c
+@@ -7,6 +7,7 @@
+  */
+ 
+ #include "util/u_debug.h"
++#include "util/u_dynarray.h"
+ #include "util/u_math.h"
+ 
+ #include "ir3_compiler.h"
+@@ -744,6 +745,88 @@
+ /**
+  * Late passes that need to be done after pscreen->finalize_nir()
+  */
++
++/* Private experiment: dynamic pow(x, 1) fast path, preserving highp and the
++ * existing non-exact algebraic identity exp2(log2(x)) -> x. No precision
++ * lowering, and the original expression remains in the general branch. */
++static bool
++fd3_pow_one_match(nir_alu_instr *exp, nir_alu_instr **mul_out,
++                 nir_alu_instr **log_out, unsigned *other_out)
++{
++   if (exp->op != nir_op_fexp2 || exp->exact || exp->def.bit_size != 32)
++      return false;
++   if (exp->src[0].src.ssa->parent_instr->type != nir_instr_type_alu)
++      return false;
++   nir_alu_instr *mul = nir_instr_as_alu(exp->src[0].src.ssa->parent_instr);
++   if (mul->op != nir_op_fmul || mul->exact ||
++       mul->def.num_components != exp->def.num_components)
++      return false;
++   for (unsigned c = 0; c < exp->def.num_components; c++)
++      if (exp->src[0].swizzle[c] != c)
++         return false;
++   for (unsigned i = 0; i < 2; i++) {
++      if (mul->src[i].src.ssa->parent_instr->type != nir_instr_type_alu)
++         continue;
++      nir_alu_instr *log = nir_instr_as_alu(mul->src[i].src.ssa->parent_instr);
++      if (log->op != nir_op_flog2 || log->exact ||
++          log->def.num_components != exp->def.num_components)
++         continue;
++      bool identity = true;
++      for (unsigned c = 0; c < exp->def.num_components; c++)
++         identity &= mul->src[i].swizzle[c] == c;
++      if (!identity)
++         continue;
++      *mul_out = mul;
++      *log_out = log;
++      *other_out = 1 - i;
++      return true;
++   }
++   return false;
++}
++
++static bool
++fd3_pow_one(nir_shader *s)
++{
++   bool progress = false;
++   nir_foreach_function_impl(impl, s) {
++      struct util_dynarray candidates;
++      util_dynarray_init(&candidates, NULL);
++      nir_foreach_block(block, impl) {
++         nir_foreach_instr(instr, block) {
++            if (instr->type == nir_instr_type_alu) {
++               nir_alu_instr *a = nir_instr_as_alu(instr), *mul, *log;
++               unsigned other;
++               if (fd3_pow_one_match(a, &mul, &log, &other))
++                  util_dynarray_append(&candidates, nir_alu_instr *, a);
++            }
++         }
++      }
++      nir_builder b = nir_builder_create(impl);
++      util_dynarray_foreach(&candidates, nir_alu_instr *, item) {
++         nir_alu_instr *a = *item, *mul, *log;
++         unsigned other;
++         if (!fd3_pow_one_match(a, &mul, &log, &other))
++            continue;
++         b.cursor = nir_before_instr(&a->instr);
++         nir_def *x = nir_ssa_for_alu_src(&b, log, 0);
++         nir_def *y = nir_ssa_for_alu_src(&b, mul, other);
++         nir_if *nif = nir_push_if(&b, nir_ball(&b, nir_feq_imm(&b, y, 1.0)));
++         nif->control = nir_selection_control_dont_flatten;
++         nir_def *fast = x;
++         nir_push_else(&b, nif);
++         nir_def *general = nir_fexp2(&b, nir_fmul(&b, nir_flog2(&b, x), y));
++         nir_pop_if(&b, nif);
++         nir_def_rewrite_uses(&a->def, nir_if_phi(&b, fast, general));
++         nir_instr_remove(&a->instr);
++         progress = true;
++      }
++      if (util_dynarray_num_elements(&candidates, nir_alu_instr *))
++         nir_metadata_preserve(impl, nir_metadata_none);
++      util_dynarray_fini(&candidates);
++   }
++   return progress;
++}
++
+ void
+ ir3_nir_post_finalize(struct ir3_shader *shader)
+ {
+@@ -751,6 +834,10 @@
+    struct ir3_compiler *compiler = shader->compiler;
+ 
+    MESA_TRACE_FUNC();
++
++   if (compiler->gen == 3 && s->info.stage == MESA_SHADER_FRAGMENT &&
++       debug_get_bool_option("FD3_DIAG_POW_ONE", false))
++      NIR_PASS_V(s, fd3_pow_one);
+ 
+    NIR_PASS_V(s, nir_lower_io, nir_var_shader_in | nir_var_shader_out,
+               ir3_glsl_type_size, nir_lower_io_lower_64bit_to_32 |

@@ -1,0 +1,127 @@
+{
+  "accepted": false,
+  "autonomy_tests": false,
+  "kernel_release": "7.2.9-t531-sleep1-dirty",
+  "functional_tests": [
+    {
+      "tag": "3-baseline-recover",
+      "module_sha256": "566a65f171c21b98bd2dadf084289d44a45249f25fe425846eb73dbdb42a8771",
+      "kernel_result": "SUCCESS",
+      "visual_image_and_input_confirmed": true,
+      "complete_panels_verified": false,
+      "XO_shutdown_count_after": 0
+    },
+    {
+      "tag": "s2idle-phy-late",
+      "module_sha256": "8c722cd11268926b06a129cad8c1f76397925697016562b0f39ee33e9f80deff",
+      "kernel_result": "SUCCESS",
+      "suspended_seconds": 13.816926469,
+      "visual_panels_and_input_confirmed": true,
+      "no_resleep_confirmed": true
+    },
+    {
+      "tag": "1-phy-late",
+      "module_sha256": "8c722cd11268926b06a129cad8c1f76397925697016562b0f39ee33e9f80deff",
+      "kernel_result": "SUCCESS",
+      "complete_visual_resume_verified": false
+    },
+    {
+      "tag": "3-phy-late",
+      "module_sha256": "8c722cd11268926b06a129cad8c1f76397925697016562b0f39ee33e9f80deff",
+      "kernel_result": "NO_RESUME",
+      "last_console_message": "MSM8226: entering L2 sleep mode 3",
+      "manual_reboot_reported": true,
+      "automatic_reset_proven": false
+    },
+    {
+      "tag": "3-handoff-held",
+      "kernel_image_sha256": "bac90f22703473f632105895229d1a4dfc4a9b41bf77acf371bfef3f8afc70d3",
+      "module_sha256": "5298434102817758abe98d3ae11ae704a8a6185ee6851b7990c6a9cc4c60847a",
+      "dsi_phy_sleep_gating": false,
+      "kernel_result": "NO_RESUME_REBOOT",
+      "last_console_message": "MSM8226: SCM entry flags=0x1",
+      "CPU_resume_marker_present": false,
+      "baseline_valid": false,
+      "baseline_limitation": "Opt-in N skips the system callback but the candidate still unprepares iface in runtime suspend; it does not preserve the legacy XO hold.",
+      "reset_origin": "unresolved; user confirmed reboot without specifying manual versus automatic",
+      "RTC_seconds": 15
+    },
+    {
+      "tag": "3-handoff-legacy",
+      "kernel_image_sha256": "bac90f22703473f632105895229d1a4dfc4a9b41bf77acf371bfef3f8afc70d3",
+      "module_sha256": "566a65f171c21b98bd2dadf084289d44a45249f25fe425846eb73dbdb42a8771",
+      "kernel_result": "SUCCESS",
+      "suspended_seconds": 13.53770808699997,
+      "CPU_resume_marker_present": true,
+      "voltage_restore_result": 0,
+      "XO_shutdown_count_after": 0,
+      "VMIN_count_after": 0,
+      "complete_visual_resume_verified": false
+    },
+    {
+      "tag": "3-mpm-timer-legacy",
+      "kernel_image_sha256": "70c06d2ccd3aca4905205785a205e6bc06694fcbc149dfa396a4273529adb6c9",
+      "module_sha256": "566a65f171c21b98bd2dadf084289d44a45249f25fe425846eb73dbdb42a8771",
+      "kernel_result": "SUCCESS",
+      "MPM_timer_seconds": 8,
+      "RTC_backup_seconds": 15,
+      "suspended_seconds": 7.994161531000017,
+      "MPM_return_IRQ_count_after": 1,
+      "CPU_resume_marker_present": true,
+      "XO_shutdown_count_after": 0,
+      "complete_visual_resume_verified": false
+    },
+    {
+      "tag": "3-mpm-timer-phy-gated",
+      "kernel_image_sha256": "70c06d2ccd3aca4905205785a205e6bc06694fcbc149dfa396a4273529adb6c9",
+      "module_sha256": "5298434102817758abe98d3ae11ae704a8a6185ee6851b7990c6a9cc4c60847a",
+      "kernel_result": "NO_RESUME_REBOOT",
+      "MPM_timer_seconds": 8,
+      "RTC_backup_seconds": 15,
+      "PHY_runtime_control_before": "on",
+      "PHY_runtime_status_before": "active",
+      "dsi_phy_sleep_gating": true,
+      "MPM_enable_words": [
+        "80000000",
+        "40000100"
+      ],
+      "MPM_polarity_words": [
+        "02000000",
+        "40000000"
+      ],
+      "last_console_message": "MSM8226: SCM entry flags=0x1",
+      "CPU_resume_marker_present": false,
+      "XO_shutdown_count_after": null,
+      "reset_origin": "not established"
+    },
+    {
+      "tag": "3-imem-legacy",
+      "kernel_image_sha256": "d2999157123ef52812290f96bb50a983e2ffddee8081bee293c47a8e320311d0",
+      "module_sha256": "566a65f171c21b98bd2dadf084289d44a45249f25fe425846eb73dbdb42a8771",
+      "kernel_result": "SUCCESS",
+      "suspended_seconds": 13.795478181000021,
+      "IMEM_magic": "5453504d",
+      "IMEM_stage": "40",
+      "IMEM_stage_name": "resume-completed",
+      "complete_visual_resume_verified": false
+    }
+  ],
+  "restored_module_sha256": "566a65f171c21b98bd2dadf084289d44a45249f25fe425846eb73dbdb42a8771",
+  "PHY_clock_PM": "excluded from production patch series; retained as candidate",
+  "0144_RPM_return_IRQ_wake_flag": "s2idle passed; isolated RPM passed with legacy PHY clock handling, but runtime-unprepare candidate still fails before CPU resume",
+  "last_contact_kernel": "7.2.9-t531-unified2-dirty",
+  "hardware_access": "SSH restored on guarded previous slot after gated MPM timer trial; safe sleep1 MSM module restored on disk",
+  "awake_MPM_enabled_pins": [
+    8,
+    25,
+    31,
+    36,
+    37,
+    38,
+    40,
+    62
+  ],
+  "current_image_sha256": "70c06d2ccd3aca4905205785a205e6bc06694fcbc149dfa396a4273529adb6c9",
+  "0145_handoff_trace": "deployed; SCM entry recorded, immediate CPU resume marker absent in failed candidate cycle",
+  "interpretation": "Failure precedes earliest C CPU resume marker. MPM timer works with held XO, but neither this timer nor PMIC RTC yields CPU return with PHY clock gating. This does not prove exact hardware root cause or reset source."
+}

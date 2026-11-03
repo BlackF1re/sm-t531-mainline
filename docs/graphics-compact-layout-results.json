@@ -1,0 +1,248 @@
+{
+  "kind": "Bounded private Mesa compact-height candidate; not proof of 60 FPS",
+  "allocation_probe": {
+    "control": {
+      "1280-800": {
+        "renderer": "FD305",
+        "width": 1280,
+        "height": 800,
+        "targets": 16,
+        "before_kib": 84,
+        "after_kib": 85652,
+        "increase_kib": 85568
+      },
+      "1023-769": {
+        "renderer": "FD305",
+        "width": 1023,
+        "height": 769,
+        "targets": 16,
+        "before_kib": 84,
+        "after_kib": 69268,
+        "increase_kib": 69184
+      },
+      "1024-1024": {
+        "renderer": "FD305",
+        "width": 1024,
+        "height": 1024,
+        "targets": 16,
+        "before_kib": 84,
+        "after_kib": 69268,
+        "increase_kib": 69184
+      }
+    },
+    "candidate": {
+      "1280-800": {
+        "renderer": "FD305",
+        "width": 1280,
+        "height": 800,
+        "targets": 16,
+        "before_kib": 84,
+        "after_kib": 69268,
+        "increase_kib": 69184
+      },
+      "1023-769": {
+        "renderer": "FD305",
+        "width": 1023,
+        "height": 769,
+        "targets": 16,
+        "before_kib": 84,
+        "after_kib": 61076,
+        "increase_kib": 60992
+      },
+      "1024-1024": {
+        "renderer": "FD305",
+        "width": 1024,
+        "height": 1024,
+        "targets": 16,
+        "before_kib": 84,
+        "after_kib": 69268,
+        "increase_kib": 69184
+      }
+    }
+  },
+  "pixel_checks": [
+    {
+      "file": "control-257-131.jsonl",
+      "checks": 28,
+      "checked_pixels": 942676
+    },
+    {
+      "file": "control-1023-769.jsonl",
+      "checks": 28,
+      "checked_pixels": 22027236
+    },
+    {
+      "file": "control-1280-800.jsonl",
+      "checks": 28,
+      "checked_pixels": 28672000
+    },
+    {
+      "file": "control-shared.jsonl",
+      "checks": 14,
+      "checked_pixels": 11013618
+    },
+    {
+      "file": "candidate-257-131.jsonl",
+      "checks": 28,
+      "checked_pixels": 942676
+    },
+    {
+      "file": "candidate-1023-769.jsonl",
+      "checks": 28,
+      "checked_pixels": 22027236
+    },
+    {
+      "file": "candidate-1280-800.jsonl",
+      "checks": 28,
+      "checked_pixels": 28672000
+    },
+    {
+      "file": "candidate-shared.jsonl",
+      "checks": 14,
+      "checked_pixels": 11013618
+    }
+  ],
+  "offscreen_abba": [
+    {
+      "case": "bench-1-control.jsonl",
+      "result": {
+        "clear_quad": 0,
+        "layers": 4,
+        "blend": 1,
+        "frames": 40,
+        "start_monotonic": 1427.426338035,
+        "end_monotonic": 1428.12342677,
+        "mean_ms": 14.8823,
+        "p50_ms": 14.8915,
+        "p95_ms": 14.9512,
+        "fps": 67.194
+      }
+    },
+    {
+      "case": "bench-2-candidate.jsonl",
+      "result": {
+        "clear_quad": 0,
+        "layers": 4,
+        "blend": 1,
+        "frames": 40,
+        "start_monotonic": 1428.396427353,
+        "end_monotonic": 1429.093790146,
+        "mean_ms": 14.9464,
+        "p50_ms": 14.9008,
+        "p95_ms": 15.2552,
+        "fps": 66.906
+      }
+    },
+    {
+      "case": "bench-3-candidate.jsonl",
+      "result": {
+        "clear_quad": 0,
+        "layers": 4,
+        "blend": 1,
+        "frames": 40,
+        "start_monotonic": 1429.335757185,
+        "end_monotonic": 1430.032369431,
+        "mean_ms": 14.9106,
+        "p50_ms": 14.9131,
+        "p95_ms": 14.9732,
+        "fps": 67.066
+      }
+    },
+    {
+      "case": "bench-4-control.jsonl",
+      "result": {
+        "clear_quad": 0,
+        "layers": 4,
+        "blend": 1,
+        "frames": 40,
+        "start_monotonic": 1430.276114785,
+        "end_monotonic": 1430.975855892,
+        "mean_ms": 14.9308,
+        "p50_ms": 14.9358,
+        "p95_ms": 15.0286,
+        "fps": 66.976
+      }
+    }
+  ],
+  "offscreen_limitation": "No independent foreign-submit trace in this ABBA; wall-time includes driver/completion overhead.",
+  "candidate_gui": {
+    "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+    "idle_gap_threshold_ms": 100,
+    "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+    "active_fps": 50.86703294104784,
+    "frame_interval": {
+      "samples": 641,
+      "p50_ms": 16.671999999971376,
+      "p95_ms": 33.349000000043816,
+      "p99_ms": 33.4339999999429,
+      "over_25ms_percent": 17.004680187207487
+    },
+    "bursts": [
+      {
+        "start": 1567.93486,
+        "seconds": 0.23335299999985182,
+        "frames": 14,
+        "fps": 55.70959019171922
+      },
+      {
+        "start": 1568.53498,
+        "seconds": 1.3668130000000929,
+        "frames": 73,
+        "fps": 52.677286505173065
+      },
+      {
+        "start": 1570.268452,
+        "seconds": 1.3668669999999565,
+        "frames": 73,
+        "fps": 52.67520541501279
+      },
+      {
+        "start": 1572.001977,
+        "seconds": 1.3834770000000844,
+        "frames": 71,
+        "fps": 50.597154849698065
+      },
+      {
+        "start": 1573.752173,
+        "seconds": 1.3668109999998705,
+        "frames": 71,
+        "fps": 51.21410348614887
+      },
+      {
+        "start": 1575.485697,
+        "seconds": 1.4001409999998486,
+        "frames": 71,
+        "fps": 49.99496479283698
+      },
+      {
+        "start": 1577.235888,
+        "seconds": 1.3668669999999565,
+        "frames": 70,
+        "fps": 50.480405189387255
+      },
+      {
+        "start": 1578.969412,
+        "seconds": 1.3668099999999868,
+        "frames": 70,
+        "fps": 50.482510370864034
+      },
+      {
+        "start": 1580.719611,
+        "seconds": 1.3835289999999532,
+        "frames": 70,
+        "fps": 49.87246382258871
+      },
+      {
+        "start": 1582.453128,
+        "seconds": 1.3668139999999767,
+        "frames": 68,
+        "fps": 49.01910574518636
+      }
+    ],
+    "gpu_busy_percent_recording": 37.47429925310895,
+    "cpu_busy_percent_recording_all_cores": 16.968800098655816,
+    "cpu_khz_median": 1190400.0,
+    "gpu_hz_median": 450000000.0,
+    "axi_hz_median": 266666666.0
+  }
+}

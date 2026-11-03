@@ -1,0 +1,596 @@
+{
+  "method": "Private opt-in A3xx u_trace CP_REG_TO_MEM reads of cumulative PWR1 GPU busy counter at 450 MHz; WFI at boundaries. Intrusive diagnostic, not FPS. Only complete render-pass records recovered.",
+  "limitations": [
+    "More boundaries add synchronization overhead; absolute duration is diagnostic.",
+    "draw_ib includes draw state, clears embedded in draw commands, shader execution and associated stalls; it does not isolate a hardware block.",
+    "No stock Android trace of identical workload is available."
+  ],
+  "captures": [
+    {
+      "name": "pass",
+      "complete_passes": 6023,
+      "groups": [
+        {
+          "width": 1280,
+          "height": 800,
+          "bins": 72,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 784,
+          "total_busy_ms": 8529.758248,
+          "median_busy_ms": 7.823854,
+          "max_busy_ms": 30.22266,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 1280,
+          "height": 1280,
+          "bins": 100,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 143,
+          "total_busy_ms": 1450.648303,
+          "median_busy_ms": 10.23922,
+          "max_busy_ms": 11.609575,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 342,
+          "height": 499,
+          "bins": 12,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 50,
+          "total_busy_ms": 352.252885,
+          "median_busy_ms": 7.1645565,
+          "max_busy_ms": 7.843084,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 360,
+          "height": 123,
+          "bins": 3,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 118,
+          "total_busy_ms": 56.707676,
+          "median_busy_ms": 0.48382000000000003,
+          "max_busy_ms": 0.605375,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 1280,
+          "height": 26,
+          "bins": 4,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 68,
+          "total_busy_ms": 45.343576,
+          "median_busy_ms": 0.6803079999999999,
+          "max_busy_ms": 0.806925,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 79,
+          "height": 14,
+          "bins": 1,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 2314,
+          "total_busy_ms": 38.652649,
+          "median_busy_ms": 0.016461999999999997,
+          "max_busy_ms": 0.023633,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 1280,
+          "height": 666,
+          "bins": 56,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 5,
+          "total_busy_ms": 35.166564,
+          "median_busy_ms": 6.982876,
+          "max_busy_ms": 7.725905,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 640,
+          "height": 400,
+          "bins": 20,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 12,
+          "total_busy_ms": 30.527198,
+          "median_busy_ms": 2.1470225,
+          "max_busy_ms": 4.831322,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 1280,
+          "height": 800,
+          "bins": 0,
+          "depth_format": "none",
+          "count": 1,
+          "total_busy_ms": 6.5637,
+          "median_busy_ms": 6.5637,
+          "max_busy_ms": 6.5637,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 1216,
+          "height": 656,
+          "bins": 56,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 1,
+          "total_busy_ms": 4.855592,
+          "median_busy_ms": 4.855592,
+          "max_busy_ms": 4.855592,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 2048,
+          "height": 1024,
+          "bins": 0,
+          "depth_format": "none",
+          "count": 628,
+          "total_busy_ms": 4.716409,
+          "median_busy_ms": 0.006876500000000001,
+          "max_busy_ms": 0.029231,
+          "draw_busy_ms": 0
+        },
+        {
+          "width": 320,
+          "height": 208,
+          "bins": 6,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 3,
+          "total_busy_ms": 4.6968630000000005,
+          "median_busy_ms": 1.572811,
+          "max_busy_ms": 1.834054,
+          "draw_busy_ms": 0
+        }
+      ],
+      "largest": [
+        {
+          "submit_id": "531",
+          "cbuf0_format": "b8g8r8a8_unorm",
+          "zs_format": "z24_unorm_s8_uint",
+          "width": "1280",
+          "height": "800",
+          "mrts": "1",
+          "samples": "1",
+          "nbins": "72",
+          "binw": "160",
+          "binh": "96",
+          "ms": 30.22266,
+          "stages_ms": {
+            "render_pass": 30.22266
+          },
+          "flush": {
+            "unstructured": "0x99120398: cleared=7, gmem_reason=f, num_draws=10"
+          }
+        },
+        {
+          "submit_id": "528",
+          "cbuf0_format": "b8g8r8a8_unorm",
+          "zs_format": "z24_unorm_s8_uint",
+          "width": "1280",
+          "height": "800",
+          "mrts": "1",
+          "samples": "1",
+          "nbins": "72",
+          "binw": "160",
+          "binh": "96",
+          "ms": 29.464878,
+          "stages_ms": {
+            "render_pass": 29.464878
+          },
+          "flush": {
+            "unstructured": "0x99120398: cleared=7, gmem_reason=f, num_draws=10"
+          }
+        },
+        {
+          "submit_id": "516",
+          "cbuf0_format": "b8g8r8a8_unorm",
+          "zs_format": "z24_unorm_s8_uint",
+          "width": "1280",
+          "height": "800",
+          "mrts": "1",
+          "samples": "1",
+          "nbins": "72",
+          "binw": "160",
+          "binh": "96",
+          "ms": 28.261758,
+          "stages_ms": {
+            "render_pass": 28.261758
+          },
+          "flush": {
+            "unstructured": "0x99120398: cleared=7, gmem_reason=f, num_draws=10"
+          }
+        },
+        {
+          "submit_id": "541",
+          "cbuf0_format": "b8g8r8a8_unorm",
+          "zs_format": "z24_unorm_s8_uint",
+          "width": "1280",
+          "height": "800",
+          "mrts": "1",
+          "samples": "1",
+          "nbins": "72",
+          "binw": "160",
+          "binh": "96",
+          "ms": 28.196829,
+          "stages_ms": {
+            "render_pass": 28.196829
+          },
+          "flush": {
+            "unstructured": "0x99120398: cleared=7, gmem_reason=f, num_draws=10"
+          }
+        },
+        {
+          "submit_id": "518",
+          "cbuf0_format": "b8g8r8a8_unorm",
+          "zs_format": "z24_unorm_s8_uint",
+          "width": "1280",
+          "height": "800",
+          "mrts": "1",
+          "samples": "1",
+          "nbins": "72",
+          "binw": "160",
+          "binh": "96",
+          "ms": 27.960727,
+          "stages_ms": {
+            "render_pass": 27.960727
+          },
+          "flush": {
+            "unstructured": "0x99120398: cleared=7, gmem_reason=f, num_draws=10"
+          }
+        }
+      ]
+    },
+    {
+      "name": "draw_ib",
+      "complete_passes": 3839,
+      "groups": [
+        {
+          "width": 1280,
+          "height": 800,
+          "bins": 72,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 267,
+          "total_busy_ms": 4979.434419,
+          "median_busy_ms": 21.547812,
+          "max_busy_ms": 26.771607,
+          "draw_busy_ms": 4050.543509
+        },
+        {
+          "width": 1280,
+          "height": 1280,
+          "bins": 100,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 23,
+          "total_busy_ms": 232.290492,
+          "median_busy_ms": 10.163275,
+          "max_busy_ms": 17.018056,
+          "draw_busy_ms": 120.50400199999999
+        },
+        {
+          "width": 342,
+          "height": 499,
+          "bins": 12,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 25,
+          "total_busy_ms": 174.355941,
+          "median_busy_ms": 6.961633,
+          "max_busy_ms": 7.054537,
+          "draw_busy_ms": 143.698842
+        },
+        {
+          "width": 640,
+          "height": 400,
+          "bins": 20,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 12,
+          "total_busy_ms": 31.833074,
+          "median_busy_ms": 2.390197,
+          "max_busy_ms": 4.543671,
+          "draw_busy_ms": 21.091104
+        },
+        {
+          "width": 79,
+          "height": 14,
+          "bins": 1,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 1471,
+          "total_busy_ms": 29.112605,
+          "median_busy_ms": 0.019156,
+          "max_busy_ms": 0.025851,
+          "draw_busy_ms": 19.291209
+        },
+        {
+          "width": 360,
+          "height": 123,
+          "bins": 3,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 19,
+          "total_busy_ms": 9.490839,
+          "median_busy_ms": 0.503005,
+          "max_busy_ms": 0.529896,
+          "draw_busy_ms": 5.340419
+        },
+        {
+          "width": 1280,
+          "height": 26,
+          "bins": 4,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 29,
+          "total_busy_ms": 8.516125,
+          "median_busy_ms": 0.29328,
+          "max_busy_ms": 0.299415,
+          "draw_busy_ms": 5.947278
+        },
+        {
+          "width": 1280,
+          "height": 36,
+          "bins": 8,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 21,
+          "total_busy_ms": 8.478382,
+          "median_busy_ms": 0.403647,
+          "max_busy_ms": 0.415069,
+          "draw_busy_ms": 5.990108
+        },
+        {
+          "width": 1280,
+          "height": 800,
+          "bins": 0,
+          "depth_format": "none",
+          "count": 1,
+          "total_busy_ms": 6.429322,
+          "median_busy_ms": 6.429322,
+          "max_busy_ms": 6.429322,
+          "draw_busy_ms": 6.427338
+        },
+        {
+          "width": 2048,
+          "height": 1024,
+          "bins": 0,
+          "depth_format": "none",
+          "count": 629,
+          "total_busy_ms": 5.343124,
+          "median_busy_ms": 0.00772,
+          "max_busy_ms": 0.037404,
+          "draw_busy_ms": 3.955262
+        },
+        {
+          "width": 1216,
+          "height": 656,
+          "bins": 56,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 1,
+          "total_busy_ms": 5.211547,
+          "median_busy_ms": 5.211547,
+          "max_busy_ms": 5.211547,
+          "draw_busy_ms": 1.92945
+        },
+        {
+          "width": 320,
+          "height": 208,
+          "bins": 6,
+          "depth_format": "z24_unorm_s8_uint",
+          "count": 3,
+          "total_busy_ms": 4.835904,
+          "median_busy_ms": 1.5278,
+          "max_busy_ms": 1.794984,
+          "draw_busy_ms": 4.064488000000001
+        }
+      ],
+      "largest": [
+        {
+          "submit_id": "518",
+          "cbuf0_format": "b8g8r8a8_unorm",
+          "zs_format": "z24_unorm_s8_uint",
+          "width": "1280",
+          "height": "800",
+          "mrts": "1",
+          "samples": "1",
+          "nbins": "72",
+          "binw": "160",
+          "binh": "96",
+          "ms": 26.771607,
+          "stages_ms": {
+            "draw_ib": 21.61889600000001,
+            "render_pass": 26.771607
+          },
+          "flush": {
+            "unstructured": "0x99a33be8: cleared=7, gmem_reason=f, num_draws=8"
+          }
+        },
+        {
+          "submit_id": "1250",
+          "cbuf0_format": "b8g8r8a8_unorm",
+          "zs_format": "z24_unorm_s8_uint",
+          "width": "1280",
+          "height": "800",
+          "mrts": "1",
+          "samples": "1",
+          "nbins": "72",
+          "binw": "160",
+          "binh": "96",
+          "ms": 24.004024,
+          "stages_ms": {
+            "draw_ib": 19.630249999999997,
+            "render_pass": 24.004024
+          },
+          "flush": {
+            "unstructured": "0x80be36f0: cleared=7, gmem_reason=f, num_draws=91"
+          }
+        },
+        {
+          "submit_id": "1301",
+          "cbuf0_format": "b8g8r8a8_unorm",
+          "zs_format": "z24_unorm_s8_uint",
+          "width": "1280",
+          "height": "800",
+          "mrts": "1",
+          "samples": "1",
+          "nbins": "72",
+          "binw": "160",
+          "binh": "96",
+          "ms": 23.972004,
+          "stages_ms": {
+            "draw_ib": 19.584233999999988,
+            "render_pass": 23.972004
+          },
+          "flush": {
+            "unstructured": "0x80be36f0: cleared=7, gmem_reason=f, num_draws=91"
+          }
+        },
+        {
+          "submit_id": "493",
+          "cbuf0_format": "b8g8r8a8_unorm",
+          "zs_format": "z24_unorm_s8_uint",
+          "width": "1280",
+          "height": "800",
+          "mrts": "1",
+          "samples": "1",
+          "nbins": "72",
+          "binw": "160",
+          "binh": "96",
+          "ms": 23.865613,
+          "stages_ms": {
+            "draw_ib": 18.461610999999998,
+            "render_pass": 23.865613
+          },
+          "flush": {
+            "unstructured": "0x99a33be8: cleared=7, gmem_reason=f, num_draws=7"
+          }
+        },
+        {
+          "submit_id": "508",
+          "cbuf0_format": "b8g8r8a8_unorm",
+          "zs_format": "z24_unorm_s8_uint",
+          "width": "1280",
+          "height": "800",
+          "mrts": "1",
+          "samples": "1",
+          "nbins": "72",
+          "binw": "160",
+          "binh": "96",
+          "ms": 23.808603,
+          "stages_ms": {
+            "draw_ib": 19.459335000000003,
+            "render_pass": 23.808603
+          },
+          "flush": {
+            "unstructured": "0x99a33be8: cleared=7, gmem_reason=f, num_draws=8"
+          }
+        }
+      ]
+    }
+  ],
+  "resolve_capture_partial": {
+    "complete_passes_recovered": 2397,
+    "largest": [
+      {
+        "submit_id": "202",
+        "cbuf0_format": "b8g8r8a8_unorm",
+        "zs_format": "z24_unorm_s8_uint",
+        "width": "1280",
+        "height": "800",
+        "mrts": "1",
+        "samples": "1",
+        "nbins": "72",
+        "binw": "160",
+        "binh": "96",
+        "ms": 23.847851,
+        "stages_ms": {
+          "draw_ib": 18.380074999999998,
+          "tile_stores": 5.121796999999998,
+          "render_pass": 23.847851
+        },
+        "flush": {
+          "unstructured": "0x9785af18: cleared=7, gmem_reason=f, num_draws=5"
+        }
+      },
+      {
+        "submit_id": "1291",
+        "cbuf0_format": "b8g8r8a8_unorm",
+        "zs_format": "z24_unorm_s8_uint",
+        "width": "1280",
+        "height": "800",
+        "mrts": "1",
+        "samples": "1",
+        "nbins": "72",
+        "binw": "160",
+        "binh": "96",
+        "ms": 23.300715,
+        "stages_ms": {
+          "draw_ib": 19.182736999999996,
+          "tile_stores": 3.476738,
+          "render_pass": 23.300715
+        },
+        "flush": {
+          "unstructured": "0x7ec2b2d8: cleared=7, gmem_reason=f, num_draws=91"
+        }
+      },
+      {
+        "submit_id": "1279",
+        "cbuf0_format": "b8g8r8a8_unorm",
+        "zs_format": "z24_unorm_s8_uint",
+        "width": "1280",
+        "height": "800",
+        "mrts": "1",
+        "samples": "1",
+        "nbins": "72",
+        "binw": "160",
+        "binh": "96",
+        "ms": 23.211491,
+        "stages_ms": {
+          "draw_ib": 19.11342099999999,
+          "tile_stores": 3.483138999999999,
+          "render_pass": 23.211491
+        },
+        "flush": {
+          "unstructured": "0x7ec2b2d8: cleared=7, gmem_reason=f, num_draws=91"
+        }
+      },
+      {
+        "submit_id": "1267",
+        "cbuf0_format": "b8g8r8a8_unorm",
+        "zs_format": "z24_unorm_s8_uint",
+        "width": "1280",
+        "height": "800",
+        "mrts": "1",
+        "samples": "1",
+        "nbins": "72",
+        "binw": "160",
+        "binh": "96",
+        "ms": 22.859469,
+        "stages_ms": {
+          "draw_ib": 18.873440999999996,
+          "tile_stores": 3.362308,
+          "render_pass": 22.859469
+        },
+        "flush": {
+          "unstructured": "0x7ec2b2d8: cleared=7, gmem_reason=f, num_draws=91"
+        }
+      },
+      {
+        "submit_id": "903",
+        "cbuf0_format": "b8g8r8a8_unorm",
+        "zs_format": "z24_unorm_s8_uint",
+        "width": "1280",
+        "height": "800",
+        "mrts": "1",
+        "samples": "1",
+        "nbins": "72",
+        "binw": "160",
+        "binh": "96",
+        "ms": 22.570523,
+        "stages_ms": {
+          "draw_ib": 18.794027999999997,
+          "tile_stores": 3.176316999999999,
+          "render_pass": 22.570523
+        },
+        "flush": {
+          "unstructured": "0x7ec2b2d8: cleared=7, gmem_reason=f, num_draws=91"
+        }
+      }
+    ],
+    "note": "Snapshot captured during SCP; examples complete, whole-capture totals not asserted."
+  }
+}

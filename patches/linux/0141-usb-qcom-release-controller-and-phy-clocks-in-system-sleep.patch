@@ -1,0 +1,147 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] usb: qcom: release system-sleep controller and PHY clocks
+
+The ChipIdea child enters PHY low power during normal suspend, but the
+MSM parent keeps its bus clocks and the ULPI PHY keeps its XO request.
+Gate the parent clocks after the child suspends and release the PHY
+reference in the late phase, after PHCD is asserted. Retain sleep_clk
+and supplies for wake detection. Restore the reference in resume_early
+and parent clocks before the ChipIdea child resumes. Runtime PM policy
+and PHY power-on initialization remain unchanged.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/phy/qualcomm/phy-qcom-usb-hs.c b/drivers/phy/qualcomm/phy-qcom-usb-hs.c
+index 928a982a8..3d4d697e3 100644
+--- a/drivers/phy/qualcomm/phy-qcom-usb-hs.c
++++ b/drivers/phy/qualcomm/phy-qcom-usb-hs.c
+@@ -12,6 +12,7 @@
+ #include <linux/reset.h>
+ #include <linux/extcon.h>
+ #include <linux/notifier.h>
++#include <linux/pm.h>
+ 
+ #define ULPI_PWR_CLK_MNG_REG		0x88
+ # define ULPI_PWR_OTG_COMP_DISABLE	BIT(0)
+@@ -36,6 +37,8 @@ struct qcom_usb_hs_phy {
+ 	struct reset_control *reset;
+ 	struct extcon_dev *vbus_edev;
+ 	struct notifier_block vbus_notify;
++	bool powered;
++	bool ref_suspended;
+ 	struct ulpi_seq init_seq[];
+ };
+ 
+@@ -165,6 +168,7 @@ static int qcom_usb_hs_phy_power_on(struct phy *phy)
+ 			goto err_ulpi;
+ 	}
+ 
++	uphy->powered = true;
+ 	return 0;
+ err_ulpi:
+ 	regulator_disable(uphy->v3p3);
+@@ -187,7 +191,10 @@ static int qcom_usb_hs_phy_power_off(struct phy *phy)
+ 	regulator_disable(uphy->v3p3);
+ 	regulator_disable(uphy->v1p8);
+ 	clk_disable_unprepare(uphy->sleep_clk);
+-	clk_disable_unprepare(uphy->ref_clk);
++	if (!uphy->ref_suspended)
++		clk_disable_unprepare(uphy->ref_clk);
++	uphy->powered = false;
++	uphy->ref_suspended = false;
+ 
+ 	return 0;
+ }
+@@ -268,6 +275,37 @@ static int qcom_usb_hs_phy_probe(struct ulpi *ulpi)
+ 	return PTR_ERR_OR_ZERO(p);
+ }
+ 
++static int qcom_usb_hs_phy_suspend_late(struct device *dev)
++{
++	struct qcom_usb_hs_phy *uphy = dev_get_drvdata(dev);
++
++	/* The controller has asserted PHCD. Keep wake detection on sleep_clk. */
++	if (uphy->powered) {
++		clk_disable_unprepare(uphy->ref_clk);
++		uphy->ref_suspended = true;
++	}
++	return 0;
++}
++
++static int qcom_usb_hs_phy_resume_early(struct device *dev)
++{
++	struct qcom_usb_hs_phy *uphy = dev_get_drvdata(dev);
++	int ret;
++
++	if (!uphy->ref_suspended)
++		return 0;
++	ret = clk_prepare_enable(uphy->ref_clk);
++	if (ret)
++		return ret;
++	uphy->ref_suspended = false;
++	return 0;
++}
++
++static const struct dev_pm_ops qcom_usb_hs_phy_pm_ops = {
++	LATE_SYSTEM_SLEEP_PM_OPS(qcom_usb_hs_phy_suspend_late,
++				qcom_usb_hs_phy_resume_early)
++};
++
+ static const struct of_device_id qcom_usb_hs_phy_match[] = {
+ 	{ .compatible = "qcom,usb-hs-phy", },
+ 	{ }
+@@ -279,6 +317,7 @@ static struct ulpi_driver qcom_usb_hs_phy_driver = {
+ 	.driver = {
+ 		.name = "qcom_usb_hs_phy",
+ 		.of_match_table = qcom_usb_hs_phy_match,
++		.pm = pm_sleep_ptr(&qcom_usb_hs_phy_pm_ops),
+ 	},
+ };
+ module_ulpi_driver(qcom_usb_hs_phy_driver);
+diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
+index 3ab3daa78..288a6c7c9 100644
+--- a/drivers/usb/chipidea/ci_hdrc_msm.c
++++ b/drivers/usb/chipidea/ci_hdrc_msm.c
+@@ -284,6 +284,34 @@ static void ci_hdrc_msm_remove(struct platform_device *pdev)
+ 	clk_disable_unprepare(ci->core_clk);
+ }
+ 
++/* ChipIdea has entered PHY low power before the parent suspends. */
++static int ci_hdrc_msm_suspend(struct device *dev)
++{
++	struct ci_hdrc_msm *ci = dev_get_drvdata(dev);
++
++	clk_disable_unprepare(ci->iface_clk);
++	clk_disable_unprepare(ci->core_clk);
++	return 0;
++}
++
++static int ci_hdrc_msm_resume(struct device *dev)
++{
++	struct ci_hdrc_msm *ci = dev_get_drvdata(dev);
++	int ret;
++
++	ret = clk_prepare_enable(ci->core_clk);
++	if (ret)
++		return ret;
++	ret = clk_prepare_enable(ci->iface_clk);
++	if (ret)
++		clk_disable_unprepare(ci->core_clk);
++	return ret;
++}
++
++static const struct dev_pm_ops ci_hdrc_msm_pm_ops = {
++	SYSTEM_SLEEP_PM_OPS(ci_hdrc_msm_suspend, ci_hdrc_msm_resume)
++};
++
+ static const struct of_device_id msm_ci_dt_match[] = {
+ 	{ .compatible = "qcom,ci-hdrc", },
+ 	{ }
+@@ -296,6 +324,7 @@ static struct platform_driver ci_hdrc_msm_driver = {
+ 	.driver = {
+ 		.name = "msm_hsusb",
+ 		.of_match_table = msm_ci_dt_match,
++		.pm = pm_sleep_ptr(&ci_hdrc_msm_pm_ops),
+ 	},
+ };
+ 

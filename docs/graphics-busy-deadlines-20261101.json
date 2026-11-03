@@ -1,0 +1,42 @@
+{
+  "short": {
+    "frames": 551,
+    "gpu_busy_ms_weighted": {
+      "n": 551,
+      "p50": 8.431593866955629,
+      "p95": 16.684585021527518,
+      "mean": 9.4670037190712
+    },
+    "gpu_busy_ms_upper_bound": {
+      "n": 551,
+      "p50": 10.886337555403344,
+      "p95": 16.674000000421074,
+      "mean": 11.200483606783726
+    },
+    "with_busy_upper_bound_below_half_interval": 136,
+    "with_busy_upper_bound_below_16_667ms": 486
+  },
+  "late": {
+    "frames": 112,
+    "gpu_busy_ms_weighted": {
+      "n": 112,
+      "p50": 33.068472585644635,
+      "p95": 35.76263445370343,
+      "mean": 29.16160243050087
+    },
+    "gpu_busy_ms_upper_bound": {
+      "n": 112,
+      "p50": 33.29607477780968,
+      "p95": 35.885727778434784,
+      "mean": 29.78142469349273
+    },
+    "with_busy_upper_bound_below_half_interval": 8,
+    "with_busy_upper_bound_below_16_667ms": 8
+  },
+  "limitations": [
+    "Assumes 450 MHz physical GPU active rate, as in retained physical measurements.",
+    "Busy counters and timestamps are not simultaneous; these mathematical sample bounds omit read/timestamp uncertainty.",
+    "Weighted estimate assumes uniform busy distribution within each approximately 10 ms sampling window; not exact per-frame execution time.",
+    "Counter does not establish framebuffer ownership."
+  ]
+}

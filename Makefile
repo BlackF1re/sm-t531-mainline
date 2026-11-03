@@ -1,8 +1,10 @@
 BOOT_MODE ?= sd
 
-.PHONY: build bootstrap rescue-initramfs collect rootfs powerdevil deploy-sd deploy-adb-sd
+.PHONY: build mesa bootstrap rescue-initramfs collect rootfs powerdevil deploy-sd deploy-adb-sd
 build:
 	./scripts/build.sh
+mesa:
+	./scripts/build-mesa.sh
 bootstrap:
 	./scripts/build.sh bootstrap
 rescue-initramfs:

@@ -1,0 +1,21 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] power: supply: qcom_pm8226_bms: do not wake for polling
+
+This BMS has no wake IRQ. Its periodic freezable work reports battery
+properties through power_supply_changed(), which otherwise activates a
+wakeup source and can abort suspend during filesystem sync. Suppress that
+software wake source; charger, power-key and RTC wake sources are separate.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/power/supply/qcom_pm8226_bms.c b/drivers/power/supply/qcom_pm8226_bms.c
+--- a/drivers/power/supply/qcom_pm8226_bms.c
++++ b/drivers/power/supply/qcom_pm8226_bms.c
+@@ -364,5 +364,7 @@ static int pm8226_bms_probe(struct platform_device *pdev)
+ 		return -ERANGE;
+ 
++	/* Periodic battery polling must not abort system suspend. */
++	cfg.no_wakeup_source = true;
+ 	cfg.drv_data = bms;
+ 	cfg.fwnode = dev_fwnode(dev);
+ 	bms->battery = devm_power_supply_register(dev, &pm8226_bms_desc, &cfg);

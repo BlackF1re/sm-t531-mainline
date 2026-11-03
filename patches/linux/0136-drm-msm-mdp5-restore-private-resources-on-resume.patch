@@ -1,0 +1,88 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] drm/msm/mdp5: restore private resource ownership on resume
+
+The suspend helper saves plane and CRTC states, but not MDP5's private
+pipe/mixer/SMP allocation object. Disable releases these resources. Resume
+then keeps the saved pipe pointers without reserving their resources again,
+so a subsequent atomic update can assign the same pipe to another plane.
+This produces pipe-release warnings and persistent INTF1 underruns.
+
+Reconstruct ownership and SMP reservations in the duplicated commit before
+checking the restored planes. Include the private object even when no plane
+changes its pipe. Repeated checks skip already restored reservations.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c b/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
+--- a/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
++++ b/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
+@@ -230,9 +230,69 @@
+ 	mdp5_destroy(mdp5_kms);
+ }
+ 
++/* Suspend duplicates planes/CRTCs, but not their private resource state. */
++static int mdp5_restore_resources(struct msm_kms *kms,
++				 struct drm_atomic_commit *state)
++{
++	struct mdp5_kms *mdp5_kms = to_mdp5_kms(to_mdp_kms(kms));
++	struct mdp5_global_state *global;
++	struct drm_plane *plane;
++	struct drm_plane_state *pstate;
++	struct drm_crtc *crtc;
++	struct drm_crtc_state *cstate;
++	int i, j, ret;
++
++	if (!state->duplicated)
++		return 0;
++
++	global = mdp5_get_global_state(state);
++	if (IS_ERR(global))
++		return PTR_ERR(global);
++
++	for_each_new_plane_in_state(state, plane, pstate, i) {
++		struct mdp5_plane_state *ps = to_mdp5_plane_state(pstate);
++		struct mdp5_hw_pipe *pipes[] = { ps->hwpipe, ps->r_hwpipe };
++
++		for (j = 0; j < ARRAY_SIZE(pipes); j++) {
++			struct mdp5_hw_pipe *pipe = pipes[j];
++
++			if (!pipe || global->hwpipe.hwpipe_to_plane[pipe->idx] == plane)
++				continue;
++			if (global->hwpipe.hwpipe_to_plane[pipe->idx])
++				return -EINVAL;
++			if (mdp5_kms->smp) {
++				ret = mdp5_smp_assign(mdp5_kms->smp, &global->smp,
++						     pipe->pipe, pipe->blkcfg);
++				if (ret)
++					return ret;
++			}
++			global->hwpipe.hwpipe_to_plane[pipe->idx] = plane;
++		}
++	}
++
++	for_each_new_crtc_in_state(state, crtc, cstate, i) {
++		struct mdp5_pipeline *pipeline = &to_mdp5_crtc_state(cstate)->pipeline;
++		struct mdp5_hw_mixer *mixers[] = { pipeline->mixer, pipeline->r_mixer };
++
++		for (j = 0; j < ARRAY_SIZE(mixers); j++) {
++			struct mdp5_hw_mixer *mixer = mixers[j];
++
++			if (!mixer)
++				continue;
++			if (global->hwmixer.hwmixer_to_crtc[mixer->idx] &&
++			    global->hwmixer.hwmixer_to_crtc[mixer->idx] != crtc)
++				return -EINVAL;
++			global->hwmixer.hwmixer_to_crtc[mixer->idx] = crtc;
++		}
++	}
++
++	return 0;
++}
++
+ static const struct mdp_kms_funcs kms_funcs = {
+ 	.base = {
+ 		.hw_init         = mdp5_hw_init,
++		.check_mode_changed = mdp5_restore_resources,
+ 		.irq_preinstall  = mdp5_irq_preinstall,
+ 		.irq_postinstall = mdp5_irq_postinstall,
+ 		.irq_uninstall   = mdp5_irq_uninstall,

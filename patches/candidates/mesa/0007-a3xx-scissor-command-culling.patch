@@ -1,0 +1,159 @@
+Subject: [CANDIDATE] freedreno/a3xx: cull independent draw IBs outside a GMEM tile
+
+Private opt-in prototype (FD3_SCISSOR_IB=true), not production enabled.
+Split a large framebuffer's draw stream on small scissors; group consecutive
+draws sharing the same scissor and emit complete state at each group entry. Omit a chunk only when its inclusive scissor
+cannot intersect the tile. Disable VSC binning for these batches: omitting
+draw packets must not desynchronize the visibility stream. Queries and
+streamout are excluded; unexpected appended commands prevent chunk culling.
+Small framebuffers retain the ordinary path to avoid per-draw state overhead.
+Original precision, pixel coverage, blending, clears and memory barriers are
+preserved. Default behavior is unchanged. Optional FD3_SCISSOR_LOG emits CPU
+statistics only. Broader correctness and GUI performance acceptance pending.
+
+--- a/src/gallium/drivers/freedreno/freedreno_batch.h
++++ b/src/gallium/drivers/freedreno/freedreno_batch.h
+@@ -43,6 +43,11 @@
+ struct fd_batch_subpass {
+    struct list_head node;
+ 
++   /* Private A3xx scissor-IB prototype. Inclusive bounds. */
++   bool a3xx_cullable;
++   struct pipe_scissor_state a3xx_scissor;
++   uint32_t *a3xx_expected_end;
++
+    /** draw pass cmdstream: */
+    struct fd_ringbuffer *draw;
+ 
+@@ -170,6 +175,8 @@
+     */
+    struct fd_batch_result *autotune_result;
+ 
++   bool a3xx_scissor_ib;
++   unsigned a3xx_emitted_ibs, a3xx_skipped_ibs;
+    unsigned num_draws;    /* number of draws in current batch */
+    unsigned num_vertices; /* number of vertices in current batch */
+ 
+--- a/src/gallium/drivers/freedreno/a3xx/fd3_draw.c
++++ b/src/gallium/drivers/freedreno/a3xx/fd3_draw.c
+@@ -108,6 +108,40 @@
+ 
+    ir3_fixup_shader_state(&ctx->base, &emit.key.key);
+ 
++   struct fd_batch_subpass *scissor_subpass = NULL;
++   struct pipe_scissor_state *sc = fd_context_get_scissor(ctx);
++   struct fd_batch *batch = ctx->batch;
++   if (debug_get_bool_option("FD3_SCISSOR_IB", false) && !batch->nondraw) {
++      uint64_t area = (uint64_t)(sc->maxx - sc->minx + 1) *
++                      (sc->maxy - sc->miny + 1);
++      uint64_t fbarea = (uint64_t)batch->framebuffer.width * batch->framebuffer.height;
++      if (fbarea >= 512 * 1024 && area * 2 < fbarea &&
++          list_is_empty(&ctx->hw_active_queries) &&
++          list_is_empty(&ctx->acc_active_queries) &&
++          !ctx->cond_query && !ctx->streamout.num_targets && !ctx->stats_users)
++         batch->a3xx_scissor_ib = true;
++      if (batch->a3xx_scissor_ib) {
++         bool quiet = list_is_empty(&ctx->acc_active_queries) &&
++                      list_is_empty(&ctx->hw_active_queries) && !ctx->cond_query &&
++                      !ctx->streamout.num_targets && !ctx->stats_users;
++         struct fd_batch_subpass *prev = batch->subpass;
++         bool reuse = quiet && prev->a3xx_cullable &&
++                      prev->a3xx_expected_end == prev->draw->cur &&
++                      !memcmp(&prev->a3xx_scissor, sc, sizeof(*sc));
++         if (reuse) {
++            /* A contiguous group has one scissor and one entry state. */
++            scissor_subpass = prev;
++         } else {
++            /* No state inherited from a potentially omitted predecessor. */
++            batch->subpass->num_draws--;
++            scissor_subpass = fd_batch_create_subpass(batch);
++            scissor_subpass->num_draws = 1;
++            scissor_subpass->a3xx_scissor = *sc;
++            scissor_subpass->a3xx_cullable = quiet;
++            fd_context_all_dirty(ctx);
++         }
++      }
++   }
+    unsigned dirty = ctx->dirty;
+ 
+    emit.prog = fd3_program_state(
+@@ -142,6 +176,8 @@
+    emit.fs = NULL;
+    draw_impl(ctx, ctx->batch->binning, &emit, index_offset);
+ 
++   if (scissor_subpass)
++      scissor_subpass->a3xx_expected_end = scissor_subpass->draw->cur;
+    fd_context_all_clean(ctx);
+ 
+    ctx->batch->num_vertices += draw->count * info->instance_count;
+--- a/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
++++ b/src/gallium/drivers/freedreno/a3xx/fd3_gmem.c
+@@ -149,7 +149,9 @@
+    if ((gmem->maxpw > 15) || (gmem->maxph > 15))
+       return false;
+ 
+-   return fd_binning_enabled && ((gmem->nbins_x * gmem->nbins_y) > 2);
++   /* Skipped draws cannot consume the original VSC visibility stream. */
++   return !batch->a3xx_scissor_ib && fd_binning_enabled &&
++          ((gmem->nbins_x * gmem->nbins_y) > 2);
+ }
+ 
+ /* workaround for (hlsq?) lockup with hw binning on a3xx patchlevel 0 */
+@@ -1065,11 +1067,57 @@
+                      A3XX_GRAS_SC_SCREEN_SCISSOR_BR_Y(y2));
+ }
+ 
++static void
++fd3_emit_scissor_tile(struct fd_batch *batch, const struct fd_tile *tile)
++{
++   foreach_subpass (subpass, batch) {
++      struct pipe_scissor_state *s = &subpass->a3xx_scissor;
++      /* Extra commands appended outside draw_vbo make this chunk uncullable. */
++      bool cull = !batch->query_providers_used && subpass->a3xx_cullable &&
++                  subpass->a3xx_expected_end == subpass->draw->cur;
++      if (cull && (s->maxx < tile->xoff || s->maxy < tile->yoff ||
++                   s->minx >= tile->xoff + tile->bin_w ||
++                   s->miny >= tile->yoff + tile->bin_h))
++      {
++         batch->a3xx_skipped_ibs++;
++         continue;
++      }
++      if (!fd_ringbuffer_empty(subpass->draw)) {
++         fd3_emit_ib(batch->gmem, subpass->draw);
++         batch->a3xx_emitted_ibs++;
++      }
++   }
++}
++
++static void
++fd3_scissor_stats(struct fd_batch *batch)
++{
++   if (getenv("FD3_SCISSOR_LOG"))
++      fprintf(stderr, "T531_SCISSOR w=%u h=%u draws=%u enabled=%u emitted=%u skipped=%u\n",
++              batch->framebuffer.width, batch->framebuffer.height,
++              batch->num_draws, batch->a3xx_scissor_ib,
++              batch->a3xx_emitted_ibs, batch->a3xx_skipped_ibs);
++}
++
++static void
++fd3_emit_scissor_sysmem(struct fd_batch *batch)
++{
++   foreach_subpass (subpass, batch) {
++      if (!fd_ringbuffer_empty(subpass->draw))
++         fd3_emit_ib(batch->gmem, subpass->draw);
++   }
++}
++
+ void
+ fd3_gmem_init(struct pipe_context *pctx) disable_thread_safety_analysis
+ {
+    struct fd_context *ctx = fd_context(pctx);
+ 
++   if (debug_get_bool_option("FD3_SCISSOR_IB", false)) {
++      ctx->emit_tile = fd3_emit_scissor_tile;
++      ctx->emit_tile_fini = fd3_scissor_stats;
++      ctx->emit_sysmem = fd3_emit_scissor_sysmem;
++   }
+    ctx->emit_sysmem_prep = fd3_emit_sysmem_prep;
+    ctx->emit_tile_init = fd3_emit_tile_init;
+    ctx->emit_tile_prep = fd3_emit_tile_prep;

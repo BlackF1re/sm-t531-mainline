@@ -1,0 +1,40 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] drm/msm/mdp5: gate clocks and restore hardware for system sleep
+
+Force runtime suspend after DRM disables scanout. On return, restore
+MDP/VBIF/CTL initialization and the cached interrupt mask before DRM
+complete restores planes. Clock enable alone does not restore hardware
+state lost during system collapse.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c b/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
+--- a/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
++++ b/drivers/gpu/drm/msm/disp/mdp5/mdp5_kms.c
+@@ -989,7 +989,26 @@
+ 	return mdp5_enable(mdp5_kms);
+ }
+ 
++static int mdp5_pm_resume(struct device *dev)
++{
++	struct msm_drm_private *priv = dev_get_drvdata(dev);
++	struct mdp_kms *mdp_kms = to_mdp_kms(priv->kms);
++	int ret;
++
++	ret = pm_runtime_force_resume(dev);
++	if (ret || pm_runtime_suspended(dev))
++		return ret;
++
++	/* System collapse can reset MDP registers while software stays live. */
++	ret = mdp5_hw_init(priv->kms);
++	if (ret)
++		return ret;
++	mdp5_set_irqmask(mdp_kms, mdp_kms->cur_irq_mask, 0);
++	return 0;
++}
++
+ static const struct dev_pm_ops mdp5_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend, mdp5_pm_resume)
+ 	SET_RUNTIME_PM_OPS(mdp5_runtime_suspend, mdp5_runtime_resume, NULL)
+ 	.prepare = msm_kms_pm_prepare,
+ 	.complete = msm_kms_pm_complete,

@@ -1,0 +1,1210 @@
+{
+  "kernel": "7.2.9-t531-pm-dirty",
+  "modes": {
+    "s2idle": {
+      "status": "SUCCESS",
+      "result": {
+        "before": {
+          "success": 0,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "after": {
+          "success": 1,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "suspended_seconds": 13.107040204,
+        "service": "inactive",
+        "clocks": {
+          "monotonic": 92.597436268,
+          "boottime": 105.704523509
+        }
+      },
+      "scanout_after": {
+        "active": 1,
+        "before": 2936,
+        "after": 2998,
+        "delta": 62
+      },
+      "resources_after": {
+        "owners": {
+          "DMA0": "plane-0",
+          "RGB0": "plane-1"
+        },
+        "smp_blocks": {
+          "RGB0": 3,
+          "DMA0": 3
+        },
+        "consistent": true
+      },
+      "kernel_events": "Nov 02 20:43:06 t531 kernel: PM: suspend entry (s2idle)\nNov 02 20:43:25 t531 kernel: PM: suspend exit\n"
+    },
+    "shallow": {
+      "status": "SUCCESS",
+      "result": {
+        "before": {
+          "success": 1,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "after": {
+          "success": 2,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "suspended_seconds": 12.876093048000001,
+        "service": "inactive",
+        "clocks": {
+          "monotonic": 138.441530837,
+          "boottime": 164.424812544
+        }
+      },
+      "scanout_after": {
+        "active": 1,
+        "before": 5410,
+        "after": 5472,
+        "delta": 62
+      },
+      "resources_after": {
+        "owners": {
+          "DMA0": "plane-0",
+          "RGB0": "plane-1"
+        },
+        "smp_blocks": {
+          "RGB0": 3,
+          "DMA0": 3
+        },
+        "consistent": true
+      },
+      "kernel_events": "Nov 02 20:44:10 t531 kernel: PM: suspend entry (shallow)\nNov 02 20:44:24 t531 kernel: PM: suspend exit\n"
+    },
+    "0": {
+      "status": "SUCCESS",
+      "result": {
+        "before": {
+          "success": 2,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "after": {
+          "success": 3,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "suspended_seconds": 14.338562945000007,
+        "service": "inactive",
+        "clocks": {
+          "monotonic": 184.893841961,
+          "boottime": 225.215721843
+        }
+      },
+      "scanout_after": {
+        "active": 1,
+        "before": 8069,
+        "after": 8131,
+        "delta": 62
+      },
+      "resources_after": {
+        "owners": {
+          "DMA0": "plane-0",
+          "RGB0": "plane-1"
+        },
+        "smp_blocks": {
+          "RGB0": 3,
+          "DMA0": 3
+        },
+        "consistent": true
+      },
+      "kernel_events": "Nov 02 20:45:10 t531 kernel: PM: suspend entry (deep)\nNov 02 20:45:25 t531 kernel: MSM8226: entering L2 sleep mode 0\nNov 02 20:45:25 t531 kernel: MSM8226: L2 collapse returned 0, voltage restore 0\nNov 02 20:45:25 t531 kernel: PM: suspend exit\n"
+    },
+    "1": {
+      "status": "SUCCESS",
+      "result": {
+        "before": {
+          "success": 3,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "after": {
+          "success": 4,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "suspended_seconds": 13.983632446000001,
+        "service": "inactive",
+        "clocks": {
+          "monotonic": 239.800774044,
+          "boottime": 294.106319959
+        }
+      },
+      "scanout_after": {
+        "active": 1,
+        "before": 11230,
+        "after": 11292,
+        "delta": 62
+      },
+      "resources_after": {
+        "owners": {
+          "DMA0": "plane-0",
+          "RGB0": "plane-1"
+        },
+        "smp_blocks": {
+          "RGB0": 3,
+          "DMA0": 3
+        },
+        "consistent": true
+      },
+      "kernel_events": "Nov 02 20:46:20 t531 kernel: PM: suspend entry (deep)\nNov 02 20:46:34 t531 kernel: MSM8226: entering L2 sleep mode 1\nNov 02 20:46:34 t531 kernel: MSM8226: L2 collapse returned 0, voltage restore 0\nNov 02 20:46:34 t531 kernel: PM: suspend exit\n"
+    },
+    "2": {
+      "status": "SUCCESS",
+      "result": {
+        "before": {
+          "success": 4,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "after": {
+          "success": 5,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "suspended_seconds": 13.725878744999989,
+        "service": "inactive",
+        "clocks": {
+          "monotonic": 383.763561708,
+          "boottime": 451.795022357
+        }
+      },
+      "scanout_after": {
+        "active": 1,
+        "before": 19749,
+        "after": 19811,
+        "delta": 62
+      },
+      "resources_after": {
+        "owners": {
+          "DMA0": "plane-0",
+          "RGB0": "plane-1"
+        },
+        "smp_blocks": {
+          "RGB0": 3,
+          "DMA0": 3
+        },
+        "consistent": true
+      },
+      "kernel_events": "Nov 02 20:48:57 t531 kernel: PM: suspend entry (deep)\nNov 02 20:49:11 t531 kernel: MSM8226: entering L2 sleep mode 2\nNov 02 20:49:11 t531 kernel: MSM8226: L2 collapse returned 0, voltage restore 0\nNov 02 20:49:11 t531 kernel: PM: suspend exit\n"
+    },
+    "3": {
+      "status": "SUCCESS",
+      "result": {
+        "before": {
+          "success": 5,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "after": {
+          "success": 6,
+          "fail": 0,
+          "failed_freeze": 0,
+          "failed_prepare": 0,
+          "failed_suspend": 0,
+          "failed_suspend_late": 0,
+          "failed_suspend_noirq": 0,
+          "failed_resume_noirq": 0,
+          "failed_resume_early": 0,
+          "failed_resume": 0,
+          "  last_failed_errno": 0
+        },
+        "suspended_seconds": 12.827297962999978,
+        "service": "inactive",
+        "clocks": {
+          "monotonic": 430.211336874,
+          "boottime": 511.070130227
+        }
+      },
+      "scanout_after": {
+        "active": 1,
+        "before": 22360,
+        "after": 22422,
+        "delta": 62
+      },
+      "resources_after": {
+        "owners": {
+          "DMA0": "plane-0",
+          "RGB0": "plane-1"
+        },
+        "smp_blocks": {
+          "RGB0": 3,
+          "DMA0": 3
+        },
+        "consistent": true
+      },
+      "kernel_events": "Nov 02 20:49:57 t531 kernel: PM: suspend entry (deep)\nNov 02 20:50:11 t531 kernel: MSM8226: entering L2 sleep mode 3\nNov 02 20:50:11 t531 kernel: MSM8226: L2 collapse returned 0, voltage restore 0\nNov 02 20:50:11 t531 kernel: PM: suspend exit\n"
+    }
+  },
+  "no_battery_tests": true,
+  "xosd_after_rpm": "Count: 0\nLast Entered At: 0\nLast Exited At: 0\nAccumulated Duration: 0\nClient Votes: 0x0\n",
+  "vmin_after_rpm": "Count: 0\nLast Entered At: 0\nLast Exited At: 0\nAccumulated Duration: 0\nClient Votes: 0x0\n",
+  "visual_acceptance": {
+    "accepted": false,
+    "user_observation": "After six-mode series desktop visible, status and navigation bars absent",
+    "scope": "Per-mode SUCCESS is CPU/scanout/resource checks only; overall resume acceptance failed"
+  },
+  "followup_graphics": {
+    "accepted": false,
+    "observations": [
+      "Restarting the packaged shell after the six-mode sequence produced a GPU hang and GL_CONTEXT_LOST.",
+      "After restarting KWin and Plasma with the production Mesa series, a 257x131 RGBA pixel check returned zero RGBA instead of the expected opaque pixel.",
+      "The previous Mesa library returned the same failure in the same boot.",
+      "Stopping the graphical session and allowing GPU runtime suspend did not restore the pixel check."
+    ],
+    "interpretation": "This initial observation did not isolate the cause. The later strict_pixel_run isolated RPM-triggered GMEM failure and recovery by restoring the existing OCMEM graphics lock; see OCMEM-RESUME-20261103.md."
+  },
+  "strict_pixel_run": {
+    "kernel": "7.2.9-t531-pm-dirty",
+    "kwin_mesa": "packaged 25.0.7-2+deb13u1",
+    "shell_mesa": "main patch series 0001,0002,0009,0010,0011,0012",
+    "shell_plugin": "original packaged plugin",
+    "modes_passed": [
+      "s2idle",
+      "shallow",
+      "standalone",
+      "retention",
+      "gdhs"
+    ],
+    "rpm": {
+      "cpu_returned": true,
+      "suspended_seconds": 14.202962753999941,
+      "gmem_pixel_check": false,
+      "sysmem_pixel_check": true
+    },
+    "overall_accepted": false,
+    "manual_recovery": {
+      "clock_vote_refresh": false,
+      "secure_config_only": false,
+      "secure_config_and_existing_graphics_lock": true
+    },
+    "next_change": "0148 OCMEM early-resume allocation restoration; rebuilt-kernel qualification pending"
+  },
+  "ocmem_integrated_run": {
+    "kernel": "7.2.9-t531-mainline-dirty",
+    "image_sha256": "3605c27e8b069cbe36dbff4d0818246a36dfc433b34016feb808057d2b22344d",
+    "msm_build_id": "1337c9b68a8fcad3b3dda4619b790b4023b31826",
+    "source": "main Linux patch series including 0148; no 0143 or diagnostic 0145-0147",
+    "rpm_first_cycle": "SUCCESS: strict pixels before/after; no manual SCM repair",
+    "other_modes": "CPU/pixels passed; OCMEM duplicate lock returned -EINVAL in five cycles",
+    "visual_acceptance": "pending; user reports sleep and wake occurred",
+    "overall_accepted": false,
+    "no_battery_tests": true,
+    "results": {
+      "kernel": "7.2.9-t531-mainline-dirty",
+      "modes": {
+        "s2idle": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 1,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 2,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 1,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 14.303042129000005,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 169.025157398,
+              "boottime": 197.557014938
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 7407,
+            "after": 7469,
+            "delta": 62
+          }
+        },
+        "shallow": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 2,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 1,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 3,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 2,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 13.664626088000006,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 217.311873817,
+              "boottime": 259.508394164
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 10185,
+            "after": 10247,
+            "delta": 62
+          }
+        },
+        "0": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 3,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 2,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 4,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 3,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 13.500922911000032,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 256.887641869,
+              "boottime": 312.585118877
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 12441,
+            "after": 12502,
+            "delta": 61
+          }
+        },
+        "1": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 4,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 3,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 5,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 4,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 13.953524935000019,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 306.567174607,
+              "boottime": 376.218209944
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 15279,
+            "after": 15341,
+            "delta": 62
+          }
+        },
+        "2": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 5,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 4,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 6,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 5,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 14.016764570999953,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 342.215716824,
+              "boottime": 425.883553196
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 17224,
+            "after": 17286,
+            "delta": 62
+          }
+        },
+        "3": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 0,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 1,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 14.222248276999991,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 106.699355381,
+              "boottime": 120.928133917
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 3783,
+            "after": 3845,
+            "delta": 62
+          }
+        }
+      },
+      "xo_count": 0,
+      "vmin_count": 0
+    },
+    "qualification": "REJECTED: graphics checks passed, but five early-resume errors were missed by the initial checker",
+    "power_key": "invalid: shell restart still pending from installation; process stability check rejected cycle",
+    "next_change": "Balance firmware lock with late-suspend unlock; reject any increased failed_* phase counter"
+  },
+  "balanced_ocmem_run": {
+    "kernel": "7.2.9-t531-mainline-dirty",
+    "image_sha256": "d476c3fb1032590d31285e49c468301f1ff8619abf75af1dc9af47e65d6cfe85",
+    "msm_build_id": "1337c9b68a8fcad3b3dda4619b790b4023b31826",
+    "source": "main Linux series including balanced late-suspend unlock / early-resume lock in 0148",
+    "mesa_shell": "/opt/t531-graphics/mesa-dc3772cdf12b8a87",
+    "kwin_mesa": "packaged 25.0.7-2+deb13u1",
+    "status": "ACCEPTED for the tested CPU/L2 suspend and graphical-resume scope",
+    "no_battery_tests": true,
+    "excluded_attempts": {
+      "s2idle-balanced-v1": "setup overlapped preceding wrapper; excluded before CPU sleep",
+      "3-balanced-v1": "successful CPU/pixels/phase counters, excluded from final series due premature next-unit scheduling",
+      "1-balanced-v2": "CPU/pixels/phase counters passed; residency 0.492275 s, rejected as early RTC wake after slow preparation"
+    },
+    "results": {
+      "kernel": "7.2.9-t531-mainline-dirty",
+      "modes": {
+        "s2idle": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 2,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 3,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 14.17960228399997,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 252.630432497,
+              "boottime": 294.690871906
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 12289,
+            "after": 12351,
+            "delta": 62
+          }
+        },
+        "shallow": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 3,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 4,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 13.50610218099996,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 294.086074454,
+              "boottime": 349.652654691
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 14676,
+            "after": 14738,
+            "delta": 62
+          }
+        },
+        "0": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 4,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 5,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 13.685687285000029,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 350.083855481,
+              "boottime": 419.336157848
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 17922,
+            "after": 17984,
+            "delta": 62
+          }
+        },
+        "1": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 6,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 7,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 29.364443058999882,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 534.620441962,
+              "boottime": 633.729535514
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 28132,
+            "after": 28194,
+            "delta": 62
+          }
+        },
+        "2": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 7,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 8,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 28.961576037999976,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 585.331487949,
+              "boottime": 713.40219326
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 31054,
+            "after": 31116,
+            "delta": 62
+          }
+        },
+        "3": {
+          "status": "SUCCESS",
+          "result": {
+            "before": {
+              "success": 1,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "after": {
+              "success": 2,
+              "fail": 0,
+              "failed_freeze": 0,
+              "failed_prepare": 0,
+              "failed_suspend": 0,
+              "failed_suspend_late": 0,
+              "failed_suspend_noirq": 0,
+              "failed_resume_noirq": 0,
+              "failed_resume_early": 0,
+              "failed_resume": 0,
+              "  last_failed_errno": 0
+            },
+            "suspended_seconds": 14.130519469000006,
+            "service": "inactive",
+            "clocks": {
+              "monotonic": 206.801975508,
+              "boottime": 234.682777737
+            }
+          },
+          "health_before": {
+            "kernel": [],
+            "graphics": []
+          },
+          "health_after": {
+            "kernel": [],
+            "graphics": []
+          },
+          "pixels_before": 29,
+          "pixels_after": 29,
+          "resources": {
+            "owners": {
+              "DMA0": "plane-0",
+              "RGB0": "plane-1"
+            },
+            "smp_blocks": {
+              "RGB0": 3,
+              "DMA0": 3
+            },
+            "consistent": true
+          },
+          "scanout": {
+            "active": 1,
+            "before": 9647,
+            "after": 9709,
+            "delta": 62
+          }
+        }
+      },
+      "xo_count": 0,
+      "vmin_count": 0
+    },
+    "visual_acceptance": {
+      "accepted": true,
+      "user_observation": "Both panels visible, everything works",
+      "after": "final power-key path cycle"
+    },
+    "power_key": {
+      "status": "SUCCESS",
+      "trigger": "synthetic pm8941_pwrkey input event through logind/PowerDevil, RTC return",
+      "suspended_seconds": 28.095411076000005,
+      "display_on_after_rtc": true,
+      "display_on_after_power_wake": true,
+      "phase_error_counters": 0,
+      "pixels_before_and_after": true,
+      "processes_stable": true,
+      "scope": "Not an electrical measurement of the physical button IRQ"
+    },
+    "sd_slot": "mainline-d476c3fb1032",
+    "pending": false,
+    "whole_soc_low_power_accepted": false,
+    "stable_60fps_established": false
+  }
+}

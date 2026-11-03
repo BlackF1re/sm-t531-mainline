@@ -1,0 +1,12 @@
+{
+  "original_image_sha256": "b7d7ff38700abfb49bddec839e61c8b8827f8b5af2abe50be3bab9aac54b6720",
+  "candidate_image_sha256": "366bcd3d10ee87bb00fc4c91b197d6c22f5da524b84f144e8adee9fb0e95d471",
+  "unchanged_kernel_code_sha256": "f315eaf7fce2445355cc045b321c51865bd15c18c7a2ab4064c012667e7f5cbf",
+  "kernel_code_bytes": 12898816,
+  "all_other_dtb_properties_unchanged": true,
+  "change": {
+    "node": "/soc/mmc@f98a4900",
+    "remove": "cd-gpios",
+    "add": "broken-cd"
+  }
+}
