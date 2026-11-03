@@ -1,0 +1,44 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] mobileshell: cache quick settings during drawer motion
+
+Keep a single layer snapshot of the quick settings while dragging or
+running the complete drawer transition. Resume live rendering after the
+transition, including its pause, completes. Preserve animation timings.
+
+Recovered from the exact deployed plugin resources, not the older import
+path prototype. The original packaged plugin is 6.7.4-2. Same-stack device
+comparison restores approximately 51 presentations/s from approximately 35.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+--- a/components/mobileshell/ActionDrawer.qml
++++ b/components/mobileshell/ActionDrawer.qml
+@@ -78,6 +78,8 @@
+      * Whether the panel is being dragged.
+      */
+     property bool dragging: false
++
++    readonly property bool moving: dragging || drawerTransition.running
+ 
+     /**
+      * Whether the panel is open after touch/mouse release from the first opening swipe.
+@@ -261,6 +263,7 @@
+     ]
+ 
+     transitions: Transition {
++        id: drawerTransition
+         SequentialAnimation {
+             PropertyAnimation {
+                 id: drawerAnimation
+--- a/components/mobileshell/actiondrawer/private/QuickSettingsPanel.qml
++++ b/components/mobileshell/actiondrawer/private/QuickSettingsPanel.qml
+@@ -19,6 +19,9 @@
+  */
+ MobileShell.BaseItem {
+     id: root
++
++    layer.enabled: root.actionDrawer.moving
++    layer.live: !root.actionDrawer.moving
+ 
+     required property var actionDrawer
+ 

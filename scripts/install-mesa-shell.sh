@@ -60,4 +60,9 @@ sed -e "s|@MESA_LIBRARY_DIR@|$destination|g" -e "s|@QT_LIBRARY_DIR@|$qt_dir|g" \
     "$project/config/t531-mesa-shell.conf" > "$backup/shell.conf"
 install -m644 "$backup/shell.conf" "$override.new"
 mv "$override.new" "$override"
+if [[ -S /run/user/1000/bus ]]; then
+    setpriv --reuid=1000 --regid="$(id -g "$desktop_user")" --init-groups \
+        env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
+        systemctl --user daemon-reload
+fi
 printf 'Plasma Mesa installed: %s\nRestart the Plasma session to load it.\n' "$destination"

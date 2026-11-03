@@ -111,7 +111,7 @@ GMEM as an optimization, but does not prove a driver bug solely from stalls.
 A private paired Mesa cross-build tests one concrete BSP difference:
 `PACKER_TIMER_ENABLE` in the A305B GMEM resolve path. Samsung enables it in
 its GMEM context-save resolve; Mesa's corresponding ordinary resolve omits it.
-The candidate is [kept separately](../patches/candidates/mesa/0001-a305b-resolve-packer-timer.patch)
+The candidate is [kept separately](https://github.com/BlackF1re/sm-t531-mainline/blob/43648a251d2be440fc4d87996ff323b6d933621c/patches/candidates/mesa/0001-a305b-resolve-packer-timer.patch)
 and is not part of the production patch series. Context-save behavior is not
 proof of equivalent normal-frame performance. Pixel checks, unchanged control
 behavior and a paired performance comparison remain required. The cross-build
@@ -197,7 +197,7 @@ Reordered busy DISCARD_RANGE uploads consult `is_renderable` and may therefore
 choose an invalid staging framebuffer blit. The retained 3D copy path itself
 already documents that buffer render targets are unsupported.
 
-[Candidate 0003](../patches/candidates/mesa/0003-a3xx-buffer-render-target.patch)
+[Candidate 0003](https://github.com/BlackF1re/sm-t531-mainline/blob/43648a251d2be440fc4d87996ff323b6d933621c/patches/candidates/mesa/0003-a3xx-buffer-render-target.patch)
 rejects PIPE_BUFFER render-target/depth-stencil capability on A3xx. This uses the
 existing synchronized buffer mapping/copy behavior rather than emitting invalid
 MRT state; it does not remove assertions or cache synchronization. The incremental
@@ -345,7 +345,7 @@ miss a layout with fewer aligned actual tiles. For a 1280×800 RGBA+packed-depth
 case in 128 KiB, its 160×96 tiles require 8×9=72 tiles; legal 256×64 tiles require
 5×13=65. This changes neither attachment formats nor the memory capacity limit.
 
-[Candidate 0004](../patches/candidates/mesa/0004-a3xx-minimize-gmem-tiles.patch)
+[Candidate 0004](https://github.com/BlackF1re/sm-t531-mainline/blob/43648a251d2be440fc4d87996ff323b6d933621c/patches/candidates/mesa/0004-a3xx-minimize-gmem-tiles.patch)
 searches legal column counts and binary-searches the smallest fitting row count,
 using the existing alignment/size validation. It keeps the original shape on
 ties and is restricted to A3xx. Allocation remains cached by the existing GMEM

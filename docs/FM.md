@@ -38,7 +38,7 @@ Keep FM outside production until a usable board-level receiver is established.
 
 ## Implementation and deployment
 
-The [candidate patch](../patches/candidates/fm/0001-media-radio-qcom-smd-candidate.patch)
+The [candidate patch](https://github.com/BlackF1re/sm-t531-mainline/blob/43648a251d2be440fc4d87996ff323b6d933621c/patches/candidates/fm/0001-media-radio-qcom-smd-candidate.patch)
 implements a V4L2 receiver on the actual `APPS_FM` RPMSG service advertised by
 this tablet's existing WCNSS firmware. It has standard tuner/frequency ioctls,
 mute, 50/75 µs deemphasis, RDS reception control, block reads/poll and a bounded

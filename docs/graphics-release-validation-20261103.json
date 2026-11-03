@@ -1611,5 +1611,18 @@
       "Prior approximately 50 FPS recordings used experimental cache plugin and are not this configuration",
       "Short runs do not establish long-term reliability"
     ]
+  },
+  "current_production": {
+    "manifest": "config/graphics-stack.lock.json",
+    "audit": "docs/graphics-stack-audit-20261103.json",
+    "cache_restored": true,
+    "fresh_boot_presentations_per_second": 51.2514045010284,
+    "p95_interval_ms": 33.38600000000724,
+    "post_cache_sleep_checks": [
+      "s2idle",
+      "RPM"
+    ],
+    "stable_60fps_established": false,
+    "post_resume_presentations_per_second": 50.73227020022438
   }
 }

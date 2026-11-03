@@ -1,0 +1,251 @@
+{
+  "reason_for_35_fps": "The previously measured quick-settings cache plugin was replaced with the packaged plugin during cleanup.",
+  "controlled_same_stack": {
+    "kernel": "7.2.9-t531-mainline-dirty",
+    "boot_sha256": "d476c3fb1032590d31285e49c468301f1ff8619abf75af1dc9af47e65d6cfe85",
+    "mesa": "unchanged",
+    "qt": "unchanged",
+    "a_original_1_fps": 35.02636962614665,
+    "b_cache_fps": 51.43159974606178,
+    "a_original_2_fps": 34.73523552393604,
+    "b_cache_p95_ms": 33.37099999998827,
+    "interpretation": "Replacing the plugin reproduces and reverses the regression. These are DRM presentation events, not optical FPS."
+  },
+  "restored_source": {
+    "plasma_mobile": "patches/plasma-mobile/0001-cache-quick-settings-during-drawer-motion.patch",
+    "resource_identity": "Recovered ActionDrawer and QuickSettingsPanel sources match the actual plugin resources byte for byte; the older QML import-path prototype differs and is excluded.",
+    "qt": "patches/qt/0001-discard-swapchain-depth.patch",
+    "qt_identity": "Stripping the saved Qt candidate produces exactly the installed library SHA-256 e92cb3a71a284f7e8d2fc5a6510174610ea22f16bd670ac3f919c4e8e133b498."
+  },
+  "preserved_fixes": {
+    "kernel": "All main Linux patches remain unchanged, including unified DRM/shared VM, touch release, WCN3660, charging, card detect, A3xx ring suspend, MPM/L2, MDP5 resources and registers, active-only memory votes, USB/MMSS clocks and balanced OCMEM restore. Module checksum/build ID and callbacks are checked on device.",
+    "mesa": "Main patches 0001/0002/0009/0010/0011/0012 remain unchanged; installed files have a verified manifest.",
+    "qt": "Active depth/stencil discard binary preserved; source promoted out of candidates.",
+    "shell_cache": "Recovered and restored; this is the demonstrated lost active optimization.",
+    "wifi_history": "Deleted earlier Wi-Fi patches were consolidated into main patch 0123, whose description lists the former components; no source loss found.",
+    "limitations": "This audit does not re-test every radio, charging or thermal function. Remaining GPU restart faults, whole-SoC XO/VMIN and stable 60 FPS are not declared solved."
+  },
+  "candidate_disposition": {
+    "promoted": "Mesa 0003/0005/0008 already integrated as main 0010/0011/0012; Qt 0001 promoted here.",
+    "removed": "All remaining patches/candidates are removed from the current tree; historical source remains in Git commit 43648a2. Failed PHY, suspend tracing, shader/tile/scissor experiments and unqualified FM are not in production."
+  },
+  "branches": {
+    "local": [
+      "main"
+    ],
+    "remote": [
+      "main"
+    ],
+    "worktrees": 1
+  },
+  "excluded_trial": "Repeated live shell restarts produced a GPU hang; that run was rejected. Fresh-boot canonical stack passed mapping/hash/journal checks, measured 51.251 FPS and passed s2idle/RPM pixel and phase-counter checks.",
+  "no_battery_tests": true,
+  "qualification": {
+    "runs": {
+      "plugin-b": {
+        "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+        "idle_gap_threshold_ms": 100,
+        "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+        "active_fps": 51.43159974606178,
+        "frame_interval": {
+          "samples": 661,
+          "p50_ms": 16.671000000087588,
+          "p95_ms": 33.37099999998827,
+          "p99_ms": 50.00200000017685,
+          "over_25ms_percent": 15.279878971255673
+        },
+        "gpu_busy_percent_recording": 62.630844047796955,
+        "cpu_busy_percent_recording_all_cores": 20.2582592654704,
+        "cpu_khz_median": 1190400,
+        "gpu_hz_median": 450000000,
+        "axi_hz_median": 266666666,
+        "health": {
+          "logged_mdp5_underruns": 0,
+          "events": [],
+          "display_integrity": "NO_LOGGED_UNDERRUN",
+          "limitation": "Kernel logging is rate-limited; counts are lower bounds and zero is not physical acceptance."
+        }
+      },
+      "plugin-a2": {
+        "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+        "idle_gap_threshold_ms": 100,
+        "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+        "active_fps": 34.73523552393604,
+        "frame_interval": {
+          "samples": 447,
+          "p50_ms": 33.324999999877036,
+          "p95_ms": 33.42100000008941,
+          "p99_ms": 50.0120000001516,
+          "over_25ms_percent": 68.68008948545861
+        },
+        "gpu_busy_percent_recording": 71.99120380118293,
+        "cpu_busy_percent_recording_all_cores": 20.184409052808046,
+        "cpu_khz_median": 1190400,
+        "gpu_hz_median": 450000000,
+        "axi_hz_median": 266666666,
+        "health": {
+          "logged_mdp5_underruns": 0,
+          "events": [],
+          "display_integrity": "NO_LOGGED_UNDERRUN",
+          "limitation": "Kernel logging is rate-limited; counts are lower bounds and zero is not physical acceptance."
+        }
+      },
+      "plugin-b-fresh": {
+        "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+        "idle_gap_threshold_ms": 100,
+        "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+        "active_fps": 51.2514045010284,
+        "frame_interval": {
+          "samples": 639,
+          "p50_ms": 16.671000000002323,
+          "p95_ms": 33.38600000000724,
+          "p99_ms": 33.43500000002564,
+          "over_25ms_percent": 16.275430359937403
+        },
+        "gpu_busy_percent_recording": 62.173564218953985,
+        "cpu_busy_percent_recording_all_cores": 20.164126611957798,
+        "cpu_khz_median": 1190400,
+        "gpu_hz_median": 450000000,
+        "axi_hz_median": 266666666,
+        "health": {
+          "logged_mdp5_underruns": 0,
+          "events": [],
+          "display_integrity": "NO_LOGGED_UNDERRUN",
+          "limitation": "Kernel logging is rate-limited; counts are lower bounds and zero is not physical acceptance."
+        }
+      },
+      "plugin-b-resumed": {
+        "kind": "Native DRM presentation bursts during manual gestures; not optical FPS",
+        "idle_gap_threshold_ms": 100,
+        "limitation": "Gaps over the threshold may be pauses or severe jank; no per-gesture boundaries",
+        "active_fps": 50.73227020022438,
+        "frame_interval": {
+          "samples": 663,
+          "p50_ms": 16.671999999971376,
+          "p95_ms": 33.35000000004129,
+          "p99_ms": 33.43700000004901,
+          "over_25ms_percent": 17.194570135746606
+        },
+        "gpu_busy_percent_recording": 63.937102912999734,
+        "cpu_busy_percent_recording_all_cores": 19.573734524369222,
+        "cpu_khz_median": 1190400.0,
+        "gpu_hz_median": 450000000.0,
+        "axi_hz_median": 266666666.0,
+        "health": {
+          "logged_mdp5_underruns": 0,
+          "events": [],
+          "display_integrity": "NO_LOGGED_UNDERRUN",
+          "limitation": "Kernel logging is rate-limited; counts are lower bounds and zero is not physical acceptance."
+        }
+      }
+    },
+    "sleep": {
+      "s2idle": {
+        "status": "SUCCESS",
+        "result": {
+          "before": {
+            "success": 0,
+            "fail": 0,
+            "failed_freeze": 0,
+            "failed_prepare": 0,
+            "failed_suspend": 0,
+            "failed_suspend_late": 0,
+            "failed_suspend_noirq": 0,
+            "failed_resume_noirq": 0,
+            "failed_resume_early": 0,
+            "failed_resume": 0,
+            "  last_failed_errno": 0
+          },
+          "after": {
+            "success": 1,
+            "fail": 0,
+            "failed_freeze": 0,
+            "failed_prepare": 0,
+            "failed_suspend": 0,
+            "failed_suspend_late": 0,
+            "failed_suspend_noirq": 0,
+            "failed_resume_noirq": 0,
+            "failed_resume_early": 0,
+            "failed_resume": 0,
+            "  last_failed_errno": 0
+          },
+          "suspended_seconds": 28.924015242000024,
+          "service": "inactive",
+          "clocks": {
+            "monotonic": 224.481758997,
+            "boottime": 253.407406121
+          }
+        },
+        "health_before": {
+          "kernel": [],
+          "graphics": []
+        },
+        "health_after": {
+          "kernel": [],
+          "graphics": []
+        },
+        "pixels_before_lines": 29,
+        "pixels_after_lines": 29
+      },
+      "3": {
+        "status": "SUCCESS",
+        "result": {
+          "before": {
+            "success": 1,
+            "fail": 0,
+            "failed_freeze": 0,
+            "failed_prepare": 0,
+            "failed_suspend": 0,
+            "failed_suspend_late": 0,
+            "failed_suspend_noirq": 0,
+            "failed_resume_noirq": 0,
+            "failed_resume_early": 0,
+            "failed_resume": 0,
+            "  last_failed_errno": 0
+          },
+          "after": {
+            "success": 2,
+            "fail": 0,
+            "failed_freeze": 0,
+            "failed_prepare": 0,
+            "failed_suspend": 0,
+            "failed_suspend_late": 0,
+            "failed_suspend_noirq": 0,
+            "failed_resume_noirq": 0,
+            "failed_resume_early": 0,
+            "failed_resume": 0,
+            "  last_failed_errno": 0
+          },
+          "suspended_seconds": 29.149981758999957,
+          "service": "inactive",
+          "clocks": {
+            "monotonic": 264.815560079,
+            "boottime": 322.891224691
+          }
+        },
+        "health_before": {
+          "kernel": [],
+          "graphics": []
+        },
+        "health_after": {
+          "kernel": [],
+          "graphics": []
+        },
+        "pixels_before_lines": 29,
+        "pixels_after_lines": 29
+      }
+    }
+  },
+  "legacy_boot_units_retired": [
+    "t531-kernel-trial-restore.service",
+    "t531-sd-cd-fix-guard.service",
+    "t531-sleep-stack-guard.service",
+    "t531-mdp5-resource-boot-check.service/timer",
+    "t531-mdp5-stage-boot-check.service/timer"
+  ],
+  "powerdevil": "Loaded packaged 6.7.4-2 action contains the native suspend transition guard; obsolete 6.3 backport is not loaded.",
+  "visual_acceptance": "pending",
+  "installer_qualification": "Pinned installation repeated successfully without changing the shell PID; all read-only checks passed, including Mesa identity, Qt/cache, native PowerDevil guard, card detect and BMS wake policy.",
+  "retired_runtime": "Unused QML import prototype and panel-cache trial directory removed from tablet after verifying a private off-repository archive; canonical immutable plugin retained.",
+  "build_default": "Main kernel LOCALVERSION now defaults to -mainline, matching the qualified release; immutable bootstrap profile unchanged."
+}

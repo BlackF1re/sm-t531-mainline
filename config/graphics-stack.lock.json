@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "kernel": "7.2.9-t531-mainline-dirty",
+  "boot_image_sha256": "d476c3fb1032590d31285e49c468301f1ff8619abf75af1dc9af47e65d6cfe85",
+  "msm_sha256": "b87c5711cbb2576dbf87a1481efcc9ce5ec4a9ab9e7a3a0b1f7e4a071fbe222b",
+  "msm_build_id": "1337c9b68a8fcad3b3dda4619b790b4023b31826",
+  "mesa_bundle": "mesa-dc3772cdf12b8a87",
+  "kwin_mesa_package": "25.0.7-2+deb13u1",
+  "qt_gui_sha256": "e92cb3a71a284f7e8d2fc5a6510174610ea22f16bd670ac3f919c4e8e133b498",
+  "qt_gui_version": "6.11.2",
+  "plasma_mobile_package": "6.7.4-2",
+  "mobileshell_original_sha256": "3d3f6bcbca921d27f04b331524374f147d252c673b66fd3839a4369d4af79c32",
+  "mobileshell_sha256": "8cd97d80450b1cdfb0db874dea1cdaf7c08a7fcc3f3bbdf340b5db15de15d0ac",
+  "shell_fd_mesa_debug": "inorder,ttile",
+  "kwin_fd_mesa_debug": "inorder"
+}

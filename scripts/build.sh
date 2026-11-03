@@ -15,6 +15,7 @@ case "$profile" in
         defconfig=multi_v7_defconfig; prefix=; required=config/kernel.fragment
         [[ ${NATIVE_KMS:-1} == 1 ]] || { echo "Main supports only native unified DRM" >&2; exit 1; }
         export NATIVE_KMS=1
+        KERNEL_LOCALVERSION=${KERNEL_LOCALVERSION:--mainline}
         export NATIVE_ICC=${NATIVE_ICC:-$NATIVE_KMS}
         ;;
     bootstrap) defconfig=qcom_defconfig; prefix=bootstrap-; required=config/bootstrap.fragment;;

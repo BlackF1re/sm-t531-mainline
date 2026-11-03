@@ -1,6 +1,8 @@
 Subject: [PATCH] rhi: discard transient default framebuffer depth before swap
 
-Diagnostic candidate for Qt 6.11.2; live acceptance pending.
+Qt 6.11.2 deployment verified by matching the stripped library SHA-256
+and on-device graphics/suspend checks. Discard only transient depth and
+stencil attachments whose contents the next frame clears.
 
 --- a/src/gui/rhi/qrhigles2.cpp
 +++ b/src/gui/rhi/qrhigles2.cpp
