@@ -206,7 +206,7 @@ For every row: research exact hardware -> smallest separate patch/configuration 
 | `live` | [VERIFIED_DEVICE](../docs/hardware-observation-20261022.json) | Read-only #19 probe/interface snapshot; earlier physical tests are separately dated. |
 | `dt` | [VERIFIED_DEVICE](../docs/hardware-observation-20261022.json) | Read-only deployed DT compatible/status list, cross-checked with local board/SoC source; no claim local patches are merged upstream. |
 | `config` | [VERIFIED_DEVICE](../config/kernel.fragment) | Checked against current .work/out/.config; required settings differ from generic defconfig. |
-| `patches` | [VERIFIED_DEVICE](../patches/linux/) | Current applied 120-patch source; builds/patches are not physical acceptance. |
+| `patches` | [VERIFIED_DEVICE](../patches/linux/) | Current applied 139-patch source; builds/patches are not physical acceptance. |
 | `rng` | [VERIFIED_UPSTREAM](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/drivers/crypto/qcom-rng.c?h=v7.2.9) | Pinned base behavior: qcom,prng has hwrng_support=false; public upstream source link below. |
 | `bt-driver` | [VERIFIED_UPSTREAM](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/drivers/bluetooth/btqcomsmd.c?h=v7.2.9) | Send callback handles CMD/ACL, not a demonstrated SCO transport. |
 | `manual` | [VERIFIED_VENDOR_SOURCE](https://downloadcenter.samsung.com/content/UM/201506/20150602135914448/SM-T531_UM_EU_Lollipop_Eng_Rev.1.0_150602.pdf) | Samsung SM-T531 EU Lollipop English user manual rev1.0 (2015-06-02), layout p7, phone/messages/location/media chapters; manufacturer-copyrighted, not redistributed. |

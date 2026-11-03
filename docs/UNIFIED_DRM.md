@@ -42,12 +42,12 @@ The unified trace contains 2,113 successful PRIME ioctls; these are inexpensive
 shared-object lookups, not eliminated API calls. The old allocation-to-import
 association was a hypothesis; the measured allocation collapse is established.
 
-With the distribution Plasma plugin restored, repeated drawer animation measured
-35.52 FPS, p50 33.328 ms, p95 33.412 ms, p99 50.009 ms, 66.46% intervals above
-25 ms, and sampled GPU busy 73.54% at 450 MHz. The earlier 50.4 FPS result used
-an experimental shell cache plugin, now removed. It is not the final stock
-result. Unified DRM removes the CPU import bottleneck but does not establish
-60 FPS. Further GPU composition profiling remains necessary.
+The historical packaged-plugin measurement was 35.52 FPS (p95 33.412 ms).
+The cache was subsequently restored and promoted into the main source series:
+controlled original / cache / original measurements were 35.026 / 51.432 /
+34.735 presentations/s. The canonical stack measured 51.251/s after boot and
+50.732/s after s2idle/RPM sleep. See [the current stack](GRAPHICS-STACK.md).
+These DRM event rates do not establish optical FPS or stable 60 FPS.
 
 One subsequent `ksplashqml` GPU hang recovered; its cause remains UNKNOWN.
 Two session restarts with runtime power on and two with runtime autosuspend
@@ -97,7 +97,13 @@ Responsive-device rollback was tested; a hard kernel hang can still require
 physical recovery. Never delete golden or the baseline while acceptance is
 pending.
 
-At publication the tested runtime was unified2, but SSH became unavailable
-before production promotion could execute. Persistent SD selection may still
-be golden. No production cold-boot acceptance is claimed, and publishing source
-does not change the tablet's selected boot slot.
+The earlier publication ended before unified2 promotion; that observation is
+historical. The current `7.2.9-t531-mainline-dirty` image
+`d476c3fb1032590d31285e49c468301f1ff8619abf75af1dc9af47e65d6cfe85`
+booted from microSD, passed the recorded short checks and was persistently
+selected as `mainline-d476c3fb1032`. Its pending marker was removed. Legacy
+one-off trial boot guards were retired; the generic verified SD recovery
+mechanism and golden slot remain. See [OCMEM qualification](OCMEM-RESUME-20261103.md)
+and [the consolidation audit](graphics-stack-audit-20261103.json). This is
+bounded functional acceptance, not long-term reliability or whole-SoC sleep
+acceptance.

@@ -20,13 +20,13 @@
 
 | | Verified on the actual SM-T531 | Still limited / pending |
 |:--:|---|---|
-| 🟢 **Boot & Debian** | Internal bootstrap → SD kexec → Debian; USB ACM and Wi-Fi SSH | Cold-boot / endurance tests |
+| 🟢 **Boot & Debian** | Internal bootstrap → SD kexec → Debian; USB ACM and Wi-Fi SSH | Extended cold-boot / endurance tests |
 | 🟢 **CPU** | Seven stock frequency steps; all four cores; CPU hotplug; WFI and standalone collapse | Sustained thermal tests, deeper cluster idle |
 | 🟢 **Storage & input** | microSD ext4 readback; touchscreen | SD hotplug and extended stress |
 | 🟡 **Display** | Native MDP5 / DSI / TC358764 output; earlier physical image/touch acceptance | Historical black/frozen GUI reports; repeat physical and endurance acceptance of the current build |
 | 🟢 **Backlight** | Phosh absent-sensor bug fixed; actual GUI/register range reaches 255 instead of 37 | Optical brightness acceptance and full panel power sequencing |
 | 🟡 **GPU & shell** | Freedreno / Adreno acceleration; Plasma Mobile and native Phosh | Composition performance, fault recovery; [single qualified stack](docs/GRAPHICS-STACK.md) |
-| 🟡 **Suspend** | CPU/L2 sleep modes, MDP5 resource/register restore and OCMEM lock restoration; [current qualification](docs/OCMEM-RESUME-20261103.md), [mode selection](docs/SLEEP-STACK.md) | Seven short functional cycles and final panels/input acceptance passed; fully clock-gated RPM collapse, XO/VMIN and long-term reliability remain open. No autonomy tests performed |
+| 🟡 **Suspend** | Six CPU/L2 modes plus the power-key input path passed short checks; MDP5/OCMEM restore; [qualification](docs/OCMEM-RESUME-20261103.md), [mode selection](docs/SLEEP-STACK.md) | Fully clock-gated RPM collapse, XO/VMIN and long-term reliability remain open. No autonomy tests performed |
 | 🟡 **Battery** | PM8226 BMS voltage/current/temperature/coulombs and modeled SOC | Capacity / aging / full-cycle accuracy |
 | 🟡 **Wi-Fi** | Managed, WPA2 AP, raw standalone monitor + probe/data injection | [Tested scope](docs/WIFI.md); firmware restart, PMF and RF-control limitations |
 | 🟡 **Bluetooth** | Native WCN3660 controller, discovery/pairing and BLE mouse | Audio/data profiles, Classic and sleep acceptance pending |
@@ -36,12 +36,19 @@
 > [!NOTE]
 > **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](docs/GRAPHICS-STABILITY.md), [battery evidence](docs/BATTERY.md), and [patch review](docs/PATCH-REVIEW.md).
 
-**Current graphics architecture (2026-10-29):** unified Adreno 305 / MDP5 MSM
-DRM, hardware Mesa 25.0.7 and Plasma Mobile. The split-only loader is removed;
-early framebuffer console and verified recovery remain. PRIME import overhead
-was eliminated, but stock drawer animation measured 35.5 FPS and a residual GPU
-recovery remains under investigation. See [unified DRM evidence and deployment](docs/UNIFIED_DRM.md).
-Production cold-boot acceptance is pending; this is not a flawless-stack claim.
+**Current graphics stack (2026-11-03):** unified Adreno 305 / MDP5 MSM
+DRM, hardware Mesa 25.0.7 and Plasma Mobile with the restored quick-settings
+cache. The single qualified stack measured **51.25 presentation events/s after
+boot and 50.73/s after sleep**. The earlier approximately 35-FPS result used
+the packaged plugin without this cache. These are DRM presentation counts,
+not optical FPS; stable 60 FPS is not established. See the
+[current stack and limitations](docs/GRAPHICS-STACK.md).
+
+The mainline SD image booted and was persistently selected; six CPU/L2 sleep
+modes and the power-key input path passed short checks, with final panels/input
+confirmed before cache consolidation. The restored cache subsequently passed
+s2idle/RPM checks. Long-term reliability, whole-SoC XO/VMIN sleep and GPU recovery
+remain open; a GPU hang occurred during repeated live session restarts.
 
 On **2026-10-22**, kernel #16 consolidates [WCN3660 support](docs/WIFI.md) into one kernel patch, selects software scanning without the known HAL208 timeout, clears stale scan state and excludes the unsupported channel 144 through standard OF limits. Managed, WPA2 AP, raw monitor, probe/data injection and hcxdumptool handshake capture passed short tests. Configuration/MSM module are unchanged; DTB adds only the frequency limit. Monitor is exclusive; firmware hot restart, PMF and advanced RF controls remain incomplete or unvalidated.
 
@@ -84,7 +91,7 @@ Detailed prerequisites, mount layout, deployment options and recovery-safe comma
 | [Samsung downstream kernel](https://github.com/LineageOS/android_kernel_samsung_msm8226/tree/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256) | Hardware research **only**; not imported wholesale |
 | [matisse3g device config](https://github.com/matissewifi/android_device_samsung_matisse3g/tree/cf5a3b04f9598d6756113b79df64e91aa53868d9) | Hardware reference |
 
-Linux patch files live in [`patches/linux/`](patches/linux); board and build configuration in [`config/`](config). The port currently applies **120 local kernel patches** to the pinned upstream base, including bring-up diagnostics and unmerged changes. Original licensing and authorship are retained. Original source pins were recorded on **2026-10-13**; later device results and upstream checks carry their own dates.
+Linux patch files live in [`patches/linux/`](patches/linux); board and build configuration in [`config/`](config). The port currently applies **139 local kernel patches** to the pinned upstream base, including bring-up diagnostics and unmerged changes. Original licensing and authorship are retained. Original source pins were recorded on **2026-10-13**; later device results and upstream checks carry their own dates.
 
 </details>
 

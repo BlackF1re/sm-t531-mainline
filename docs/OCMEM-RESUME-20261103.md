@@ -53,7 +53,8 @@ The revised patch balances late-suspend unlock and early-resume lock. The
 checker now rejects increased `failed_*` phase counters and OCMEM resume
 errors. A power-key trial also correctly rejected a process change caused
 by an unfinished shell restart; it is not accepted as a resume qualification.
-Qualification of the balanced revision remains pending.
+This was the intermediate status; the balanced revision was subsequently
+qualified as recorded in “Accepted balanced revision” below.
 
 ## Separate unresolved work
 
@@ -74,7 +75,9 @@ The final image SHA-256 is
 It booted from microSD; internal BOOT and lk2nd were not changed. The MSM
 module matches the recorded main-series build ID above. Plasma loads the
 immutable `mesa-dc3772cdf12b8a87` bundle, KWin retains packaged Mesa, and the
-packaged mobileshell plugin is restored. Diagnostic kernel patches are absent.
+packaged mobileshell plugin was used for this initial seven-cycle series.
+The cache plugin was subsequently restored and qualified separately; see
+[the current stack](GRAPHICS-STACK.md). Diagnostic kernel patches are absent.
 
 | Mode | Measured suspended time | Result |
 |---|---:|---|
@@ -106,5 +109,7 @@ The automatic post-resume drawer workload completed with the same shell
 process and no logged GPU fault or MDP5 underrun. The original packaged
 plugin configuration measured 35.026 presentations/s, p95 33.424 ms. This
 is not 60 FPS; prior approximately 50/s recordings used an experimental
-cache plugin and do not describe this accepted configuration. See
+cache plugin and do not describe that initial packaged-plugin configuration.
+The current canonical cached stack subsequently measured 51.251/s after boot
+and 50.732/s after s2idle/RPM sleep. See [GRAPHICS-STACK.md](GRAPHICS-STACK.md) and
 `graphics-release-validation-20261103.json` for scope and measurement limits.
