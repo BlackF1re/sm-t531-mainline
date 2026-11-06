@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-project=$PWD
-work=${WORK_DIR:-$project/../build/sm-t531}
-linux=${KERNEL_SRC:-$project/../sources/linux-mainline}
-out=${KERNEL_OUT:-$work/out}
-artifacts=${ARTIFACTS_DIR:-$work/artifacts/current}
+profile=${1:-main}
+source scripts/lib/host-paths.sh
+t531_host_paths "$profile"
 commit=5fce161649b4d779d1b76d9fcd52dc77779774b8
 tag=v7.2.9
 cross=${CROSS_COMPILE:-arm-linux-gnueabihf-}
-profile=${1:-main}
 case "$profile" in
     main)
         defconfig=multi_v7_defconfig; prefix=; required=config/kernel.fragment

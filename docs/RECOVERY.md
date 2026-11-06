@@ -33,25 +33,33 @@ Build a recovery initramfs **without rebuilding or replacing the frozen kernel**
 make rescue-initramfs
 ```
 
-This needs an existing kernel build providing `../build/sm-t531/out/usr/gen_init_cpio`; the script exits if that tool is missing. It produces `bootstrap-initramfs.cpio.gz` and does not install it or change internal BOOT.
+This needs an existing bootstrap kernel build providing
+`../build/sm-t531/bootstrap/out/usr/gen_init_cpio` (or explicit `KERNEL_OUT`); the script exits if that tool is missing. It produces `bootstrap-initramfs.cpio.gz` and does not install it or change internal BOOT.
 
 The actual device has verified bootstrap recovery and USB ACM diagnostic exchange; **USB Ethernet is not validated**.
 
 ## Graphics fallback
 
-The latest installed `#8` profile uses `/usr/local/libexec/t531-kernel-trial-restore` and the verified snapshot in `/var/lib/t531/kernel-trial-backup`. The helper and snapshot were present and their saved checksums passed a read-only check on **2026-10-19**. Consult [Graphics stability](GRAPHICS-STABILITY.md) and [battery deployment](BATTERY.md#installed-device-result) for the image/module history.
+Current graphics updates use the atomic SD-slot controller documented in
+[Unified DRM](UNIFIED_DRM.md), with host-independent slot logic in
+`tools/graphics-ab/slots.py`. The supported entry point on the tablet is
+`/usr/local/sbin/t531-graphics-ab`; it checks the board, SD layout and saved
+baseline before changing a boot slot or restoring configuration.
 
-```bash
-# Run on the tablet only with the verified current snapshot present:
-sudo /usr/local/libexec/t531-kernel-trial-restore --rollback &&
-  sudo systemctl reboot
-```
+A trial needs a verified matching kernel, module tree, initramfs, command line
+and configuration snapshot. Its userspace timeout cannot recover an early boot
+failure or a wedged kernel by itself. No validated watchdog recovery is claimed.
+Preserve SSH/USB access and obtain approval before an update or reboot.
 
-The helper restores the saved SD kernel, MSM module and available module metadata for the **next boot** and runs `depmod`; it does not switch the running kernel or unload MSM. Keep the entire snapshot intact. It requires the installed initramfs and kernel command line to match the saved snapshot. It does not revert Phosh packages or all userspace settings. The saved pre-battery image also predates battery support, so rolling back can remove battery telemetry.
+`/usr/local/libexec/t531-kernel-trial-restore` and snapshots named `#8` are
+historical deployment mechanisms, not the default instructions for the current
+stack. The repository's `t531-graphics-rollback` compatibility wrapper delegates
+to the slot controller; older installed versions may behave differently. Check
+which implementation is present before using it.
 
-The automatic trial service is **disabled after promotion**. During an armed trial it restores the previous image on disk after rootfs reaches its service; it cannot recover an early boot failure or a wedged kernel by itself. No validated watchdog recovery is claimed.
-
-`/usr/local/sbin/t531-graphics-rollback [original|native]` belongs to older bring-up snapshots. Do not use it as the current default rollback: those profiles can restore older framebuffer/native images and graphics configurations. Never unload/reload MSM as a recovery shortcut, or read the full `clk_summary` / a powered-off DSI PLL; those operations caused recorded aborts or system hangs. Do not mix kernel, DRM modules, and Mesa configurations from different trials.
+Never unload/reload MSM as a recovery shortcut, or read the full `clk_summary`
+or a powered-off DSI PLL: those operations caused recorded aborts or hangs.
+Do not mix kernel, DRM modules and Mesa configurations from different trials.
 
 ## Diagnostic access
 

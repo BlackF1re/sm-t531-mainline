@@ -21,11 +21,18 @@ ROOTFS_PROFILE=mobile make rootfs
 
 - `make build`: pinned Linux **v7.2.9**, ordered patches, board config, modules, DTB, boot container and checksums.
 - `ROOTFS_PROFILE=mobile`: Debian armhf with **Plasma Mobile**, SDDM, the native Mesa entry and activation service. Phosh requires the separate [Phosh build/install workflow](PHOSH.md).
-- Outputs: `../build/sm-t531/artifacts/current/`; kernel source: `../build/sm-t531/linux/`; build output: `../build/sm-t531/out/`.
+- Outputs: `../build/sm-t531/artifacts/current/`; kernel source: `../sources/linux-mainline/`; build output: `../build/sm-t531/out/`.
 - Default kernel build uses **native MDP5 / DSI + interconnect** (`NATIVE_KMS=1`, `NATIVE_ICC=1`).
-- Older firmware-framebuffer recovery build: `make build` — **different graphics path**, not a drop-in guarantee.
 
-Run these commands from the repository root, in order. `rootfs.sh` copies the module tree from `../build/sm-t531/artifacts/current/modules/` **if it exists**; build the matching kernel first. A fresh rootfs does not automatically reproduce the tablet's manually deployed Phosh runtime, device-local GPU power hold or private Wi-Fi configuration. WCNSS also needs the device firmware/calibration at the DT paths `qcom/matisse3g/wcnss.mdt` and `qcom/matisse3g/WCNSS_qcom_wlan_nv.bin`; the script does not import the owner's private copies.
+For a mobile rootfs, first build the DRM capability probes against an existing
+armhf sysroot containing libdrm development files:
+
+```bash
+DRM_SYSROOT=/path/to/armhf-sysroot ./scripts/graphics/build-probe.sh
+```
+
+The generated probe is a required input to the mobile rootfs recipe.
+Run the build/rootfs commands from the repository root, in order. `rootfs.sh` copies the module tree from `../build/sm-t531/artifacts/current/modules/` **if it exists**; build the matching kernel first. A fresh rootfs does not automatically reproduce the installed custom KWin/Qt/Mesa/Plasma stack or private Wi-Fi configuration; use the [graphics stack guide](GRAPHICS-STACK.md) for its exact component identities. WCNSS also needs the device firmware/calibration at the DT paths `qcom/matisse3g/wcnss.mdt` and `qcom/matisse3g/WCNSS_qcom_wlan_nv.bin`; the script does not import the owner's private copies.
 
 > [!NOTE]
 > The artifact named `zImage` on the **internal-bootstrap SD path** is an Android-v0 `sd-kernel.img` *container* with an appended DT. The host's separate `zImage` build artifact is the real Linux kernel. Do not interchange these blindly.
@@ -50,7 +57,7 @@ sudo tar --numeric-owner -xpf ../build/sm-t531/artifacts/current/debian-armhf.ta
 
 The deploy script requires a mounted **ext2** boot root and rejects an existing extlinux entry to avoid unsafe overwrites. It **does not** select or validate the physical card for you.
 
-`deploy-sd` copies boot files only: it does not install the rootfs or a new module tree, create a rollback snapshot, or arrange an automatic fallback. For an existing rootfs, install the matching modules and native userspace setup as well. The shared release string `7.2.9-dirty` does not establish that two builds are compatible. The owner's most recent on-device updates use the hash-checked [kernel trial/rollback path](RECOVERY.md#graphics-fallback).
+`deploy-sd` copies boot files only: it does not install the rootfs or a new module tree, create a rollback snapshot, or arrange an automatic fallback. For an existing rootfs, install the matching modules and native userspace setup as well. Matching release strings alone do not establish that two builds are compatible. Existing-system graphics updates use the hash-checked [slot trial/rollback path](UNIFIED_DRM.md).
 
 ## What changes, what does not
 
@@ -80,7 +87,11 @@ For troubleshooting or fallback steps, use **[Recovery & safety](RECOVERY.md)**.
 
 Generated files live outside the repository, in `../build/sm-t531/` by default.
 The main kernel source defaults to `../sources/linux-mainline/`; `KERNEL_SRC`,
-`KERNEL_OUT`, `WORK_DIR` and `ARTIFACTS_DIR` override the main build paths.
+`KERNEL_OUT`, `WORK_DIR`, `SOURCES_DIR` and `ARTIFACTS_DIR` override the build paths.
+All host build/package/deploy helpers share `scripts/lib/host-paths.sh`.
+Child scripts inherit the selected paths. Bootstrap builds use separate defaults:
+`../sources/linux-bootstrap/`, `../build/sm-t531/bootstrap/out/` and
+`../build/sm-t531/bootstrap/artifacts/`. Explicit overrides take precedence.
 One retained installed build is in `../artifacts/mainline-20261103/`, with
 `SHA256SUMS`. This archive is separate from the next build's output directory.
 No build step depends on a retained `.work` directory. Historical paths in

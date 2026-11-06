@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-project=$PWD
-work=${WORK_DIR:-$project/../build/sm-t531}
-out=${KERNEL_OUT:-$work/out}
-artifacts=${ARTIFACTS_DIR:-$work/artifacts/current}
-cross=${CROSS_COMPILE:-arm-linux-gnueabihf-}
 profile=${1:-main}
+source scripts/lib/host-paths.sh
+t531_host_paths "$profile"
+cross=${CROSS_COMPILE:-arm-linux-gnueabihf-}
 case "$profile" in main) prefix=;; bootstrap) prefix=bootstrap-;; *) echo 'Usage: build-initramfs.sh [main|bootstrap]'; exit 1;; esac
 export LC_ALL=C TZ=UTC SOURCE_DATE_EPOCH=1790985600
 mkdir -p "$work" "$artifacts"
-[ -x "$out/usr/gen_init_cpio" ] || { echo 'Run make build first to obtain gen_init_cpio'; exit 1; }
+[ -x "$out/usr/gen_init_cpio" ] || { echo "Build the $profile kernel first to obtain gen_init_cpio"; exit 1; }
 # Pinned static Debian armhf BusyBox; no host-architecture binary in initramfs.
 url='https://deb.debian.org/debian/pool/main/b/busybox/busybox-static_1.37.0-6+b9_armhf.deb'
 sha=8b35210e08d559ecc0ddb660dd96f6f9694f69eb27f1dc608f5eeda56d94509e

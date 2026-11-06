@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-a=${ARTIFACTS_DIR:-$PWD/../build/sm-t531/artifacts/current}
-a=$(realpath "$a")
-work=${WORK_DIR:-$PWD/../build/sm-t531}
+source scripts/lib/host-paths.sh
+t531_host_paths
+a=$(realpath "$artifacts")
 [[ ${NATIVE_KMS:-1} == 1 ]] || { echo "SD production supports only native unified DRM" >&2; exit 1; }
 NATIVE_KMS=1
 # The installed bootstrap passes its live DT to kexec. An Android v0

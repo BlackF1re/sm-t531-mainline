@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/lib/host-paths.sh
+t531_host_paths
 [ "${FORMAT_SD:-}" = yes ] || { echo 'Formatting erases both microSD partitions. Set FORMAT_SD=yes after preserving its data.'; exit 1; }
 serial=${ADB_SERIAL:-$(adb -d get-serialno)}
 [[ "$serial" != unknown ]] || { echo 'No USB tablet'; exit 1; }
@@ -18,11 +20,11 @@ sectors=$("${adb_cmd[@]}" exec-out cat /sys/class/block/mmcblk1/size | tr -d '\r
 [ "$("${adb_cmd[@]}" exec-out cat /sys/class/block/mmcblk1p1/size | tr -d '\r')" = 98304 ]
 [ "$("${adb_cmd[@]}" exec-out cat /sys/class/block/mmcblk1p2/start | tr -d '\r')" = 100352 ]
 [ "$("${adb_cmd[@]}" exec-out cat /sys/class/block/mmcblk1p2/size | tr -d '\r')" = 30152704 ]
-a=../build/sm-t531/artifacts/current
+a=$artifacts
 (cd "$a"; sha256sum -c SHA256SUMS)
 [ -s "$a/debian-armhf.tar.gz" ]
 "${adb_cmd[@]}" shell mkdir -p /data/local/tmp/t531-tools
-"${adb_cmd[@]}" push ../build/sm-t531/busybox/usr/bin/busybox "$bb"
+"${adb_cmd[@]}" push "$work/busybox/usr/bin/busybox" "$bb"
 "${adb_cmd[@]}" shell chmod 700 "$bb"
 remote() {
     local result

@@ -4,12 +4,12 @@ Read-only SM-T531 diagnostic for the exact running MSM kernel: maps GPU submit
 IDs to the context/sequence of their retained user and hardware fences at
 retirement. No GPU registers, clocks, fences or scheduling decisions are changed.
 
-Build against the matching configured kernel tree, headers, generated symbols
-and release; for the retained unified2 build:
+Build against the matching configured kernel tree, generated symbols and
+release. Supply an existing build directory explicitly; no historical `.work`
+output is required:
 
 ```sh
-make -C .work/linux O="$PWD/.work/gpu-counter-build/out" ARCH=arm \
-  CROSS_COMPILE=arm-linux-gnueabihf- LOCALVERSION=-unified2 \
+make -C "$KERNEL_BUILD" ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- \
   M="$PWD/tools/native-fence-owner" modules
 ```
 

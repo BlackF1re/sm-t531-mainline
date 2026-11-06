@@ -3,14 +3,15 @@
 # An isolated ARM rootfs avoids replacing libraries in the production rootfs.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-project=$PWD
-work=$project/../build/sm-t531/phosh
+source scripts/lib/host-paths.sh
+t531_host_paths
+base_root=$work/rootfs
+work=$work/phosh
 root=${PHOSH_BUILD_ROOT:-$work/rootfs}
-artifacts=$project/../build/sm-t531/artifacts/current
 mkdir -p "$work" "$artifacts"
 if [[ ! -d $root ]]; then
-    [[ -r ../build/sm-t531/rootfs/etc/debian_version ]] || { echo 'Prepare the Debian rootfs first'; exit 1; }
-    sudo cp -a --reflink=auto ../build/sm-t531/rootfs "$root"
+    [[ -r "$base_root/etc/debian_version" ]] || { echo 'Prepare the Debian rootfs first'; exit 1; }
+    sudo cp -a --reflink=auto "$base_root" "$root"
 fi
 [[ $(sudo chroot "$root" dpkg --print-architecture) == armhf ]]
 [[ $(sudo chroot "$root" /bin/sh -c '. /etc/os-release; echo "$VERSION_CODENAME"') == trixie ]]

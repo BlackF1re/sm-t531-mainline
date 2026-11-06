@@ -1,6 +1,6 @@
 BOOT_MODE ?= sd
 
-.PHONY: build mesa bootstrap rescue-initramfs collect rootfs powerdevil deploy-sd deploy-adb-sd
+.PHONY: check build mesa bootstrap rescue-initramfs collect rootfs powerdevil deploy-sd deploy-adb-sd
 build:
 	./scripts/build.sh
 mesa:
@@ -20,3 +20,8 @@ deploy-sd:
 
 deploy-adb-sd:
 	./scripts/deploy-adb-sd.sh
+
+# Host-only: no compilation, flashing, network access, or tablet interaction.
+check:
+	python3 -B tools/check-repository.py
+	python3 -B -m unittest discover -s tests

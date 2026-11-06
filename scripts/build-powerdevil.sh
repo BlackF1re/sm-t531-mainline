@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-project=$PWD
-work=$project/../build/sm-t531/powerdevil
-root=$project/../build/sm-t531/rootfs
-artifacts=$project/../build/sm-t531/artifacts/current
+source scripts/lib/host-paths.sh
+t531_host_paths
+root=$work/rootfs
+work=$work/powerdevil
 snapshot=https://snapshot.debian.org/archive/debian/20261003T000000Z/
 [ -f "$root/etc/debian_version" ] || { echo 'Run make rootfs first'; exit 1; }
 [ "$(sudo chroot "$root" dpkg --print-architecture)" = armhf ]

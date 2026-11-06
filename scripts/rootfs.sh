@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-work=$PWD/../build/sm-t531
+source scripts/lib/host-paths.sh
+t531_host_paths
 root=$work/rootfs
 native_kms=${NATIVE_KMS:-1}
 snapshot=https://snapshot.debian.org/archive/debian/20261003T000000Z/
-mkdir -p "$work/artifacts/current"
+mkdir -p "$artifacts"
 if [ ! -f "$root/debootstrap/debootstrap" ] && [ ! -f "$root/etc/debian_version" ]; then
     sudo debootstrap --arch=armhf --foreign --variant=minbase --components=main,contrib,non-free,non-free-firmware \
         --keyring=/usr/share/keyrings/debian-archive-keyring.gpg \
@@ -36,15 +37,15 @@ case "${ROOTFS_PROFILE:-base}" in
         sudo install -D -m644 config/msm.conf "$root/etc/modprobe.d/msm.conf"
         sudo install -D -m644 config/t531-graphics.conf "$root/etc/environment.d/60-t531-graphics.conf"
         sudo install -D -m644 config/t531-sddm-graphics.conf "$root/etc/systemd/system/sddm.service.d/20-t531-graphics.conf"
-        [[ -x ../build/sm-t531/artifacts/tools/t531-drm-probe ]] || {
+        [[ -x "$work/artifacts/tools/t531-drm-probe" ]] || {
             echo 'Build the ARM DRM capability probe with scripts/graphics/build-probe.sh first'; exit 1;
         }
-        sudo install -D -m755 ../build/sm-t531/artifacts/tools/t531-drm-probe "$root/usr/local/libexec/t531-drm-probe"
+        sudo install -D -m755 "$work/artifacts/tools/t531-drm-probe" "$root/usr/local/libexec/t531-drm-probe"
         if [ "${ROOTFS_PROFILE}" = mobile ]; then
             sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
                 plasma-mobile-full sddm xwayland
             ./scripts/build-powerdevil.sh
-            sudo cp ../build/sm-t531/artifacts/current/t531-powerdevil-suspend_0.20261013-1_armhf.deb "$root/tmp/"
+            sudo cp "$artifacts/t531-powerdevil-suspend_0.20261013-1_armhf.deb" "$root/tmp/"
             sudo chroot "$root" dpkg -i /tmp/t531-powerdevil-suspend_0.20261013-1_armhf.deb
             sudo python3 -c 'import pathlib,sys; pathlib.Path(sys.argv[1]).unlink()' "$root/tmp/t531-powerdevil-suspend_0.20261013-1_armhf.deb"
             sudo install -m 755 scripts/configure-plasma.sh "$root/tmp/t531-configure-plasma.sh"
@@ -104,9 +105,9 @@ ExecStart=/usr/bin/ssh-keygen -A
 WantedBy=multi-user.target
 KEYS
 sudo systemctl --root="$root" enable systemd-networkd ssh t531-ssh-keys.service serial-getty@ttyGS0.service
-if [ -d "$work/artifacts/current/modules/lib/modules" ]; then
+if [ -d "$artifacts/modules/lib/modules" ]; then
     sudo mkdir -p "$root/lib/modules"
-    sudo cp -a "$work/artifacts/current/modules/lib/modules/." "$root/lib/modules/"
+    sudo cp -a "$artifacts/modules/lib/modules/." "$root/lib/modules/"
 fi
 sudo install -m 755 scripts/configure-charging.sh "$root/tmp/t531-configure-charging.sh"
 sudo chroot "$root" env INSTALL_ONLY=1 /tmp/t531-configure-charging.sh
@@ -123,12 +124,12 @@ if [ -n "${WIFI_CONFIG:-}" ]; then
         /tmp/t531-configure-network.sh /tmp/t531-wifi.conf
     sudo rm -f "$root/tmp/t531-wifi.conf" "$root/tmp/t531-configure-network.sh"
 fi
-sudo chroot "$root" dpkg-query -W '-f=${Package}\t${Version}\t${Architecture}\n' > "$work/artifacts/current/debian-packages.tsv"
+sudo chroot "$root" dpkg-query -W '-f=${Package}\t${Version}\t${Architecture}\n' > "$artifacts/debian-packages.tsv"
 sudo chroot "$root" apt-get clean
 # Fresh installations generate their own machine-id and SSH host keys.
 sudo rm -f "$root/etc/ssh/ssh_host_"* "$root/var/lib/dbus/machine-id"
 sudo truncate -s 0 "$root/etc/machine-id"
 sudo tar --sort=name --numeric-owner --mtime='2026-10-03 00:00:00 UTC' \
     --exclude='./dev/*' --exclude='./proc/*' --exclude='./sys/*' -C "$root" -cf - . \
-    | gzip -n -1 > "$work/artifacts/current/debian-armhf.tar.gz"
-echo "Rootfs: $work/artifacts/current/debian-armhf.tar.gz"
+    | gzip -n -1 > "$artifacts/debian-armhf.tar.gz"
+echo "Rootfs: $artifacts/debian-armhf.tar.gz"

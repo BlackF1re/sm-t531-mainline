@@ -2,10 +2,11 @@
 # Build only the recorded production Mesa series from a verified source archive.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-project=$PWD
+source scripts/lib/host-paths.sh
+t531_host_paths
 archive=${MESA_SOURCE_ARCHIVE:?Set MESA_SOURCE_ARCHIVE to mesa-25.0.7.tar.xz}
 cross=${MESA_CROSS_FILE:?Set MESA_CROSS_FILE to the armhf Meson cross file}
-work=${MESA_WORK_DIR:-$project/../build/sm-t531/mesa-production}
+work=${MESA_WORK_DIR:-$work/mesa-production}
 meson=("${MESON_PYTHON:-python3}" -m mesonbuild.mesonmain)
 archive=$(realpath "$archive"); cross=$(realpath "$cross")
 [[ $(sha256sum "$archive" | cut -d' ' -f1) == 592272df3cf01e85e7db300c449df5061092574d099da275d19e97ef0510f8a6 ]]

@@ -71,6 +71,10 @@ flowchart LR
 
 ## Build
 
+Run `make check` for host-only source and documentation checks.
+See the [documentation map](docs/README.md) and [tool index](tools/README.md)
+for current guides, historical evidence and diagnostic scope.
+
 ```bash
 make build
 ROOTFS_PROFILE=mobile make rootfs
@@ -78,7 +82,7 @@ ROOTFS_PROFILE=mobile make rootfs
 
 Detailed prerequisites, mount layout, deployment options and recovery-safe commands: **[Build & deploy →](docs/BUILD-DEPLOY.md)**
 
-`ROOTFS_PROFILE=mobile` prepares **Plasma Mobile**. The installed **Phosh** profile requires its separate [build/install and session-selection steps](docs/PHOSH.md); these two commands alone do not reproduce the current tablet setup.
+`ROOTFS_PROFILE=mobile` prepares **Plasma Mobile**. The optional **Phosh** profile requires its separate [build/install and session-selection steps](docs/PHOSH.md); these two commands alone do not reproduce the current tablet setup.
 
 <details>
 <summary><strong>📌 Pinned inputs and provenance</strong></summary>
