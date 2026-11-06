@@ -16,6 +16,7 @@ invocation. Read the tool's header or adjacent README before using it.
 | Historical Mesa instrumentation | `diagnostics/a3xx-stage/` | Intrusive stage-timing method; excluded from production patches and unsuitable as an FPS benchmark |
 | Build compatibility | `kwin-vulkan-api-probe.cpp` | Vulkan-Hpp syntax probe, not Vulkan support on Adreno 305 |
 | Battery, backlight and sleep | `check-battery-*.py`, `test-*brightness.py`, `test-backlight-range.py`, `audit-sleep-states.py`, `check-suspend-cycle.py` | Tool-specific acceptance tests; some change device state |
+| Private stock-data backups | `stock-backup/`, `scripts/backup-stock` | Read-only acquisition, integrity checks and explicitly confirmed restoration; default output is Git-ignored |
 | Identity and image preparation | `set-bluetooth-address.py`, `check-boot-layout.py` | Private per-device identity insertion and boot-container inspection |
 | Radio / Android research | `wifi/`, `android/`, `build-wifi-trial.sh`, `fetch-phosh-runtime.py` | Specialized bring-up and reproducibility helpers |
 | Bus / display register research | `measure-msm8226-bus.c`, `read-msm8226-qos.py`, `read-dsi-controller.c` | Device-specific register access; historical diagnostics, not routine health checks |

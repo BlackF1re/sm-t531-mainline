@@ -10,3 +10,6 @@ __pycache__/
 *.mod.c
 Module.symvers
 modules.order
+
+# Local golden backups contain factory identities, calibration and user data.
+/backup_stock/

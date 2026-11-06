@@ -7,8 +7,9 @@ acceptance.
 
 | Purpose | Canonical starting point |
 |---|---|
-| Hardware inventory, implementation and acceptance gaps | [Hardware matrix](HARDWARE.md), `status/hardware.yaml` |
+| Hardware inventory, implementation and acceptance gaps | [Hardware matrix](../hardware/SUPPORT.md), `hardware/support.yaml` |
 | Host prerequisites, paths and SD deployment | [Build & deployment](BUILD-DEPLOY.md) |
+| Private backups and restore plans | [Stock-data backup](BACKUP-STOCK.md) |
 | Bootstrap, recovery and protected storage | [Recovery & safety](RECOVERY.md) |
 | Supported graphics components and identity checks | [Single graphics stack](GRAPHICS-STACK.md) |
 | Unified DRM architecture and trial mechanism | [Unified DRM](UNIFIED_DRM.md) |

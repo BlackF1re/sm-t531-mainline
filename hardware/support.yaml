@@ -1,4 +1,5 @@
 schema_version: 1
+record_scope: Historical acceptance snapshot; current graphics/sleep identity is maintained in docs/GRAPHICS-STACK.md and docs/SLEEP-STACK.md.
 updated: '2026-10-22'
 device: Samsung Galaxy Tab 4 10.1 3G SM-T531 / matisse3g
 baseline:
@@ -2161,7 +2162,7 @@ subsystems:
   - VERIFIED_VENDOR_SOURCE
 android_audit:
   report: docs/ANDROID-HARDWARE-AUDIT.md
-  observations: docs/android-hardware-observation-20261022.json
+  observations: hardware/android-observation-20261022.json
   board_revision_reported: '0003'
   selected_dt: r02 (explicit compatible QCDT metadata; original FDT bytes unchanged)
   native_acceptance_unchanged: true

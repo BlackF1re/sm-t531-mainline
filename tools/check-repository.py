@@ -23,7 +23,8 @@ def main():
             errors.append(f'{relative}: tracked file is missing')
             continue
         if (relative.suffix in {'.o', '.ko', '.pyc', '.deb', '.so'}
-                or '__pycache__' in relative.parts or '.work' in relative.parts):
+                or '__pycache__' in relative.parts or '.work' in relative.parts
+                or 'backup_stock' in relative.parts):
             errors.append(f'{relative}: generated artifact tracked as source')
         try:
             if path.suffix == '.py':

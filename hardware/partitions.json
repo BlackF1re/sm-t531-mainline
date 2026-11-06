@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "compatible": "samsung,matisse3g",
+  "model": "SM-T531",
+  "sector_bytes": 512,
+  "user_area_bytes": 15758000128,
+  "boot_area_bytes": 4194304,
+  "lk2nd_boot_prefix_bytes": 524288,
+  "evidence": "VERIFIED_DEVICE: original partition table corroborated by read-only Linux lsblk/sysfs, 2026-11-07",
+  "partitions": [
+    {
+      "name": "APNHLOS",
+      "device": "mmcblk0p1",
+      "start_sector": 8192,
+      "bytes": 14680064
+    },
+    {
+      "name": "MODEM",
+      "device": "mmcblk0p2",
+      "start_sector": 36864,
+      "bytes": 52166656
+    },
+    {
+      "name": "SBL1",
+      "device": "mmcblk0p3",
+      "start_sector": 138752,
+      "bytes": 524288
+    },
+    {
+      "name": "DBI",
+      "device": "mmcblk0p4",
+      "start_sector": 139776,
+      "bytes": 32768
+    },
+    {
+      "name": "DDR",
+      "device": "mmcblk0p5",
+      "start_sector": 139840,
+      "bytes": 32768
+    },
+    {
+      "name": "ABOOT",
+      "device": "mmcblk0p6",
+      "start_sector": 139904,
+      "bytes": 2097152
+    },
+    {
+      "name": "RPM",
+      "device": "mmcblk0p7",
+      "start_sector": 144000,
+      "bytes": 524288
+    },
+    {
+      "name": "TZ",
+      "device": "mmcblk0p8",
+      "start_sector": 145024,
+      "bytes": 524288
+    },
+    {
+      "name": "PAD",
+      "device": "mmcblk0p9",
+      "start_sector": 146048,
+      "bytes": 1048576
+    },
+    {
+      "name": "PARAM",
+      "device": "mmcblk0p10",
+      "start_sector": 148096,
+      "bytes": 10485760
+    },
+    {
+      "name": "EFS",
+      "device": "mmcblk0p11",
+      "start_sector": 168576,
+      "bytes": 14680064
+    },
+    {
+      "name": "MODEMST1",
+      "device": "mmcblk0p12",
+      "start_sector": 197248,
+      "bytes": 3145728
+    },
+    {
+      "name": "MODEMST2",
+      "device": "mmcblk0p13",
+      "start_sector": 203392,
+      "bytes": 3145728
+    },
+    {
+      "name": "BOOT",
+      "device": "mmcblk0p14",
+      "start_sector": 209536,
+      "bytes": 10485760
+    },
+    {
+      "name": "RECOVERY",
+      "device": "mmcblk0p15",
+      "start_sector": 230016,
+      "bytes": 10485760
+    },
+    {
+      "name": "FOTA",
+      "device": "mmcblk0p16",
+      "start_sector": 250496,
+      "bytes": 10485760
+    },
+    {
+      "name": "BACKUP",
+      "device": "mmcblk0p17",
+      "start_sector": 270976,
+      "bytes": 7330816
+    },
+    {
+      "name": "FSG",
+      "device": "mmcblk0p18",
+      "start_sector": 285294,
+      "bytes": 3145728
+    },
+    {
+      "name": "FSC",
+      "device": "mmcblk0p19",
+      "start_sector": 291438,
+      "bytes": 1024
+    },
+    {
+      "name": "SSD",
+      "device": "mmcblk0p20",
+      "start_sector": 291440,
+      "bytes": 8192
+    },
+    {
+      "name": "PERSIST",
+      "device": "mmcblk0p21",
+      "start_sector": 291456,
+      "bytes": 8388608
+    },
+    {
+      "name": "PERSDATA",
+      "device": "mmcblk0p22",
+      "start_sector": 307840,
+      "bytes": 9437184
+    },
+    {
+      "name": "SYSTEM",
+      "device": "mmcblk0p23",
+      "start_sector": 326272,
+      "bytes": 2411724800
+    },
+    {
+      "name": "CACHE",
+      "device": "mmcblk0p24",
+      "start_sector": 5036672,
+      "bytes": 314572800
+    },
+    {
+      "name": "HIDDEN",
+      "device": "mmcblk0p25",
+      "start_sector": 5651072,
+      "bytes": 20971520
+    },
+    {
+      "name": "USERDATA",
+      "device": "mmcblk0p26",
+      "start_sector": 5692032,
+      "bytes": 12843662848
+    }
+  ]
+}

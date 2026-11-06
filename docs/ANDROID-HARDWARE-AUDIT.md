@@ -2,9 +2,9 @@
 
 Checked **2026-10-22**. Evidence: **VERIFIED_DEVICE** for the explicitly stated
 Android identification/probe results. This is a hardware inventory audit, not
-native Linux feature acceptance. The [full matrix](HARDWARE.md) and
-[machine-readable tasks](../status/hardware.yaml) retain separate implementation
-states. [Sanitized measurements](android-hardware-observation-20261022.json)
+native Linux feature acceptance. The [full matrix](../hardware/SUPPORT.md) and
+[machine-readable tasks](../hardware/support.yaml) retain separate implementation
+states. [Sanitized measurements](../hardware/android-observation-20261022.json)
 contain fixed hardware names, selected configuration and compatible/status nodes.
 
 ## Boot provenance and DT selection
