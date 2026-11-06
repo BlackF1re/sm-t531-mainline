@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 project=$PWD
-work=${WORK_DIR:-$project/.work}
+work=${WORK_DIR:-$project/../build/sm-t531}
 out=${KERNEL_OUT:-$work/out}
 artifacts=${ARTIFACTS_DIR:-$work/artifacts/current}
 cross=${CROSS_COMPILE:-arm-linux-gnueabihf-}

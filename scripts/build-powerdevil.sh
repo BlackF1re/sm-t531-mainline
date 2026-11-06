@@ -2,9 +2,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 project=$PWD
-work=$project/.work/powerdevil
-root=$project/.work/rootfs
-artifacts=$project/.work/artifacts/current
+work=$project/../build/sm-t531/powerdevil
+root=$project/../build/sm-t531/rootfs
+artifacts=$project/../build/sm-t531/artifacts/current
 snapshot=https://snapshot.debian.org/archive/debian/20261003T000000Z/
 [ -f "$root/etc/debian_version" ] || { echo 'Run make rootfs first'; exit 1; }
 [ "$(sudo chroot "$root" dpkg --print-architecture)" = armhf ]

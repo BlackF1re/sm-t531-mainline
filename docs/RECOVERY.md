@@ -33,7 +33,7 @@ Build a recovery initramfs **without rebuilding or replacing the frozen kernel**
 make rescue-initramfs
 ```
 
-This needs an existing kernel build providing `.work/out/usr/gen_init_cpio`; the script exits if that tool is missing. It produces `bootstrap-initramfs.cpio.gz` and does not install it or change internal BOOT.
+This needs an existing kernel build providing `../build/sm-t531/out/usr/gen_init_cpio`; the script exits if that tool is missing. It produces `bootstrap-initramfs.cpio.gz` and does not install it or change internal BOOT.
 
 The actual device has verified bootstrap recovery and USB ACM diagnostic exchange; **USB Ethernet is not validated**.
 

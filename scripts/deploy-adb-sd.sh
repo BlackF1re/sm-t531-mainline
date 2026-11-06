@@ -18,11 +18,11 @@ sectors=$("${adb_cmd[@]}" exec-out cat /sys/class/block/mmcblk1/size | tr -d '\r
 [ "$("${adb_cmd[@]}" exec-out cat /sys/class/block/mmcblk1p1/size | tr -d '\r')" = 98304 ]
 [ "$("${adb_cmd[@]}" exec-out cat /sys/class/block/mmcblk1p2/start | tr -d '\r')" = 100352 ]
 [ "$("${adb_cmd[@]}" exec-out cat /sys/class/block/mmcblk1p2/size | tr -d '\r')" = 30152704 ]
-a=.work/artifacts/current
+a=../build/sm-t531/artifacts/current
 (cd "$a"; sha256sum -c SHA256SUMS)
 [ -s "$a/debian-armhf.tar.gz" ]
 "${adb_cmd[@]}" shell mkdir -p /data/local/tmp/t531-tools
-"${adb_cmd[@]}" push .work/busybox/usr/bin/busybox "$bb"
+"${adb_cmd[@]}" push ../build/sm-t531/busybox/usr/bin/busybox "$bb"
 "${adb_cmd[@]}" shell chmod 700 "$bb"
 remote() {
     local result

@@ -1,0 +1,50 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] compositor: retry a single top overlay before full composition
+
+Recovered source for the installed KWin 6.7.4-2+t531overlay1 package.
+Preserved by the 2026-11-06 repository audit; this does not establish an
+isolated performance benefit. The installed library matches the retained
+package byte for byte (see docs/WORKTREE-AUDIT-20261106.md).
+
+A DRM device can expose more individually usable planes than its mixer or
+shared line buffer can support at once. On MSM8226 there are three source
+pipes but only two configured mixer stages and seven 4 KiB SMP blocks.
+Two 1280-wide 32-bit sources need six blocks; a third needs nine.
+
+If the ideal layout fails, try its topmost eligible surface above the
+composited remainder before discarding all non-cursor overlays. Reuse the
+existing preparation and atomic test paths and retain the normal fallback
+on failure. Do not lift a surface past a cursor or composited scene.
+
+This is an active bounded fallback, not a validated performance fix.
+It does not handle scene enumeration that already fell back to scene-only,
+change the driver overlay allowlist, or fix SMP transition allocation.
+
+---
+diff --git a/src/compositor.cpp b/src/compositor.cpp
+--- a/src/compositor.cpp
++++ b/src/compositor.cpp
+@@ -774,6 +774,23 @@
+     auto [layers, result] = setupLayers(primaryView, logicalOutput, output, allowedOutputLayers, *idealLayerAssignments,
+                                         frame, SetupType::Ideal, toUpdate);
+ 
++    // Some KMS devices expose more planes than can be used simultaneously.
++    // Before dropping all overlay candidates, try the topmost surface alone
++    // above a composited scene. Keep the existing cursor/effect ordering:
++    // a cursor or the scene at the top makes this reduced layout unsuitable.
++    if (!result && overlaysAllowed && layerCandidates.size() > 2
++        && qobject_cast<SurfaceItem *>(layerCandidates.front())) {
++        const QList<Item *> reducedCandidates{layerCandidates.front(), scene->containerItem()};
++        if (auto reducedAssignments = assignLayers(primaryView, reducedCandidates, allowedOutputLayers)) {
++            idealLayerAssignments = std::move(reducedAssignments);
++            std::tie(layers, result) = setupLayers(primaryView, logicalOutput, output, allowedOutputLayers,
++                                                  *idealLayerAssignments, frame, SetupType::Ideal, toUpdate);
++            if (result) {
++                qCDebug(KWIN_CORE) << "Using one overlay after full layer assignment failed";
++            }
++        }
++    }
++
+     // test and downgrade the configuration until the test is successful
+     if (!result) {
+         // first, fall back to composited primary + hardware cursor, if that's not already done

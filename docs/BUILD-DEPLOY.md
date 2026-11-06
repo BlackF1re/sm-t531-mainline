@@ -21,11 +21,11 @@ ROOTFS_PROFILE=mobile make rootfs
 
 - `make build`: pinned Linux **v7.2.9**, ordered patches, board config, modules, DTB, boot container and checksums.
 - `ROOTFS_PROFILE=mobile`: Debian armhf with **Plasma Mobile**, SDDM, the native Mesa entry and activation service. Phosh requires the separate [Phosh build/install workflow](PHOSH.md).
-- Outputs: `.work/artifacts/current/`; kernel source: `.work/linux/`; build output: `.work/out/`.
+- Outputs: `../build/sm-t531/artifacts/current/`; kernel source: `../build/sm-t531/linux/`; build output: `../build/sm-t531/out/`.
 - Default kernel build uses **native MDP5 / DSI + interconnect** (`NATIVE_KMS=1`, `NATIVE_ICC=1`).
 - Older firmware-framebuffer recovery build: `make build` — **different graphics path**, not a drop-in guarantee.
 
-Run these commands from the repository root, in order. `rootfs.sh` copies the module tree from `.work/artifacts/current/modules/` **if it exists**; build the matching kernel first. A fresh rootfs does not automatically reproduce the tablet's manually deployed Phosh runtime, device-local GPU power hold or private Wi-Fi configuration. WCNSS also needs the device firmware/calibration at the DT paths `qcom/matisse3g/wcnss.mdt` and `qcom/matisse3g/WCNSS_qcom_wlan_nv.bin`; the script does not import the owner's private copies.
+Run these commands from the repository root, in order. `rootfs.sh` copies the module tree from `../build/sm-t531/artifacts/current/modules/` **if it exists**; build the matching kernel first. A fresh rootfs does not automatically reproduce the tablet's manually deployed Phosh runtime, device-local GPU power hold or private Wi-Fi configuration. WCNSS also needs the device firmware/calibration at the DT paths `qcom/matisse3g/wcnss.mdt` and `qcom/matisse3g/WCNSS_qcom_wlan_nv.bin`; the script does not import the owner's private copies.
 
 > [!NOTE]
 > The artifact named `zImage` on the **internal-bootstrap SD path** is an Android-v0 `sd-kernel.img` *container* with an appended DT. The host's separate `zImage` build artifact is the real Linux kernel. Do not interchange these blindly.
@@ -39,7 +39,7 @@ The verified card layout uses a **48 MiB ext2** boot partition (`T531_BOOT`) and
 make deploy-sd BOOT_MODE=internal BOOT_MOUNT=/mounted/card-boot
 
 # Extract Debian onto the verified, mounted ext4 ROOT partition:
-sudo tar --numeric-owner -xpf .work/artifacts/current/debian-armhf.tar.gz \
+sudo tar --numeric-owner -xpf ../build/sm-t531/artifacts/current/debian-armhf.tar.gz \
   -C /mounted/card-root
 ```
 
@@ -56,7 +56,7 @@ The deploy script requires a mounted **ext2** boot root and rejects an existing 
 
 ```mermaid
 flowchart LR
-  H["Host build"] --> A[".work/artifacts/current"]
+  H["Host build"] --> A["../build/sm-t531/artifacts/current"]
   A --> S["SD: boot + Debian rootfs"]
   S --> K["Internal bootstrap kexec"]
   K --> L["Running Linux"]
@@ -75,3 +75,21 @@ flowchart LR
 - Do not put Wi-Fi credentials, SSH keys, firmware, calibration, MAC addresses, raw DT dumps, or unsanitized logs into Git.
 
 For troubleshooting or fallback steps, use **[Recovery & safety](RECOVERY.md)**.
+
+## Host layout after the 2026-11-06 cleanup
+
+Generated files live outside the repository, in `../build/sm-t531/` by default.
+The main kernel source defaults to `../sources/linux-mainline/`; `KERNEL_SRC`,
+`KERNEL_OUT`, `WORK_DIR` and `ARTIFACTS_DIR` override the main build paths.
+One retained installed build is in `../artifacts/mainline-20261103/`, with
+`SHA256SUMS`. This archive is separate from the next build's output directory.
+No build step depends on a retained `.work` directory. Historical paths in
+research reports describe old experiments, not required current inputs.
+
+The frozen bootstrap source is reconstructable from Linux commit
+`5fce161649b4d779d1b76d9fcd52dc77779774b8`, the first six `patches/linux` patches,
+`config/bootstrap-frozen.config` and the historical project scripts at `7a4374c`.
+It must be built in a separate source/output tree from the main kernel.
+This records source provenance, not proof of a bit-identical reconstruction.
+The exact installed BOOT image remains private; do not rebuild or flash it
+as part of ordinary main-kernel updates.

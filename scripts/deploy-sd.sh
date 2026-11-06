@@ -8,7 +8,7 @@ mountpoint -q "$1" || { echo 'Destination must be an existing mount'; exit 1; }
 [ ! -e "$1/extlinux/extlinux.conf" ] || { echo 'Existing boot configuration; refusing overwrite'; exit 1; }
 mode=${BOOT_MODE:-sd}
 case "$mode" in sd|internal) ;; *) echo 'BOOT_MODE must be sd or internal'; exit 1;; esac
-a=.work/artifacts/current
+a=../build/sm-t531/artifacts/current
 (cd "$a"; sha256sum -c SHA256SUMS)
 [ "$mode" != sd ] || mkdir -p "$1/extlinux"
 cp "$a/zImage" "$a/qcom-msm8226-samsung-matisse3g.dtb" "$a/initramfs.cpio.gz" \

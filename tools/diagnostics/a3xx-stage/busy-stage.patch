@@ -1,0 +1,64 @@
+--- a/src/gallium/drivers/freedreno/a3xx/fd3_context.c
++++ b/src/gallium/drivers/freedreno/a3xx/fd3_context.c
+@@ -18,6 +18,28 @@
+ #include "fd3_rasterizer.h"
+ #include "fd3_texture.h"
+ #include "fd3_zsa.h"
++
++/* Diagnostic only: cumulative GPU busy cycles, NOT wall-clock timestamps.
++ * Supported CP_REG_TO_MEM packet and loop-count encoding from the exact BSP.
++ * Only PWR counter 1 is read; no selectors or HLSQ registers are changed.
++ * WFI makes stage boundaries observable, so this trace is not an FPS benchmark.
++ */
++static void
++fd3_diag_busy_record(struct fd_ringbuffer *ring, struct fd_bo *bo, unsigned offset)
++{
++   fd_ringbuffer_attach_bo(ring, bo);
++   OUT_PKT3(ring, CP_WAIT_FOR_IDLE, 1);
++   OUT_RING(ring, 0);
++   OUT_PKT3(ring, CP_REG_TO_MEM, 2);
++   OUT_RING(ring, 0xec | (2u << 18));
++   OUT_RELOC(ring, bo, offset, 0, 0);
++}
++
++static uint64_t
++fd3_diag_busy_ns(uint64_t ticks)
++{
++   return ticks * 20 / 9; /* stock 450 MHz physical active clock */
++}
+ 
+ static void
+ fd3_context_destroy(struct pipe_context *pctx) in_dt
+@@ -88,6 +110,10 @@
+    fd_context_setup_common_vbos(&fd3_ctx->base);
+ 
+    fd3_query_context_init(pctx);
++   if (debug_get_bool_option("FD3_DIAG_BUSY_TRACE", false)) {
++      fd3_ctx->base.record_timestamp = fd3_diag_busy_record;
++      fd3_ctx->base.ts_to_ns = fd3_diag_busy_ns;
++   }
+ 
+    fd3_ctx->border_color_uploader =
+       u_upload_create(pctx, 4096, 0, PIPE_USAGE_STREAM, 0);
+--- a/src/gallium/drivers/freedreno/freedreno_gmem.c
++++ b/src/gallium/drivers/freedreno/freedreno_gmem.c
+@@ -612,7 +612,9 @@
+       ctx->emit_tile_prep(batch, tile);
+ 
+       if (batch->restore) {
++         trace_start_tile_loads(&batch->trace, batch->gmem, batch->restore);
+          ctx->emit_tile_mem2gmem(batch, tile);
++         trace_end_tile_loads(&batch->trace, batch->gmem);
+       }
+ 
+       ctx->emit_tile_renderprep(batch, tile);
+@@ -631,7 +633,9 @@
+       fd_reset_wfi(batch);
+ 
+       /* emit gmem2mem to transfer tile back to system memory: */
++      trace_start_tile_stores(&batch->trace, batch->gmem, batch->resolve);
+       ctx->emit_tile_gmem2mem(batch, tile);
++      trace_end_tile_stores(&batch->trace, batch->gmem);
+    }
+ 
+    if (ctx->emit_tile_fini)

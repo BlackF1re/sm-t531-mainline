@@ -13,7 +13,7 @@ The supported component identity is recorded in
 | Component | Qualified configuration |
 |---|---|
 | Kernel | Main Linux patch series, unified Adreno/MDP5 DRM; balanced OCMEM restore |
-| KWin | Packaged Mesa 25.0.7-2+deb13u1, `inorder` |
+| KWin | Custom 6.7.4-2+t531overlay1 with the retained single-overlay patch; packaged Mesa 25.0.7-2+deb13u1, `inorder` |
 | Plasma | Main Mesa patches 0001/0002/0009/0010/0011/0012, `inorder,ttile` |
 | Qt GUI | Qt 6.11.2 with the main transient depth/stencil discard patch |
 | Mobileshell | Plasma Mobile 6.7.4-2 with the main quick-settings cache patch |
@@ -72,3 +72,8 @@ It reads no battery-life telemetry and does not trigger suspend.
 
 See [`graphics-stack-audit-20261103.json`](graphics-stack-audit-20261103.json)
 for preserved fixes, excluded trials and post-consolidation qualification.
+
+The 2026-11-06 [worktree audit](WORKTREE-AUDIT-20261106.md) recovered the
+active KWin patch from private build packaging. Its presence is verified, but
+an isolated FPS benefit has not been established. The lock and read-only check
+now also cover the KWin package version and the mapped libkwin binary.

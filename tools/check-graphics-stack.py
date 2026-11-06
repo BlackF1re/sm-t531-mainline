@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """Read-only qualification of the single installed SM-T531 graphics stack."""
+import argparse
 import hashlib
 import json
 import os
 from pathlib import Path
 import subprocess
 
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--lock', type=Path, default=Path('/etc/t531/graphics-stack.lock.json'),
+                    help='Expected stack manifest; defaults to the installed manifest')
+args = parser.parse_args()
 assert os.geteuid() == 0, 'Run as root'
 assert b'samsung,matisse3g' in Path('/proc/device-tree/compatible').read_bytes().split(b'\0')
-lock = json.loads(Path('/etc/t531/graphics-stack.lock.json').read_text())
+lock = json.loads(args.lock.read_text())
 
 def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -20,7 +25,7 @@ def mapped(name):
     for line in Path('/proc', pids[0], 'maps').read_text().splitlines():
         fields = line.split(maxsplit=5)
         if len(fields) == 6 and fields[5].startswith('/'):
-            if any(part in fields[5] for part in ('libgallium', 'libQt6Gui', 'libmobileshellplugin')):
+            if any(part in fields[5] for part in ('libgallium', 'libQt6Gui', 'libmobileshellplugin', 'libkwin.so')):
                 assert not fields[5].endswith(' (deleted)'), fields[5]
                 files.add(fields[5])
     return files
@@ -36,6 +41,10 @@ for function in ('ocmem_suspend_late', 'ocmem_resume_early', 'qcom_mpm_disable_w
                  'ci_hdrc_msm_suspend', 'qcom_usb_hs_phy_suspend_late', 'msm8226_noc_suspend_late'):
     assert function in symbols, function
 shell, kwin = mapped('plasmashell'), mapped('kwin_wayland')
+for package in ('libkwin6', 'kwin-wayland'):
+    assert subprocess.check_output(['dpkg-query', '-W', '-f=${Version}', package], text=True) == lock['kwin_package_version']
+kwin_library = [path for path in kwin if '/libkwin.so.' in path]
+assert len(kwin_library) == 1 and sha(kwin_library[0]) == lock['kwin_library_sha256'], 'KWin library identity mismatch'
 qt = f"/opt/t531-graphics/qt-{lock['qt_gui_sha256'][:16]}/libQt6Gui.so.{lock['qt_gui_version']}"
 plugin = '/usr/lib/arm-linux-gnueabihf/qt6/qml/org/kde/plasma/private/mobileshell/libmobileshellplugin.so'
 assert qt in shell and sha(qt) == lock['qt_gui_sha256']

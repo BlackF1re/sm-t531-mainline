@@ -23,7 +23,8 @@ working; this is not a claim that every Bluetooth profile is verified.
 ## Private factory identity
 
 The EFS backup contains the factory text address at `/bluetooth/bt_addr`.
-It was validated and kept in ignored `.work/board-data/bluetooth-address`.
+It was validated against that EFS file and is retained outside the public
+repository at `../private/FIRMWARE/board-data/bluetooth-address` (mode 0600).
 The separate 9-byte PERSIST `.bt_nv.bin` contains a different address; it
 was not substituted for the EFS identity.
 
@@ -32,7 +33,8 @@ file, and inserts standard little-endian `local-bd-address` into the staged
 DTB. Public DTS and Git contain no device address. Packaging fails for a
 missing, malformed, zero or multicast address. A clean build needs the
 verified per-device EFS address file and the existing stock WCNSS firmware.
-Preserve `.work/board-data/` during future cleanup. The kernel binary and
+Override `BT_ADDRESS_FILE` when using another private storage location.
+The kernel binary and
 public source DTB remain free of the private address.
 
 `-t531` isolates the new module configuration from the previous

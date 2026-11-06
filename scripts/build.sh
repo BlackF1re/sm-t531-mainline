@@ -2,8 +2,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 project=$PWD
-work=${WORK_DIR:-$project/.work}
-linux=${KERNEL_SRC:-$work/linux}
+work=${WORK_DIR:-$project/../build/sm-t531}
+linux=${KERNEL_SRC:-$project/../sources/linux-mainline}
 out=${KERNEL_OUT:-$work/out}
 artifacts=${ARTIFACTS_DIR:-$work/artifacts/current}
 commit=5fce161649b4d779d1b76d9fcd52dc77779774b8

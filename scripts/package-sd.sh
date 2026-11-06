@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-a=${ARTIFACTS_DIR:-$PWD/.work/artifacts/current}
+a=${ARTIFACTS_DIR:-$PWD/../build/sm-t531/artifacts/current}
 a=$(realpath "$a")
-work=${WORK_DIR:-$PWD/.work}
+work=${WORK_DIR:-$PWD/../build/sm-t531}
 [[ ${NATIVE_KMS:-1} == 1 ]] || { echo "SD production supports only native unified DRM" >&2; exit 1; }
 NATIVE_KMS=1
 # The installed bootstrap passes its live DT to kexec. An Android v0
@@ -15,7 +15,7 @@ cp "$a/qcom-msm8226-samsung-matisse3g.dtb" "$work/sd-kernel.dtb"
 bt_node=/soc/remoteproc@fb204000/smd-edge/wcnss/bluetooth
 if fdtget "$work/sd-kernel.dtb" "$bt_node" compatible >/dev/null 2>&1; then
     python3 "$PWD/tools/set-bluetooth-address.py" "$work/sd-kernel.dtb" \
-        "${BT_ADDRESS_FILE:-$work/board-data/bluetooth-address}"
+        "${BT_ADDRESS_FILE:-$PWD/../private/FIRMWARE/board-data/bluetooth-address}"
 fi
 # RAM banks verified from the SM-T531 bootloader's live device tree.
 fdtput -t x "$work/sd-kernel.dtb" /memory@0 reg 0 40000000 40000000 20000000

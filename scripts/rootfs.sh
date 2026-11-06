@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-work=$PWD/.work
+work=$PWD/../build/sm-t531
 root=$work/rootfs
 native_kms=${NATIVE_KMS:-1}
 snapshot=https://snapshot.debian.org/archive/debian/20261003T000000Z/
@@ -36,15 +36,15 @@ case "${ROOTFS_PROFILE:-base}" in
         sudo install -D -m644 config/msm.conf "$root/etc/modprobe.d/msm.conf"
         sudo install -D -m644 config/t531-graphics.conf "$root/etc/environment.d/60-t531-graphics.conf"
         sudo install -D -m644 config/t531-sddm-graphics.conf "$root/etc/systemd/system/sddm.service.d/20-t531-graphics.conf"
-        [[ -x .work/artifacts/tools/t531-drm-probe ]] || {
+        [[ -x ../build/sm-t531/artifacts/tools/t531-drm-probe ]] || {
             echo 'Build the ARM DRM capability probe with scripts/graphics/build-probe.sh first'; exit 1;
         }
-        sudo install -D -m755 .work/artifacts/tools/t531-drm-probe "$root/usr/local/libexec/t531-drm-probe"
+        sudo install -D -m755 ../build/sm-t531/artifacts/tools/t531-drm-probe "$root/usr/local/libexec/t531-drm-probe"
         if [ "${ROOTFS_PROFILE}" = mobile ]; then
             sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
                 plasma-mobile-full sddm xwayland
             ./scripts/build-powerdevil.sh
-            sudo cp .work/artifacts/current/t531-powerdevil-suspend_0.20261013-1_armhf.deb "$root/tmp/"
+            sudo cp ../build/sm-t531/artifacts/current/t531-powerdevil-suspend_0.20261013-1_armhf.deb "$root/tmp/"
             sudo chroot "$root" dpkg -i /tmp/t531-powerdevil-suspend_0.20261013-1_armhf.deb
             sudo python3 -c 'import pathlib,sys; pathlib.Path(sys.argv[1]).unlink()' "$root/tmp/t531-powerdevil-suspend_0.20261013-1_armhf.deb"
             sudo install -m 755 scripts/configure-plasma.sh "$root/tmp/t531-configure-plasma.sh"

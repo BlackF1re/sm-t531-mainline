@@ -52,8 +52,11 @@ therefore **must not be used as an FPS benchmark** or as exact production pass
 latency. Complete records are recovered from a potentially unclosed trace;
 missing records are not reconstructed.
 
-Private source snapshots, trace captures, build script and analyzer are kept
-under `.work/gpu-stage-build/`. Production libraries were not overwritten.
+The instrumentation diff and original analyzer are preserved in
+[`tools/diagnostics/a3xx-stage`](../tools/diagnostics/a3xx-stage/README.md).
+The aggregates above are the retained results; duplicate source snapshots and
+raw captures under `.work/gpu-stage-build/` are disposable. Production libraries
+were not overwritten by that historical experiment.
 See also `GRAPHICS-PIXEL-ISOLATION-20261101.md` for the controlled experiments
 and rejected explanations.
 

@@ -4,13 +4,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 project=$PWD
-work=$project/.work/phosh
+work=$project/../build/sm-t531/phosh
 root=${PHOSH_BUILD_ROOT:-$work/rootfs}
-artifacts=$project/.work/artifacts/current
+artifacts=$project/../build/sm-t531/artifacts/current
 mkdir -p "$work" "$artifacts"
 if [[ ! -d $root ]]; then
-    [[ -r .work/rootfs/etc/debian_version ]] || { echo 'Prepare the Debian rootfs first'; exit 1; }
-    sudo cp -a --reflink=auto .work/rootfs "$root"
+    [[ -r ../build/sm-t531/rootfs/etc/debian_version ]] || { echo 'Prepare the Debian rootfs first'; exit 1; }
+    sudo cp -a --reflink=auto ../build/sm-t531/rootfs "$root"
 fi
 [[ $(sudo chroot "$root" dpkg --print-architecture) == armhf ]]
 [[ $(sudo chroot "$root" /bin/sh -c '. /etc/os-release; echo "$VERSION_CODENAME"') == trixie ]]
