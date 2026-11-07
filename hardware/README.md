@@ -58,7 +58,7 @@
 | Capacitive keys | Back, Recent Apps; maXTouch | Device |
 | Cover sensor | Hall switch, GPIO110 | Device |
 | Accelerometer | ST K2HH, I²C `0x1d` | Device |
-| Grip/SAR sensor | Semtech SX9500, I²C `0x28`, IRQ66 | Device |
+| Grip/SAR sensor | Semtech SX9500, I²C `0x28`, interrupt GPIO66 | Device |
 | Haptic controller | ISA1200, I²C `0x48`, enable32/clock34 | Sources |
 
 ## Power and USB

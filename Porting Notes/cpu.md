@@ -1,6 +1,6 @@
 # CPU, voltage and idle
 
-* MSM8226: four Cortex-A7, ARMv7/NEON/VFPv4, shared L2; physical RAM 1536 MiB
+* MSM8226: four Cortex-A7, ARMv7/NEON/VFPv4, shared L2/SAW2; physical RAM 1536 MiB
   before reserved/CMA deductions. Exact DRAM package/type is unknown.
 * **SOURCE/DEVICE:** OPPs 300/384/600/787.2/998.4/1094.4/1190.4 MHz.
   `config/kernel.fragment` selects schedutil and `ARM_QCOM_CPUFREQ_NVMEM`.

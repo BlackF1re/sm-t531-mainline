@@ -1,6 +1,6 @@
 # Internal eMMC
 
-* Device `mmcblk0`, product`016GE2`,15,758,000,128bytes,512-byte sectors;
+* Device `mmcblk0`, product`016GE2`,15,758,000,128bytes,512-byte sectors; SDHCI1;
  26partitions and4-MiB boot0/boot1. RPMB is separate from ordinary raw reads.
 * USERDATA has a512-byte remainder beyond whole KiB. `/proc/partitions` rounds
   it away; a zero PIT length does not mean zero capacity. Use sysfs/lsblk bytes.

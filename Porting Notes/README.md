@@ -22,6 +22,11 @@ and runnable diagnostic tools remain separate technical artifacts.
 | [device-tree](device-tree.md) | Device Tree and board identity |
 | [cpu](cpu.md) | CPU, voltage and idle |
 | [memory](memory.md) | RAM and BIMC memory controller |
+| [clocks](clocks.md) | MSM8226 clock and reset controllers |
+| [interrupts](interrupts.md) | Interrupt controller and timers |
+| [pinctrl](pinctrl.md) | TLMM and PMIC pin control |
+| [ipc](ipc.md) | Shared memory and remote-processor IPC |
+| [efuses](efuses.md) | QFPROM / eFuses |
 | [interconnect](interconnect.md) | MSM8226 interconnect |
 | [ocmem](ocmem.md) | OCMEM SRAM and graphics allocation |
 | [pmic](pmic.md) | PM8226 PMIC and board supplies |
