@@ -13,6 +13,9 @@
 
 **Native ARMv7 Linux** on the Samsung Galaxy Tab 4 10.1 **SM-T531** (`matisse3g`): Qualcomm **MSM8226**, four Cortex-A7 cores, and **Adreno 305B**. Debian armhf runs from **microSD**, independently of Android userspace.
 
+> [!WARNING]
+> **Tested hardware: SM-T531, r02 board variant** (Android DT: `[MATISSE-3G-OPEN] Rev-02-MTP-v2`). **r00/r01 compatibility is unverified.** Android reports `hw_rev=3`; this hardware revision number is distinct from the `r02` DT designation.
+
 > [!IMPORTANT]
 > **Experimental port — not a daily-driver image.** Real hardware works, but graphics stability, power management, and long-duration reliability are not fully accepted. **Do not flash a different Galaxy Tab 4 variant.**
 
