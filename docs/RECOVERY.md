@@ -79,7 +79,7 @@ Only **one terminal reader** may hold an ACM port at a time. Boot messages alone
 ## Internal BOOT — emergency only
 
 Confirmed partition/BOOT layout and immutable-source provenance are maintained
-in [storage notes](../Porting%20Notes/storage.md#boot-chain). Verify them against
+in [storage notes](../Porting%20Notes/boot.md). Verify them against
 the actual device and private backup before any emergency restoration.
 
 > [!IMPORTANT]
@@ -98,4 +98,4 @@ A saved `BOOT-lk2nd.img` represents the alternative **pre-bootstrap lk2nd** stat
 **Never flash** a raw `zImage`, `RECOVERY`, PIT, bootloader, modem, or calibration partitions as part of normal kernel deployment. See [lk2nd boot documentation](https://github.com/msm8916-mainline/lk2nd/blob/23.1/Documentation/boot.md).
 
 The inherited bootstrap SysRq failure and its correction are recorded in
-[platform notes](../Porting%20Notes/platform.md).
+[platform notes](../Porting%20Notes/pmic.md).

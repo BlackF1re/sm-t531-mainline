@@ -16,4 +16,4 @@ The lead engineer coordinates device mutations and loads the resulting
 `t531_battery_diag.ko`, collects `dmesg` lines matching `t531-battery`, then
 unloads it. Do not load it while another driver is modifying those peripheral
 registers. The PM8226 register allowlist and source commit are in the C file.
-See [battery evidence](../../Porting%20Notes/battery-charging.md) for interpretation and limits.
+See [battery evidence](../../Porting%20Notes/battery.md) for interpretation and limits.

@@ -1,8 +1,10 @@
 # GPU performance: results worth preserving
 
 Remaining driver/hardware root cause is **UNKNOWN**. Do not repeat rejected
-controls as established fixes. Stack/topology fixes: [gpu](gpu.md); physical
-clock/QoS checks: [memory-interconnect](memory-interconnect.md).
+controls as established fixes. This baseline uses one MSM DRM device with
+Adreno305B/MDP5; the old expensive cross-device PRIME path is already fixed.
+Active GPU450MHz,AXI266.67MHz and DDR533.33MHz were independently measured;
+correct active clocks do not prove optimal contention or sleep policy.
 
 ## Findings and rejected explanations
 

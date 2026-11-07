@@ -33,8 +33,16 @@ Existing private archive after cleanup:
 * The internal partition called BACKUP is only~7MiB; its name does not make it
   a full-device backup. `private.7z` was not inspected/changed during cleanup.
 
-New captures use ignored `backup_stock/`; [backup operator guide](../docs/BACKUP-STOCK.md)
-records transport coverage, same-device identity, permissions and restore gates.
+New captures use ignored `backup_stock/` with owner-only permissions:
+`./scripts/backup-stock backup --host root@ADDRESS` and
+`./scripts/backup-stock verify backup_stock/SESSION`. SSH requires verified host
+keys,rootPython and offline internal storage. It captures the full user area plus
+boot0/boot1; lk2nd captures exposed partitions, not raw gaps/GPT/boot areas.
+RPMB keys/contents,OTP/eFuses/secure secrets and eMMC hardware config are not
+ordinary raw backup data. A current capture is not automatically factory stock.
+Restore defaults to a plan; writing needs --execute,same-device identity,
+explicit target selection,critical gating where applicable and confirmation.
+Do not clone calibration or assume transport loss during writing is atomic.
 No calibration/NV, raw dumps, addresses, unsanitized DT or credentials belong
 in Git. Do not fabricate calibration or clone identities to another tablet.
 Read-only extraction used `mtools` for FAT firmware partitions and `debugfs`

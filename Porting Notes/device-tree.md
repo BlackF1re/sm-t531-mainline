@@ -21,7 +21,9 @@
   not evidence of population on this tablet.
 * `CONFIG_ARM_ATAG_DTB_COMPAT` is disabled: the immutable loader supplies a live
   FDT, while the packaged SD image must preserve its appended updated DT.
-  See [storage](storage.md) for container/offset constraints.
+  The installed SD zImage is an Android-v0 container carrying appended DT,
+  not a bare host zImage. Preserve decompressor/DT placement below firmware
+  scanout0x03200000; the internal BOOT prefix is512KiB,not part of virtual boot.
 
 Sources: [sanitized Android tree/probes](../docs/android-hardware-observation-20261022.json),
 [Linux observation](../docs/hardware-observation-20261022.json),

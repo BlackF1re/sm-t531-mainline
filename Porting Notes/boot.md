@@ -1,20 +1,4 @@
-# eMMC, microSD and bootstrap
-
-## Geometry and identity
-
-* **DEVICE:** internal eMMC`mmcblk0`, product`016GE2`,15,758,000,128bytes,
-  512-byte sectors;26partitions and4-MiB boot0/boot1. RPMB is separate.
-  Public exact offsets/sizes: [hardware/partitions.json](../hardware/partitions.json).
-* USERDATA has a512-byte remainder beyond whole KiB; `/proc/partitions` rounds
-  it away. PIT USERDATA count0 is not zero capacity. Use sysfs/lsblk bytes.
-  PIT's30entries include GPT/PIT/MD5 special regions; these are not30Linux partitions.
-* SD`mmcblk1p1`:48MiB ext2,label T531_BOOT; p2 ext4,T531_ROOT. SD root runs
-  Linux independently of Android. Internal eMMC is never ordinary kernel-update
-  storage. SD data/readback works; hotplug/root-device removal is not accepted.
-* GPIO38 card-detect storm fixed by0130 `broken-cd` polling; retain data/power
-  IRQs and removability. Do not revive global IRQ masking as an FPS workaround.
-
-## Boot chain
+# lk2nd, bootstrap and kexec
 
 * Frozen internal BOOT p14 is10MiB: protected lk2nd prefix512KiB plus ext2
   bootstrap payload. RECOVERY p15. Android-v0 lk2nd image itself309264bytes
@@ -44,11 +28,24 @@
 Full current internal BOOT hash`f2e67d637182e79193912952f45341ceac4e621aeb7cefab4a8e55a6663192fc`;
 older private Android BOOT hash`b04a99b4fb519a65a3135786d996fa580c9d7022694ebb8a00ed7a06c60c89cd`.
 Do not relabel one as the other or treat ten old critical dumps as full eMMC.
-Operator procedures: [recovery](../docs/RECOVERY.md),
-[SD slot updates](../docs/UNIFIED_DRM.md), [stock backup](../docs/BACKUP-STOCK.md).
 Ramoops controlled-restart retention was observed; power-loss retention was not.
 Never infer crash absence solely from missing pstore after an early failure.
 
 Primary data: [SD checks](../docs/sd-cd-sleep-results-20261101.json),
 [package](../docs/sd-cd-fix-package-20261101.json),
 [graphics audit](../docs/graphics-stack-audit-20261103.json), private provenance.
+
+Startup: native graphics waits up to45s for SSH listener. Unit uses
+Wants/Before display-manager rather than nested synchronous systemctl from
+ExecStartPost; reduced boot-delay mechanism was not independently established.
+
+Bootstrap recovery commands: `mount-sd` mounts read-only without ext4 journal
+replay; `umount-sd` before changing to `mount-sd rw`. `boot-sd` attempts SD boot;
+`save-logs` performs its own writable mount/unmount and stores rescue evidence.
+Automatic kexec preserves previous pstore first. Use one USB ACM reader at a time.
+Do not reboot, rewrite boot files or unload DRM during an unrelated investigation.
+
+An inherited first-stage loop logged sysrq-triggered crash; the corrected
+command line removed console=ttyMSM0,115200 and added sysctl.kernel.sysrq=0.
+This was not evidence of a new SMP/cpufreq defect. Native serial BREAK/SysRq is
+disabled in config/kernel.fragment; no wired UART console is established.

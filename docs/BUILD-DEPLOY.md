@@ -72,7 +72,7 @@ flowchart LR
 
 - Kernel and rootfs updates use the SD path.
 - Never treat `make bootstrap` as an ordinary SD-kernel update; it builds the **first stage** without flashing it.
-- An existing Debian installation requires the matching native Mesa entry / activation setup before switching from simpledrm to native KMS; see [Native KMS](../Porting%20Notes/display.md).
+- An existing Debian installation requires the matching native Mesa entry / activation setup before switching from simpledrm to native KMS; see [Native KMS](../Porting%20Notes/mdp5.md).
 
 ## Reproducibility & secrets
 
@@ -98,5 +98,5 @@ No build step depends on a retained `.work` directory. Historical paths in
 research reports describe old experiments, not required current inputs.
 
 Frozen bootstrap source/layout constraints are recorded in
-[storage notes](../Porting%20Notes/storage.md#boot-chain). It is a separate build
+[storage notes](../Porting%20Notes/boot.md). It is a separate build
 profile and must not be flashed as part of ordinary main-kernel updates.

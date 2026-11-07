@@ -1,19 +1,4 @@
-# Cellular, GNSS and FM
-
-## Cellular and location
-
-* SM-T531 is3G, not LTE: single SIM/UIM; source GSM/GPRS/EDGE, UMTS/HSPA.
-  Integrated MPSS/Q6, MBA, RF front end; Android `pil-q6v5-mss` binds.
-* Native modem is not accepted. Bring-up dependencies: preserved modem/MBA/NV,
-  remoteproc/RMTFS/QMI → SIM/PIN/registration → BAM-DMUX/QMI data → SMS →
-  call signaling plus [ADSP/codec audio](audio.md). Each needs real endpoint tests.
-* GNSS/GPS antenna documented; native fix absent. QMI LOC routing is a
-  **HYPOTHESIS**, supported constellations/RF parts not established. No call/SMS/
-  location wake or continuous network standby acceptance.
-* Preserve MODEMST1/2,FSG/FSC,EFS/PERSIST and radio calibration; firmware files
-  on MODEM do not establish a running modem. No unverified RF/NV changes.
-
-## FM
+# Qualcomm Iris FM
 
 * WCNSS advertises real `APPS_FM` RPMSG service. Candidate V4L2 driver supports
   standard tuning, mute,50/75µs deemphasis,RDS reads/poll and bounded seek;

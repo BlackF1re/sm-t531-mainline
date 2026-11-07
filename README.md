@@ -26,7 +26,7 @@
 | 🟡 **Display** | Native MDP5 / DSI / TC358764 output; earlier physical image/touch acceptance | Historical black/frozen GUI reports; repeat physical and endurance acceptance of the current build |
 | 🟢 **Backlight** | Phosh absent-sensor bug fixed; actual GUI/register range reaches 255 instead of 37 | Optical brightness acceptance and full panel power sequencing |
 | 🟡 **GPU & shell** | Freedreno / Adreno acceleration; Plasma Mobile and native Phosh | Composition performance, fault recovery; [single qualified stack](docs/GRAPHICS-STACK.md) |
-| 🟡 **Suspend** | Six CPU/L2 modes plus the power-key input path passed short checks; MDP5/OCMEM restore; [qualification](Porting%20Notes/memory-interconnect.md#qos-and-sleep), [mode selection](Porting%20Notes/power-management.md) | Fully clock-gated RPM collapse, XO/VMIN and long-term reliability remain open. No autonomy tests performed |
+| 🟡 **Suspend** | Six CPU/L2 modes plus the power-key input path passed short checks; MDP5/OCMEM restore; [qualification](Porting%20Notes/interconnect.md), [mode selection](Porting%20Notes/power-management.md) | Fully clock-gated RPM collapse, XO/VMIN and long-term reliability remain open. No autonomy tests performed |
 | 🟡 **Battery** | PM8226 BMS voltage/current/temperature/coulombs and modeled SOC | Capacity / aging / full-cycle accuracy |
 | 🟡 **Wi-Fi** | Managed, WPA2 AP, raw standalone monitor + probe/data injection | [Tested scope](Porting%20Notes/wifi.md); firmware restart, PMF and RF-control limitations |
 | 🟡 **Bluetooth** | Native WCN3660 controller, discovery/pairing and BLE mouse | Audio/data profiles, Classic and sleep acceptance pending |
@@ -34,7 +34,7 @@
 | ⚪ **Modem / cameras** | — | Not brought up / untested |
 
 > [!NOTE]
-> **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](Porting%20Notes/display.md#errors-suspend-and-unsafe-probes), [battery evidence](Porting%20Notes/battery-charging.md), and [patch review](docs/PATCH-REVIEW.md).
+> **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](Porting%20Notes/mdp5.md), [battery evidence](Porting%20Notes/battery.md), and [patch review](docs/PATCH-REVIEW.md).
 
 Current graphics, sleep and peripheral integration details are consolidated in
 [Porting Notes](Porting%20Notes/README.md). The

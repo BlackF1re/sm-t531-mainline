@@ -1,7 +1,7 @@
 # SD graphics update and recovery
 
 Technical architecture: [GPU](../Porting%20Notes/gpu.md),
-[display](../Porting%20Notes/display.md), [storage](../Porting%20Notes/storage.md).
+[display](../Porting%20Notes/mdp5.md), [storage](../Porting%20Notes/boot.md).
 This guide is the supported replacement for the retired in-place trial writer.
 
 1. Build the main profile (`make build`, optionally `SD_ONLY=1`). Build probes

@@ -14,21 +14,11 @@
   requested/actual/BRT level; CTRL85 and ROM unchanged. Status02 read clears
   latched OVP/OCP/TSD/UVLO: initial38 contained old OVP, later30 had no fault.
   No numerical kernel clamp; optical endpoint acceptance remains separate.
-* Actual Phosh0.58 GtkScale gave2/2/3/11/37 at0/25/50/75/100% because auto
-  brightness ran with `HasAmbientLight=false`,0 lux. SensorProxy3.7 accepts
-  ClaimLight subscriptions without a populated sensor; success is not presence.
-  Unblank re-claimed the nonexistent light sensor and hid the auto toggle.
-* `patches/phosh/0002-ambient-require-available-light-sensor.patch` serializes
-  claim/release and gates availability, including disappearing/pending replies.
-  Manual mapping remains `round(2×(255/2)^p)` →2/7/23/76/255. Actual GTK/sysfs/
-  I²C endpoint checks after t5313 package installation matched all five values.
-  This fixes the reported plateau without remapping brightness or LED current.
-* Focused `test-ambient` tests need GNOME settings-daemon-common schemas;
-  production build then uses tests=false. `tools/test-phosh-brightness.py
-  --expect-manual` must run with the desktop session bus and exclusive display
-  ownership; it changes brightness briefly. Hardware sweep tool:
-  `tools/test-backlight-range.py`. Neither should run during other GUI tests.
 
-Evidence: [register and GUI results](../docs/backlight-range-results.json),
-`patches/linux/0033*`, `0036*`, `0037*`, `patches/phosh`.
-Datasheet: [TI LP8556 SNVS871M](https://www.ti.com/lit/ds/symlink/lp8556.pdf).
+For register control, write the standard sysfs brightness range0…255;
+read actual_brightness and BRT to distinguish a kernel clamp from UI mapping.
+The device sweep reached255 numerically; optical endpoint acceptance is pending.
+
+Evidence: [register sweep](../docs/backlight-range-results.json),
+`patches/linux/0033*`, `0036*`, `0037*`, `tools/test-backlight-range.py`.
+[LP8556 SNVS871M datasheet](https://www.ti.com/lit/ds/symlink/lp8556.pdf).

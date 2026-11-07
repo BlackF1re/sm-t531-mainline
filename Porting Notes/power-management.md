@@ -26,9 +26,10 @@ is still absent. Ordinary awake cpuidle remains per-core WFI/SPC.
   like downstream. RPM SMD clock/regulator votes alone are not sleep handshake.
 * Active-only memory votes0138, bootstrap clock sleep-set fix0139, MMSS gating
  0142; MDP gating/resource restore0136/0140, USB controller/PHY late/early0141.
-* OCMEM unlock/early lock0148 is essential after RPM; see
-  [memory-interconnect](memory-interconnect.md). A successful CPU return with
-  zero GPU pixels or increased `failed_*` counters is a failure.
+* OCMEM0148 releases the existing graphics lock after late GPU suspend and
+  restores security/banks/the same allocation before GPU resume. Clock re-voting
+  alone left zero pixels after RPM; lock restoration fixed readback. CPU return
+  with zero pixels or increased failed_* phase counters is a failure.
 * Excluded experiment0143 fully unprepared DSI PHY interface clock: s2idle/
   retention returned but RPM did not. Ordinary disable retains parent prepare
   and its XO request. Do not reintroduce it as a completed power optimization.
@@ -43,9 +44,10 @@ is still absent. Ordinary awake cpuidle remains per-core WFI/SPC.
   it was not necessarily a completed sleep followed by wake. 0130 removes
   `cd-gpios`, uses `broken-cd` polling, retains data/power IRQs/removability.
   CD wake count became0; 16-MiB write/fsync/readback passed (~2.608s).
-* A3xx deferred CP init produced stale ring cursors on second suspend (0131);
-  details in [gpu](gpu.md). A separate BMS30-s notification poll activated a
-  wake source; 0132 makes polling non-waking and avoids unchanged notifications.
+* A3xx deferred CP init can leave hardwareRPTR0/softwareWPTR528 on the next
+  suspend:0131reconciles validated cursors only when needs_hw_init. A separate
+  BMS30s poll activated a wake source;0132makes polling non-waking and suppresses
+  unchanged notifications. Neither is evidence of an unsolicited physical wake.
 * Wait for complete `PrepareForSleep(true/false)` before moving phases or
   clearing RTC alarms. An RTC return can leave DPMS off; the next Power event
   may wake only the display. Discover `pm8941_pwrkey` by name, not event number.
@@ -74,10 +76,6 @@ One 0.492-s retention attempt was excluded; use a sufficiently delayed alarm.
 XO/VMIN counters remained0; DDR self-refresh, low sleep current and long-term
 reliability are unverified. USB connection previously impeded sleep; don't
 conflate local clock-gating success with low whole-board power.
-
-Startup: native graphics waits up to45s for SSH listener. Unit uses
-Wants/Before display-manager rather than nested synchronous systemctl from
-ExecStartPost; reduced boot-delay mechanism was not independently established.
 
 Data: `docs/{sleep-stack,sleep-modes,sleep-capabilities}-*.json`,
 [sleep release](../docs/sleep-release-validation-20261103.json),

@@ -10,8 +10,8 @@
   insufficient to reproduce vendor DVFS.
 * Ordinary cpuidle: WFI and per-core SPC. Source wake latencies 1/500 µs,
   SPC minimum residency 2 ms; source coordinated PC latency 550 µs is not an
-  implemented coupled cluster-idle governor. System L2 modes are separate:
-  [power management](power-management.md).
+  implemented coupled cluster-idle governor. System suspend separately selects
+  L2 retention/GDHS/standalone/RPM; those paths do not add coupled cluster idle.
 * **DEVICE, 2026-10-16:** PMU 483,499,967 cycles / 406.20 ms task CPU time ≈
   1.190 GHz at requested 1,190,400 kHz. CPU1/3 physical readings ≈1190.40 MHz;
   shared L2 ≈1190.40 MHz. Do not infer L2 frequency from cpufreq alone.
@@ -28,3 +28,8 @@ Sources: [physical-rate/cache measurements](../docs/phosh-performance-results.js
 `tools/measure-msm8226-bus.c`, corresponding Linux patches above.
 Low-load DVFS, thermal/voltage transitions and long hotplug/suspend acceptance
 remain incomplete; no overclock is selected.
+
+The L2 physical-clock reader uses the BSP measure_mux_APSS path:KPSS global
+diagnostic register0x1c,divide-by4,GCC selector362 and XO/4. It restores/verifies
+both KPSS and GCC state without programming operating PLLs/test-pad registers.
+CoreSight/JTAG access and an external UART console have not been established.

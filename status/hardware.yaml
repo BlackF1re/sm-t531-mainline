@@ -9,7 +9,7 @@ baseline:
   production_patch_count: 120
   runtime: Phoc 0.46 / Phosh 0.58, native split GPU/KMS
   inspection: Initial inventory was read-only. The FM row now includes separate native/Android RF trials
-    documented in Porting Notes/modem-gnss.md; no FM reception acceptance.
+    documented in Porting Notes/fm.md; no FM reception acceptance.
 scope_note: Tasks cover confirmed board/SoC functions plus explicitly unconfirmed variants. This is not a signed
   BOM or proof that every shared vendor node is populated. VERIFIED is restricted to the stated physical test; WORKING
   is not full release acceptance. Dependency lists express primary porting prerequisites, not every kernel dependency.
@@ -148,15 +148,15 @@ sources:
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   memory:
     kind: VERIFIED_DEVICE
-    path: Porting Notes/memory-interconnect.md
+    path: Porting Notes/interconnect.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   graphics:
     kind: VERIFIED_DEVICE
-    path: Porting Notes/display.md
+    path: Porting Notes/mdp5.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   native:
     kind: VERIFIED_DEVICE
-    path: Porting Notes/display.md
+    path: Porting Notes/mdp5.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   performance:
     kind: VERIFIED_DEVICE
@@ -172,23 +172,23 @@ sources:
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   charging:
     kind: VERIFIED_DEVICE
-    path: Porting Notes/battery-charging.md
+    path: Porting Notes/charger.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   chargepath:
     kind: VERIFIED_DEVICE
-    path: Porting Notes/battery-charging.md
+    path: Porting Notes/charger.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   vbus:
     kind: VERIFIED_DEVICE
-    path: Porting Notes/battery-charging.md
+    path: Porting Notes/charger.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   battery:
     kind: VERIFIED_DEVICE
-    path: Porting Notes/battery-charging.md
+    path: Porting Notes/battery.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   rtc:
     kind: VERIFIED_DEVICE
-    path: Porting Notes/platform.md
+    path: Porting Notes/rtc.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   firmware:
     kind: VERIFIED_DEVICE

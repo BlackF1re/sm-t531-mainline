@@ -1,0 +1,8 @@
+# Infrared transmitter candidates
+
+* MC96FR332/MC96FR116 descriptions belong to early/common variants: r00/r01
+  include IR, r02 omits it; full matisse3g driver is disabled and GPIO4/62 are NC.
+* No fitted transmitter or native transmit acceptance is established. Do not
+  infer SM-T531 wiring from Wi-Fi/US variants or enable those GPIOs blindly.
+
+Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
