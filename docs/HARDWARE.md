@@ -2,7 +2,7 @@
 
 Updated **2026-10-22**. Baseline: **7.2.9-t531-dirty #19**, project `1511f60`, 120 applied production patches, native MDP5/DSI + Adreno, Phosh.
 
-**This is a functional porting inventory, not a claim of complete hardware support.** It contains 108 individually tracked functions/options, not that many physical chips. Current read-only observations are separated from earlier physical acceptance. The machine-readable source is [hardware/support.yaml](support.yaml).
+**This is a functional porting inventory, not a claim of complete hardware support.** It contains 108 individually tracked functions/options, not that many physical chips. Current read-only observations are separated from earlier physical acceptance. The machine-readable source is [status/hardware.yaml](../status/hardware.yaml).
 
 The owner tablet, its prior acceptance records, board-specific Samsung/Qualcomm sources and the Samsung SM-T531 manual are the evidence. A shared SoC node, a driver option or a successful probe does not prove a populated device or working function. The Android kernel reports board Revision 0003; some chip revisions, panel supplier and optional components still need board/BOM confirmation; absolute physical completeness cannot be guaranteed from software alone. The first inventory snapshot was read-only. A subsequent owner-authorized Android boot trial temporarily replaced only the BOOT payload and restored the entire original partition byte-for-byte; see the Android audit below.
 
@@ -12,14 +12,14 @@ The owner tablet, its prior acceptance records, board-specific Samsung/Qualcomm 
 
 ## Evidence and revision control
 
-- [Read-only current-device observation](../docs/hardware-observation-20261022.json) records only sanitized, non-identifying facts. Interface reads are not new physical acceptance. Earlier tests name their build in the linked evidence documents.
-- [Source manifest](sources.json) pins Samsung downstream mirror `3fa1853ed5d6c3a8ef5a2fda9822705243bbc256`, all 31 files in the union of r00/r01/r02 include closures and the other inspected files by SHA256. The mirror contains later downstream/Lineage changes; it is not represented as a pristine Samsung release tarball. GPL headers/authorship are retained in research files, which are not copied into this document.
+- [Read-only current-device observation](hardware-observation-20261022.json) records only sanitized, non-identifying facts. Interface reads are not new physical acceptance. Earlier tests name their build in the linked evidence documents.
+- [Source manifest](hardware-source-manifest.json) pins Samsung downstream mirror `3fa1853ed5d6c3a8ef5a2fda9822705243bbc256`, all 31 files in the union of r00/r01/r02 include closures and the other inspected files by SHA256. The mirror contains later downstream/Lineage changes; it is not represented as a pristine Samsung release tarball. GPL headers/authorship are retained in research files, which are not copied into this document.
 - [Samsung SM-T531 manual](https://downloadcenter.samsung.com/content/UM/201506/20150602135914448/SM-T531_UM_EU_Lollipop_Eng_Rev.1.0_150602.pdf), rev1.0, 2015-06-02: physical layout p7 (two speakers, microphone, SIM/SD/jack/antennas), plus phone/media/location features. Copyrighted PDF remains outside Git.
 - r02 wiring agrees with the currently bound touch/accelerometer/charger/MUIC/backlight. The subsequent Android boot reports physical Revision 0003 while using the preserved r02 DT; the DT model is not a PCB revision measurement. r00 light/proximity/compass/button-light and r00/r01 IR nodes are **not** silently carried into the physical inventory.
 
 ## Android cross-check and restoration
 
-The [Android hardware audit](../docs/ANDROID-HARDWARE-AUDIT.md) captures a real boot of the owner's preserved Android 6.0.1 kernel, 5,468 live DT properties, running kernel configuration and actual driver/ID reads. WCD9306, K2HH, SX9500 and both camera identities are now device-backed. ISA1200 remains a DT description without an observed bound driver. FM Iris is enabled/bound in that running Android kernel even though the previously inspected downstream defconfig disables it; [subsequent native/Android FM trials](../docs/FM.md) found no RF signal. **These observations do not upgrade native Linux acceptance.** Original BOOT was restored and verified over all 10 MiB; native #19, SSH/ACM and Phoc/Phosh returned.
+The [Android hardware audit](ANDROID-HARDWARE-AUDIT.md) captures a real boot of the owner's preserved Android 6.0.1 kernel, 5,468 live DT properties, running kernel configuration and actual driver/ID reads. WCD9306, K2HH, SX9500 and both camera identities are now device-backed. ISA1200 remains a DT description without an observed bound driver. FM Iris is enabled/bound in that running Android kernel even though the previously inspected downstream defconfig disables it; [subsequent native/Android FM trials](FM.md) found no RF signal. **These observations do not upgrade native Linux acceptance.** Original BOOT was restored and verified over all 10 MiB; native #19, SSH/ACM and Phoc/Phosh returned.
 
 ## Functional matrix
 
@@ -181,7 +181,7 @@ Every row has a stable task ID. Hardware identified only from vendor sources is 
 | `optional.compassgyro` — Magnetometer / gyroscope | Early HSCDTD008 and other generic sensor options | unknown | UNKNOWN | No device in current DT; gyro/compass options disabled in full config. | No basis to promise these sensors; distinguish sensor fusion from a physically fitted gyro/compass. |
 | `optional.ir` — Infrared remote transmitter | MC96FR332/MC96FR116 family, early/common board variants | unknown | UNKNOWN | r00/r01 include IR node; r02 omits it; full matisse3g driver disabled and GPIO4/62 marked NC. | Confirm actual fitted hardware before porting; Wi-Fi/US variants are not evidence for SM-T531. |
 | `optional.nfc` — NFC | SEC NFC/PN547 generic family alternatives | unknown | UNKNOWN | Board NFC block commented out; matisse3g NFC configs disabled. | Not confirmed as fitted on SM-T531; no porting task unless BOM/physical evidence establishes it. |
-| `optional.fm` — FM broadcast radio | WCN3660/Qualcomm iris FM capability; board RF route unknown | unknown | BLOCKED | [Native candidate](../docs/FM.md): `/dev/radio0`, 49/49 V4L2 API checks; all 29 supplied frequencies give zero signal/no RDS with wired headphones. Preserved Android also gives zero RSSI. Candidate stays outside production. | Service-manual text suggests unwired FM pins; visually verify schematic pins 41/48/61/68 before more driver work. Absence remains unproven. RF/RDS/seek, power-off and suspend are unaccepted. |
+| `optional.fm` — FM broadcast radio | WCN3660/Qualcomm iris FM capability; board RF route unknown | unknown | BLOCKED | [Native candidate](FM.md): `/dev/radio0`, 49/49 V4L2 API checks; all 29 supplied frequencies give zero signal/no RDS with wired headphones. Preserved Android also gives zero RSSI. Candidate stays outside production. | Service-manual text suggests unwired FM pins; visually verify schematic pins 41/48/61/68 before more driver work. Absence remains unproven. RF/RDS/seek, power-off and suspend are unaccepted. |
 | `optional.videoout` — Wired external display | Possible MHL/HDMI accessory claims; no verified board transmitter | unknown | UNKNOWN | No dedicated connector in manual layout or board MHL transmitter identified in inspected DT; no accepted output. | Do not assume MHL from accessory listings or generic HDMI audio DAI; obtain schematic/BOM evidence. |
 | `optional.flashaf` — Camera flash, autofocus and calibration peripherals | Generic PM8226 flash nodes; no proven physical LED/actuator/EEPROM | unknown | UNKNOWN | Vendor templates include flash even for this camera file; this does not establish physical population. | Confirm modules/flash/actuator/OTP/EEPROM before adding nodes; never activate generic high-current flash blindly. |
 | `optional.ant` — ANT / ANT+ | Potential shared-radio service | unknown | UNKNOWN | No inspected board-specific source or native hardware test establishes usable ANT. | Find actual firmware endpoint/product support and a physical ANT peer before calling it present. |
@@ -203,8 +203,8 @@ For every row: research exact hardware -> smallest separate patch/configuration 
 
 | Key | Source | Scope |
 |---|---|---|
-| `live` | [VERIFIED_DEVICE](../docs/hardware-observation-20261022.json) | Read-only #19 probe/interface snapshot; earlier physical tests are separately dated. |
-| `dt` | [VERIFIED_DEVICE](../docs/hardware-observation-20261022.json) | Read-only deployed DT compatible/status list, cross-checked with local board/SoC source; no claim local patches are merged upstream. |
+| `live` | [VERIFIED_DEVICE](hardware-observation-20261022.json) | Read-only #19 probe/interface snapshot; earlier physical tests are separately dated. |
+| `dt` | [VERIFIED_DEVICE](hardware-observation-20261022.json) | Read-only deployed DT compatible/status list, cross-checked with local board/SoC source; no claim local patches are merged upstream. |
 | `config` | [VERIFIED_DEVICE](../config/kernel.fragment) | Checked against current .work/out/.config; required settings differ from generic defconfig. |
 | `patches` | [VERIFIED_DEVICE](../patches/linux) | Current applied 139-patch source; builds/patches are not physical acceptance. |
 | `rng` | [VERIFIED_UPSTREAM](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/drivers/crypto/qcom-rng.c?h=v7.2.9) | Pinned base behavior: qcom,prng has hwrng_support=false; public upstream source link below. |
@@ -225,20 +225,20 @@ For every row: research exact hardware -> smallest separate patch/configuration 
 | `vendor-sr130` | [VERIFIED_VENDOR_SOURCE](https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/drivers/media/platform/msm/camera_v2/sensor/sr130pc20_yuv.c) | Front YUV sensor driver with matisse-specific tuning include. |
 | `vendor-camss` | [VERIFIED_VENDOR_SOURCE](https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226-camera.dtsi) | Shared camera DMA/ISP/JPEG resources; used as research, not transplanted Android HAL. |
 | `vendor-display` | [VERIFIED_VENDOR_SOURCE](https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/dsi_panel_tc358764_wxga_video-r01.dtsi) | Board DSI/LVDS timing and PHY reference; final panel supplier not identified. |
-| `recovery` | [VERIFIED_DEVICE](../docs/RECOVERY.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `build` | [VERIFIED_DEVICE](../docs/BUILD-DEPLOY.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `bt` | [VERIFIED_DEVICE](../docs/BLUETOOTH.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `wifi` | [VERIFIED_DEVICE](../docs/WIFI.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `memory` | [VERIFIED_DEVICE](../docs/MEMORY-BUS.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `graphics` | [VERIFIED_DEVICE](../docs/GRAPHICS-STABILITY.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `native` | [VERIFIED_DEVICE](../docs/NATIVE-KMS.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `performance` | [VERIFIED_DEVICE](../docs/GRAPHICS-BOTTLENECK.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `backlight` | [VERIFIED_DEVICE](../docs/BACKLIGHT.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `touch` | [VERIFIED_DEVICE](../docs/TOUCH-SLEEP.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `recovery` | [VERIFIED_DEVICE](RECOVERY.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `build` | [VERIFIED_DEVICE](BUILD-DEPLOY.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `bt` | [VERIFIED_DEVICE](BLUETOOTH.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `wifi` | [VERIFIED_DEVICE](WIFI.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `memory` | [VERIFIED_DEVICE](MEMORY-BUS.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `graphics` | [VERIFIED_DEVICE](GRAPHICS-STABILITY.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `native` | [VERIFIED_DEVICE](NATIVE-KMS.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `performance` | [VERIFIED_DEVICE](GRAPHICS-BOTTLENECK.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `backlight` | [VERIFIED_DEVICE](BACKLIGHT.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `touch` | [VERIFIED_DEVICE](TOUCH-SLEEP.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
 | `charging` | `VERIFIED_DEVICE`; local record `docs/CHARGING.md` (not published in this commit) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
 | `chargepath` | `VERIFIED_DEVICE`; local record `docs/CHARGE-PATH.md` (not published in this commit) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
 | `vbus` | `VERIFIED_DEVICE`; local record `docs/VBUS.md` (not published in this commit) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `battery` | [VERIFIED_DEVICE](../docs/BATTERY.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `battery` | [VERIFIED_DEVICE](BATTERY.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
 | `rtc` | `VERIFIED_DEVICE`; local record `docs/RTC-WATCHDOG.md` (not published in this commit) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `firmware` | [VERIFIED_DEVICE](../docs/FIRMWARE.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
-| `android` | [VERIFIED_DEVICE](../docs/ANDROID-HARDWARE-AUDIT.md) | Preserved Android kernel live-DT/config/probe cross-check; full BOOT restored. |
+| `firmware` | [VERIFIED_DEVICE](FIRMWARE.md) | Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance. |
+| `android` | [VERIFIED_DEVICE](ANDROID-HARDWARE-AUDIT.md) | Preserved Android kernel live-DT/config/probe cross-check; full BOOT restored. |

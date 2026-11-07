@@ -2162,7 +2162,7 @@ subsystems:
   - VERIFIED_VENDOR_SOURCE
 android_audit:
   report: docs/ANDROID-HARDWARE-AUDIT.md
-  observations: hardware/android-observation-20261022.json
+  observations: docs/android-hardware-observation-20261022.json
   board_revision_reported: '0003'
   selected_dt: r02 (explicit compatible QCDT metadata; original FDT bytes unchanged)
   native_acceptance_unchanged: true

@@ -28,7 +28,7 @@ PRIME import уже устранена unified DRM: около 6,2 мс → 0,01
 Повторное объединение DRM не устранит оставшуюся стоимость рендеринга.
 
 Пиковые GPU OPP bus votes уже совпадают с Android DT; их единственная
-поддерживаемая таблица находится в [аппаратном справочнике](../hardware/ANDROID-REFERENCE.md#gpu-and-display-configuration).
+поддерживаемая таблица находится в [аппаратном справочнике](ANDROID-HARDWARE-AUDIT.md#gpu-and-display-configuration).
 
 Linux дополнительно задаёт ненулевой average DDR vote. Совпадение peak
 запросов не доказывает совпадение фактических частот или задержек шины.

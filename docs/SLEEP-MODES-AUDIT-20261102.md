@@ -29,7 +29,7 @@ firmware sleep outcomes, not extra names to append to the CPUidle table.
 The stock reference is
 [msm8226-v2-pm.dtsi](https://github.com/LineageOS/android_kernel_samsung_msm8226/blob/3fa1853ed5d6c3a8ef5a2fda9822705243bbc256/arch/arm/boot/dts/msm8226/msm8226-v2-pm.dtsi),
 checked online as well as against the captured runtime DT. Local source
-provenance is recorded in [the hardware source manifest](../hardware/sources.json).
+provenance is recorded in [the hardware source manifest](hardware-source-manifest.json).
 
 ## System sleep selection
 

@@ -52,7 +52,7 @@ remain open; a GPU hang occurred during repeated live session restarts.
 
 On **2026-10-22**, kernel #16 consolidates [WCN3660 support](docs/WIFI.md) into one kernel patch, selects software scanning without the known HAL208 timeout, clears stale scan state and excludes the unsupported channel 144 through standard OF limits. Managed, WPA2 AP, raw monitor, probe/data injection and hcxdumptool handshake capture passed short tests. Configuration/MSM module are unchanged; DTB adds only the frequency limit. Monitor is exclusive; firmware hot restart, PMF and advanced RF controls remain incomplete or unvalidated.
 
-The **[full hardware matrix](hardware/SUPPORT.md)** tracks 108 porting/acceptance tasks, with sources, remaining tests and [machine-readable dependencies](hardware/support.yaml). The [temporary Android cross-check](docs/ANDROID-HARDWARE-AUDIT.md) confirms several component identities; original internal BOOT was restored byte-for-byte. Android observations do not establish native Linux acceptance.
+The **[full hardware matrix](docs/HARDWARE.md)** tracks 108 porting/acceptance tasks, with sources, remaining tests and [machine-readable dependencies](status/hardware.yaml). The [temporary Android cross-check](docs/ANDROID-HARDWARE-AUDIT.md) confirms several component identities; original internal BOOT was restored byte-for-byte. Android observations do not establish native Linux acceptance.
 
 ## Boot flow
 
@@ -71,9 +71,9 @@ flowchart LR
 
 ## Hardware reference and private backups
 
-General board data is collected in [`hardware/`](hardware/README.md), with one
-support matrix and source manifest. Raw dumps, calibration and device identities
-remain local. Use `./scripts/backup-stock --help` and the
+[`hardware/`](hardware/README.md) contains the component list and partition
+geometry. Support status and research are in [docs](docs/README.md).
+Raw dumps, calibration and device identities remain local. Use `./scripts/backup-stock --help` and the
 [backup guide](docs/BACKUP-STOCK.md) for acquisition, integrity checks and
 explicit restore plans. Default captures are stored in ignored `backup_stock/`.
 
@@ -111,7 +111,7 @@ Linux patch files live in [`patches/linux/`](patches/linux); board and build con
 
 | Area | Start here |
 |---|---|
-| Hardware inventory / porting order | [Full functional matrix](hardware/SUPPORT.md) · [Machine-readable tasks](hardware/support.yaml) |
+| Hardware inventory / porting order | [Full functional matrix](docs/HARDWARE.md) · [Machine-readable tasks](status/hardware.yaml) |
 | 🖥️ **Native screen / DSI / LVDS** | [Native KMS](docs/NATIVE-KMS.md) · [Graphics stability](docs/GRAPHICS-STABILITY.md) |
 | 🎮 **Rendering performance** | [Graphics](docs/GRAPHICS.md) · [Bottlenecks](docs/GRAPHICS-BOTTLENECK.md) · [Memory bus](docs/MEMORY-BUS.md) |
 | 📱 **Mobile shell** | [Phosh](docs/PHOSH.md) · [Backlight](docs/BACKLIGHT.md) |
