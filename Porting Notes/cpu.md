@@ -21,3 +21,5 @@
   Other PMU events returned invalid zero counts; no cache-miss claim follows.
 * Cached CPU copy/memset and NEON tile packing did not explain GPU/GUI
   performance loss; warm iterations caused no minor faults.
+
+Hardware block inventory: [Cortex-A7 / CPU IP](cpu-hardware.md).

@@ -15,6 +15,7 @@ private. Historical results are archived at Git `e865aba`, not active facts.
 |---|---|
 | [device-tree](device-tree.md) | Device Tree and board identity |
 | [cpu](cpu.md) | CPU, voltage and idle |
+| [cpu-hardware](cpu-hardware.md) | Cortex-A7 cluster: core, MMU/cache and SAW/APCS IP |
 | [memory](memory.md) | RAM and BIMC memory controller |
 | [clocks](clocks.md) | MSM8226 clock and reset controllers |
 | [blsp](blsp.md) | QUP I²C, GPIO-I²C, SPI and UART buses |
@@ -43,6 +44,7 @@ private. Historical results are archived at Git `e865aba`, not active facts.
 |---|---|
 | [drm](drm.md) | Unified MSM DRM / GEM |
 | [gpu](gpu.md) | Adreno 305B kernel driver |
+| [gpu-hardware](gpu-hardware.md) | A305B hardware engines, GMEM and firmware |
 | [gpu-smmu](gpu-smmu.md) | GPU ARM SMMU |
 | [display-iommu](display-iommu.md) | Legacy display IOMMU / TrustZone |
 | [multimedia-iommu](multimedia-iommu.md) | Camera, JPEG, Venus and LPASS IOMMUs |
