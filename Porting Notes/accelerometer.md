@@ -6,6 +6,9 @@
   range accuracy and correct screen/touch rotation are not physically accepted.
 * Patch 0022 quiesces active ST IIO triggers before system suspend; patch 0020
   restores QUP clocks before client interrupt handling. Preserve both orderings.
+* K2HH needs 30ms after supplies enable before WHO_AM_I; immediate access can
+  return `-ENXIO`. Patch0153 restores this vendor startup delay. Module reloads
+  and XYZ raw reads pass with SX9500 active on shared LVS1.
 * This is an accelerometer; rotation support does not establish a gyroscope.
 
 * **DEVICE:** Android SensorService exposes `K2HH Acceleration`,

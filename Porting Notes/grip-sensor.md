@@ -23,7 +23,7 @@
   retain the preceding scan; direct reads allow 900ms before reporting timeout.
 * Grip/release event acceptance and suspend/resume remain unverified. Modem SAR
   control is not implemented by this IIO driver. Trial kernel boots with SX9500;
-  its separate accelerometer probe failure prevents promoting it as the default.
+  K2HH startup timing is corrected separately by patch0153.
 
 Sources: vendor `drivers/sensors/sx9500{,_reg.h}`, commit
 `3fa1853ed5d6c3a8ef5a2fda9822705243bbc256`; kernel `sx9500.c` and
