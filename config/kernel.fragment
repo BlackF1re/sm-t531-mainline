@@ -101,3 +101,6 @@ CONFIG_UHID=m
 CONFIG_QCOM_MPM=y
 CONFIG_QCOM_RPM_MASTER_STATS=y
 CONFIG_QCOM_STATS=m
+
+# SM-T531 capacitive grip/SAR sensor; standard IIO raw/buffer/event interface.
+CONFIG_SX9500=m

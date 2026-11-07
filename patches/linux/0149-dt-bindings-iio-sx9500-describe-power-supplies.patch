@@ -1,0 +1,24 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] dt-bindings: iio: sx9500: describe power supplies
+
+Describe the main and host-interface supplies, using the vdd/svdd names
+shared by other Semtech capacitive proximity bindings.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/Documentation/devicetree/bindings/iio/proximity/semtech,sx9500.yaml b/Documentation/devicetree/bindings/iio/proximity/semtech,sx9500.yaml
+--- a/Documentation/devicetree/bindings/iio/proximity/semtech,sx9500.yaml
++++ b/Documentation/devicetree/bindings/iio/proximity/semtech,sx9500.yaml
+@@ -18,6 +18,12 @@
+ 
+   interrupts:
+     maxItems: 1
++
++  vdd-supply:
++    description: Main power supply
++
++  svdd-supply:
++    description: Host interface power supply
+ 
+   reset-gpios:
+     description:

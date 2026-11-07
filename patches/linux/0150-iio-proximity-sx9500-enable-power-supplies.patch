@@ -1,0 +1,46 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] iio: proximity: sx9500: enable power supplies
+
+Enable vdd and svdd before the first transaction and allow the device to
+settle. Release both supplies through devres. This is needed by boards
+whose sensor rails are disabled at probe time.
+
+Existing descriptions without supplies retain regulator-core dummy-
+supply compatibility.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iio/proximity/sx9500.c b/drivers/iio/proximity/sx9500.c
+--- a/drivers/iio/proximity/sx9500.c
++++ b/drivers/iio/proximity/sx9500.c
+@@ -15,6 +15,7 @@
+ #include <linux/acpi.h>
+ #include <linux/gpio/consumer.h>
+ #include <linux/regmap.h>
++#include <linux/regulator/consumer.h>
+ #include <linux/pm.h>
+ #include <linux/delay.h>
+ 
+@@ -886,6 +887,7 @@
+ 
+ static int sx9500_probe(struct i2c_client *client)
+ {
++	static const char * const supplies[] = { "vdd", "svdd" };
+ 	int ret;
+ 	struct iio_dev *indio_dev;
+ 	struct sx9500_data *data;
+@@ -910,6 +912,14 @@
+ 	indio_dev->info = &sx9500_info;
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+ 	i2c_set_clientdata(client, indio_dev);
++
++	ret = devm_regulator_bulk_get_enable(&client->dev,
++					     ARRAY_SIZE(supplies), supplies);
++	if (ret)
++		return dev_err_probe(&client->dev, ret, "failed to enable supplies\n");
++
++	/* Allow power to settle before resetting and accessing the device. */
++	msleep(30);
+ 
+ 	sx9500_gpio_probe(client, data);
+ 

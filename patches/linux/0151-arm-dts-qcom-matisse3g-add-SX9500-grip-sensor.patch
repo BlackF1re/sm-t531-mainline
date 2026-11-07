@@ -1,0 +1,70 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] ARM: dts: qcom: matisse3g: add SX9500 grip sensor
+
+Use the preserved board wiring: GPIO0/1, active-low interrupt GPIO66,
+L15 at 2.8 V and LVS1. The pinned vendor driver selects L15 specifically
+for CONFIG_SEC_MATISSE_PROJECT, while related products use L19.
+
+The grip line must not also be assigned to the reference AUXPCM route.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+--- a/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
++++ b/arch/arm/boot/dts/qcom/qcom-msm8226-samsung-matisse3g.dts
+@@ -13,6 +13,28 @@
+ 	model = "Samsung Galaxy Tab 4 10.1 3G (SM-T531)";
+ 	compatible = "samsung,matisse3g", "qcom,msm8226";
+ 	chassis-type = "tablet";
++
++	i2c-grip {
++		compatible = "i2c-gpio";
++		sda-gpios = <&tlmm 0 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
++		scl-gpios = <&tlmm 1 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
++		i2c-gpio,delay-us = <5>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&grip_i2c_default>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		proximity@28 {
++			compatible = "semtech,sx9500";
++			reg = <0x28>;
++			interrupt-parent = <&tlmm>;
++			interrupts = <66 IRQ_TYPE_EDGE_FALLING>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&grip_irq_default>;
++			vdd-supply = <&pm8226_l15>;
++			svdd-supply = <&pm8226_lvs1>;
++		};
++	};
+ 
+ 	reg_tsp_3p3v: regulator-tsp-3p3v {
+ 		compatible = "regulator-fixed";
+@@ -536,3 +558,26 @@
+ 	interrupt-parent = <&mpm>;
+ 	interrupts = <62 IRQ_TYPE_LEVEL_HIGH>;
+ };
++
++/* Matisse uses L15, not the L19 supply of related Samsung boards. */
++&pm8226_l15 {
++	regulator-min-microvolt = <2800000>;
++	regulator-max-microvolt = <2800000>;
++};
++
++&tlmm {
++	grip_i2c_default: grip-i2c-default-state {
++		pins = "gpio0", "gpio1";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
++	};
++
++	grip_irq_default: grip-irq-default-state {
++		pins = "gpio66";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-pull-up;
++		input-enable;
++	};
++};
