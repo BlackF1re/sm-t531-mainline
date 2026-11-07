@@ -7,5 +7,3 @@
 * Probe/feed logs are insufficient acceptance. An expiry test can require
   physical recovery; do not rely on a userspace rollback timer after a kernel
   wedge or repeat reset tests without an approved recovery plan.
-
-Evidence: [historical test-state artifact](../status/hardware.yaml).

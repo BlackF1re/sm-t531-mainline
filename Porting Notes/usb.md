@@ -5,7 +5,7 @@
   CONFIG_PHY_QCOM_USB_HS, ULPI_BUS, configfs ACM/ECM/RNDIS/F_FS.
   USB ACM diagnostic exchange worked; USB Ethernet/OTG storage/peripherals
   and production MTP remain unvalidated. No wired UART console is available.
-* ChipIdea/PHY system-sleep ordering: patch0141 enters PHY low-power, releases
+* ChipIdea/PHY system-sleep ordering: patch 0141 enters PHY low-power, releases
   working controller clocks, restores PHY reference in resume_early; sleep
   clock and PHY supply stay. Do not infer full XO release from runtime status.
 * USB attached has impeded deeper sleep in recorded trials. Controller/PHY,
@@ -17,11 +17,7 @@
   or kernel mode switch; device enumeration/disappearance is not proof of panic.
 
 * **DEVICE:** full Android root ADB works with Samsung USB
-  `04e8:6860`, composite `mtp,acm,adb`, CONFIGURED. Under Windows USB/IP a
-  stale Linux `1d6b:0104` enumeration blocked ADB after reboot; detach/reattach
-  only the tablet's physical bus restored it. Re-identify the bus each time.
+  `04e8:6860`, composite `mtp, acm, adb`, CONFIGURED. Host USB/IP can retain stale enumeration across reboot; re-identify the
+  tablet before attempting reconnection.
   `sys.boot_completed=1` plus mounted `/data` distinguished full Android from
   charger mode; a charging screen alone is not a reliable boot-state test.
-
-Sources: `config/kernel.fragment`, `patches/linux/0141*`, board MUIC entries in
-[source manifest](../docs/hardware-source-manifest.json).

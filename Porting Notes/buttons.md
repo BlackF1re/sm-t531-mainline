@@ -9,5 +9,3 @@
   logind `PrepareForSleep(true/false)` cycle when measuring key-triggered sleep.
 * Earlier volume/PIN interference followed stale touchscreen slots, while the
   physical key bits were released. Do not diagnose stuck keys from the overlay.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

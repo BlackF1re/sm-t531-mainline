@@ -1,32 +1,32 @@
 # lk2nd, bootstrap and kexec
 
-* Frozen internal BOOT p14 is10MiB: protected lk2nd prefix512KiB plus ext2
-  bootstrap payload. RECOVERY p15. Android-v0 lk2nd image itself309264bytes
+* Frozen internal BOOT p14 is 10 MiB: protected lk2nd prefix 512 KiB plus ext2
+  bootstrap payload. RECOVERY p15. Android-v0 lk2nd image itself 309264 bytes
   fits the preserved prefix. Full BOOT is distinct from lk2nd's virtual `boot`
-  payload9,961,472bytes. Never flash a full physical BOOT via virtual `boot`.
-* Bootstrap approximately3-s countdown / volume-key recovery, then kexec SD
-  kernel. Its exact source base`5fce161649b4`+first6Linux patches and scripts
-  at Git`7a4374c` are reconstructable; exact config`config/bootstrap-frozen.config`.
+  payload 9,961,472 bytes. Never flash a full physical BOOT via virtual `boot`.
+* Bootstrap approximately 3-s countdown / volume-key recovery, then kexec SD
+  kernel. Its exact source base `5fce161649b4` + first 6 Linux patches and scripts
+  at Git `7a4374c` are reconstructable; exact config `config/bootstrap-frozen.config`.
   Reconstruction is not a claim of byte-identical rebuilding. Ordinary main
   updates must not rebuild/replace the frozen chain.
 * Installed SD file named `zImage` is an Android-v0 container carrying appended
   DT, not host raw Linux zImage. `CONFIG_ARM_ATAG_DTB_COMPAT` is off. Firmware
-  framebuffer is at`0x03200000`; keep decompression/DT/initramfs placement clear.
+  framebuffer is at `0x03200000`; keep decompression/DT/initramfs placement clear.
   Excluding unrelated Exynos/Tegra/MDP4/DPU/DP/HDMI built-ins avoids fixed-space
-  overflow. Memory banks passed by packaging:0…0x40000000 and0x40000000…0x60000000.
-* Main image SHA`d476c3fb1032590d31285e49c468301f1ff8619abf75af1dc9af47e65d6cfe85`,
-  slot`mainline-d476c3fb1032`; `/graphics-current` selects actual slot. Read-only
+  overflow. Memory banks passed by packaging: 0…0x40000000 and 0x40000000…0x60000000.
+* Main image SHA `d476c3fb1032590d31285e49c468301f1ff8619abf75af1dc9af47e65d6cfe85`,
+  slot `mainline-d476c3fb1032`; `/graphics-current` selects actual slot. Read-only
   debugfs `cat` does not follow ext2 fast symlinks: resolve them before hashing.
   A stale production.slot marker is not proof of selected boot content.
-* Retained balanced-OCMEM artifacts live under `../artifacts/`; identify the
-  build by the image hash above and matching modules (all811hashes matched).
-  Main source: `../sources/linux-mainline`,139recorded patches, no extra changes.
-  Generated builds now use`../build/sm-t531`, not removed`.work`.
+* Balanced-OCMEM artifacts are outside Git. Current builds default to
+  `../build/sm-t531/artifacts/current` (overridable via `ARTIFACTS_DIR`);
+  identify the installed image by the hash above and matching modules.
+  Main source: `../sources/linux-mainline`, 139 recorded patches.
 
 ## Preservation and recovery boundaries
 
-Full current internal BOOT hash`f2e67d637182e79193912952f45341ceac4e621aeb7cefab4a8e55a6663192fc`;
-older private Android BOOT hash`b04a99b4fb519a65a3135786d996fa580c9d7022694ebb8a00ed7a06c60c89cd`.
+Full current internal BOOT hash `f2e67d637182e79193912952f45341ceac4e621aeb7cefab4a8e55a6663192fc`;
+older private Android BOOT hash `b04a99b4fb519a65a3135786d996fa580c9d7022694ebb8a00ed7a06c60c89cd`.
 Do not relabel one as the other or treat ten old critical dumps as full eMMC.
 Ramoops controlled-restart retention was observed; power-loss retention was not.
 Never infer crash absence solely from missing pstore after an early failure.
@@ -38,7 +38,7 @@ Never infer crash absence solely from missing pstore after an early failure.
 
 Primary data: private provenance.
 
-Startup: native graphics waits up to45s for SSH listener. Unit uses
+Startup: native graphics waits up to 45 s for SSH listener. Unit uses
 Wants/Before display-manager rather than nested synchronous systemctl from
 ExecStartPost; reduced boot-delay mechanism was not independently established.
 

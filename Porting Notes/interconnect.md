@@ -12,7 +12,7 @@
 | MDP core | 200 |
 | Historical Linux DSI pixel / byte | 74.240 / 55.680 |
 
-The active-rate samples use the BSP debug-clock counter against XO/4=4.8MHz,
+The active-rate samples use the BSP debug-clock counter against XO/4=4.8 MHz,
 not software requests. Saved mux/counter registers are restored and polling is
 bounded. No operating PLL/rate/voltage is changed by the measurement.
 
@@ -46,7 +46,3 @@ Topology: APSS/CPU and [Adreno](gpu.md) request DDR through BIMC/SNOC/MMSS;
 [MDP5](mdp5.md) is another display master. GPU-local allocations also use
 [OCMEM](ocmem.md); its virtual master vote is not a physical DDR port.
 The links identify endpoints, not missing setup instructions.
-
-Evidence: `patches/linux/0055*`–`0061*`, `0107*`, `0138*`, `0139*`, `0142*`,
-`tools/read-msm8226-qos.py`, `tools/measure-msm8226-bus.c`.
-Low-load policy, contention and whole-board power remain unverified.

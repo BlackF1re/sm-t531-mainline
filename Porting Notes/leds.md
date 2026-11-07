@@ -1,7 +1,5 @@
-# Navigation / notification LEDs
+# Navigation / notification LEDs — absent
 
-* Source descriptions are revision-dependent: button backlight appears in r00
-  and is absent from r02; generic PMIC LED nodes do not prove population.
-* Only virtual MMC activity LEDs were observed in native sysfs. Physical LED iss not present.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).
+* No physical navigation/notification LEDs are fitted on this SM-T531.
+  Early r00 button-backlight nodes are variant-only and absent from r02.
+  Native sysfs exposes virtual MMC activity LEDs only.

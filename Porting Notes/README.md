@@ -1,19 +1,13 @@
 # Porting Notes — SM-T531
 
-Each record states the component, integration, accepted observations and open
-limits locally. Android observations retain explicit validation limits.
-Evidence labels distinguish device observations, source-only configuration and
-hypotheses; a probe is not functional acceptance. Unknown population is explicit.
+Each component record is a self-contained statement of board identity, implementation,
+accepted behavior and unresolved limits. DEVICE marks observed behavior, SOURCE marks
+configuration, and HYPOTHESIS marks an unverified explanation; probe alone is not
+functional acceptance. Keep tested configurations when they limit conclusions.
 
-Links in the index are navigation. In component records, source/configuration/
-artifacts corroborate local facts; only the interconnect record
-links component records to identify the endpoints it joins. There are no
-required reading steps in other prose documents. Raw firmware/NV, identities,
-calibration and unsanitized backups remain private.
-Historical report snapshots remain in Git at`e865aba`. Observations retain
-their tested configuration and scope; they do not certify the entire system.
-Source manifests, build locks and runnable diagnostic tools remain separate
-technical artifacts.
+The index is navigation, not required reading. Procedures and build locks live
+outside the notes. Firmware/NV, identities, calibration and raw backups remain
+private. Historical results are archived at Git `e865aba`, not active facts.
 
 ## Platform
 

@@ -13,5 +13,3 @@
   belongs to disabled nine-axis fusion with zero clients, not a gyro probe.
   `pm list features` advertises a gyro despite this; that declaration is not
   hardware evidence. Physical absence is still unproven.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

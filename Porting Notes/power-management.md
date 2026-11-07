@@ -39,14 +39,11 @@ is still absent. Ordinary awake cpuidle remains per-core WFI/SPC.
 
 ## Preserved Android reference
 
-Dirty Unicorns6.0.1 is not factory firmware. Its L2 maximum mode was4,
-CPU0 coordinated-collapse idle enabled, CPU1–3 disabled; standalone idle
-was enabled and retention idle disabled. Direct unplugged screen-off suspend
-returned after~8.137s using MPM timer8s with RTC backup45s; XO/VMIN counters
-still0. Connected suspend returned−EBUSY from USB. This does not establish
-normal framework autosuspend or low power. The41 GPIO↔MPM pairs matched the
-runtime Android DT; GIC SPI mappings subtract32, and vendor255 bypass entries
-are not physical MPM pins.
+Dirty Unicorns 6.0.1 is not factory firmware. CPU0 used coordinated collapse,
+CPU1–3 did not; L2 maximum mode 4. An unplugged screen-off test returned after
+~8.137 s on MPM timer 8 s with RTC backup 45 s, but XO/VMIN remained 0.
+Connected USB suspend failed with `-EBUSY`. The 41 GPIO↔MPM mappings matched
+Android DT; GIC SPI indices subtract 32 and vendor 255 bypasses are not pins.
 
 ## Reproduced independent aborts
 

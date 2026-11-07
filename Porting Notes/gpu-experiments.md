@@ -3,7 +3,7 @@
 Remaining driver/hardware root cause is **UNKNOWN**. Do not repeat rejected
 controls as established fixes. This baseline uses one MSM DRM device with
 Adreno305B/MDP5; the old expensive cross-device PRIME path is already fixed.
-Active GPU450MHz,AXI266.67MHz and DDR533.33MHz were independently measured;
+Active GPU450 MHz, AXI266.67 MHz and DDR533.33 MHz were independently measured;
 correct active clocks do not prove optimal contention or sleep policy.
 
 ## Findings and rejected explanations
@@ -21,17 +21,15 @@ correct active clocks do not prove optimal contention or sleep policy.
 | No blending / 4 full MOV→1 | Per-layer slope largely unchanged | Does not isolate a final ALU/blend/DDR defect |
 | Scissor-aware IB culling | Sparse synthetic ~31–32→24–27 ms; GUI50.763/49.687/50.329 | No GUI improvement; not promoted |
 | Compact private image allocation | −19.15% measured target allocation; same ~14.9-ms render | Main correctness/memory improvement, not 60-FPS fix |
-| Tile-layout candidate0004 | Offscreen17.05→15.50ms; GUI51.171→51.292/s, p99 worsened in one pair | Not promoted; no reliable GUI gain |
+| Tile-layout candidate0004 | Offscreen17.05→15.50 ms; GUI51.171→51.292/s, p99 worsened in one pair | Not promoted; no reliable GUI gain |
 | Local QoS Bypass | ~34.05 vs34.37/s on older stack | No demonstrated gain |
 | Requested core/AXI rate sweeps | Physical clocks did not change | Not a valid frequency-isolation experiment |
 | CPU tile packing/staging | Some CPU preparation improved; presentation did not | Do not promote as throughput solution |
 
-Earlier split-stack tiled-vs-linear four-layer AB-A: 25.55→15.91→25.41 ms;
-texture path is expensive, but that stack differs from current unified/cache.
-Clear folding executed40times but GUI ABA50.877/50.619/50.554/s and submit/
-retire timing did not improve; it remained disabled. TWO_QUADS vs FOUR_QUADS
-fragment thread size and exponent-one shader controls gave no reliable GUI
-solution. Per-draw full-state IB and KWin tiling candidates were rejected.
+Earlier split-stack tiled-vs-linear four-layer A/B/A: 25.55→15.91→25.41 ms,
+not directly comparable with current unified DRM. Clear folding, fragment thread
+size, exponent-one shaders, full-state IB and KWin tiling did not improve GUI
+FPS; candidates were rejected.
 Coverage-reduction
 on the active desktop visibly corrupted pixels and was stopped; future
 pixel-changing diagnostics must be offscreen. Scissor culling compares complete

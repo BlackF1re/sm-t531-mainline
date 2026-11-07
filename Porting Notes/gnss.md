@@ -7,5 +7,3 @@
   Modem remoteproc/firmware/resource operation must first be established.
 * No cold-fix, tracking, power/suspend or location-triggered wake acceptance.
   Preserve modem/WCNSS factory calibration; do not synthesize RF/NV data.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

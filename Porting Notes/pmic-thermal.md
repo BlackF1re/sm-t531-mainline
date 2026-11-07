@@ -7,5 +7,3 @@
 
 * **DEVICE:** Android `thermal_zone6` is `pm8226_tz`, snapshot
   44542 (millidegrees). Native support remains separate from this observation.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).
