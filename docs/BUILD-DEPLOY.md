@@ -72,7 +72,7 @@ flowchart LR
 
 - Kernel and rootfs updates use the SD path.
 - Never treat `make bootstrap` as an ordinary SD-kernel update; it builds the **first stage** without flashing it.
-- An existing Debian installation requires the matching native Mesa entry / activation setup before switching from simpledrm to native KMS; see [Native KMS](NATIVE-KMS.md).
+- An existing Debian installation requires the matching native Mesa entry / activation setup before switching from simpledrm to native KMS; see [Native KMS](../Porting%20Notes/display.md).
 
 ## Reproducibility & secrets
 
@@ -97,10 +97,6 @@ One retained installed build is in `../artifacts/mainline-20261103/`, with
 No build step depends on a retained `.work` directory. Historical paths in
 research reports describe old experiments, not required current inputs.
 
-The frozen bootstrap source is reconstructable from Linux commit
-`5fce161649b4d779d1b76d9fcd52dc77779774b8`, the first six `patches/linux` patches,
-`config/bootstrap-frozen.config` and the historical project scripts at `7a4374c`.
-It must be built in a separate source/output tree from the main kernel.
-This records source provenance, not proof of a bit-identical reconstruction.
-The exact installed BOOT image remains private; do not rebuild or flash it
-as part of ordinary main-kernel updates.
+Frozen bootstrap source/layout constraints are recorded in
+[storage notes](../Porting%20Notes/storage.md#boot-chain). It is a separate build
+profile and must not be flashed as part of ordinary main-kernel updates.

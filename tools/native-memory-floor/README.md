@@ -19,6 +19,6 @@ Load `t531_memory_floor.ko` only on the matching SM-T531 kernel as root, run a
 bounded measurement, and unload it. It checks the board compatible. No GPU
 registers, geometry, color formats or desktop settings are changed.
 
-See `docs/GRAPHICS-PIXEL-ISOLATION-20261101.md`: the retained rate sweep did not
+See `Porting Notes/gpu-experiments.md`: the retained rate sweep did not
 change the physically measured GPU/AXI rates despite lower devfreq requests,
 so it cannot establish a causal dependence on GPU frequency or OCMEM bandwidth.

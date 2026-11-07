@@ -13,5 +13,5 @@ uninstrumented latency**. Do not use at another GPU frequency unchanged.
 from a potentially unclosed trace. No missing records are reconstructed.
 Accepted aggregates and limitations already live in
 `docs/graphics-gpu-stages-20261101.json` and
-`docs/GRAPHICS-ROOT-CAUSE-STATUS-20261101.md`; raw traces are not duplicated here.
+`Porting Notes/gpu-experiments.md`; raw traces are not duplicated here.
 Old hardcoded build/deploy scripts and full Mesa source snapshots are omitted.

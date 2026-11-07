@@ -127,4 +127,4 @@
 | Other variant options | Fingerprint, barometer, sensor hub, S Pen, TV tuner, wireless charging |
 
 Device = identified on the tablet; Sources = board/vendor documentation.
-[Evidence and Linux support](../docs/HARDWARE.md).
+[Evidence and Linux support](../Porting%20Notes/README.md).

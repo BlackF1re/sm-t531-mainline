@@ -78,15 +78,9 @@ Only **one terminal reader** may hold an ACM port at a time. Boot messages alone
 
 ## Internal BOOT — emergency only
 
-The source README previously recorded the verified BOOT layout and backups:
-
-| Field | Device evidence |
-|---|---|
-| Internal BOOT | `mmcblk0p14`, **10 MiB** |
-| Protected lk2nd prefix | First **512 KiB** |
-| Bootstrap payload | Remaining ext2 area |
-| RECOVERY | `mmcblk0p15` |
-| Saved Android BOOT & lk2nd images | Kept **outside Git** |
+Confirmed partition/BOOT layout and immutable-source provenance are maintained
+in [storage notes](../Porting%20Notes/storage.md#boot-chain). Verify them against
+the actual device and private backup before any emergency restoration.
 
 > [!IMPORTANT]
 > The recovery commands below were **not physically tested**. They are **not** instructions for initial installation. Validate device, PIT, backup hashes and partition identity before any attempt.
@@ -103,9 +97,5 @@ A saved `BOOT-lk2nd.img` represents the alternative **pre-bootstrap lk2nd** stat
 
 **Never flash** a raw `zImage`, `RECOVERY`, PIT, bootloader, modem, or calibration partitions as part of normal kernel deployment. See [lk2nd boot documentation](https://github.com/msm8916-mainline/lk2nd/blob/23.1/Documentation/boot.md).
 
-<details>
-<summary><strong>Prior known first-stage issue</strong></summary>
-
-An early boot loop was attributed to `sysrq triggered crash` in the inherited UP/bootstrap stage. The corrected first-stage command line removed `console=ttyMSM0,115200` and added `sysctl.kernel.sysrq=0`. This was **not evidence of a fault** in the new SMP cpufreq/idle implementation. The frozen kernel and lk2nd prefix stayed byte-identical after the authorized recovery update.
-
-</details>
+The inherited bootstrap SysRq failure and its correction are recorded in
+[platform notes](../Porting%20Notes/platform.md).

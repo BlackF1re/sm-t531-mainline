@@ -1,5 +1,5 @@
 schema_version: 1
-record_scope: Historical acceptance snapshot; current graphics/sleep identity is maintained in docs/GRAPHICS-STACK.md and docs/SLEEP-STACK.md.
+record_scope: Historical acceptance snapshot; current graphics/sleep identity is maintained in docs/GRAPHICS-STACK.md and Porting Notes/power-management.md.
 updated: '2026-10-22'
 device: Samsung Galaxy Tab 4 10.1 3G SM-T531 / matisse3g
 baseline:
@@ -9,7 +9,7 @@ baseline:
   production_patch_count: 120
   runtime: Phoc 0.46 / Phosh 0.58, native split GPU/KMS
   inspection: Initial inventory was read-only. The FM row now includes separate native/Android RF trials
-    documented in docs/FM.md; no FM reception acceptance.
+    documented in Porting Notes/modem-gnss.md; no FM reception acceptance.
 scope_note: Tasks cover confirmed board/SoC functions plus explicitly unconfirmed variants. This is not a signed
   BOM or proof that every shared vendor node is populated. VERIFIED is restricted to the stated physical test; WORKING
   is not full release acceptance. Dependency lists express primary porting prerequisites, not every kernel dependency.
@@ -140,63 +140,63 @@ sources:
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   bt:
     kind: VERIFIED_DEVICE
-    path: docs/BLUETOOTH.md
+    path: Porting Notes/bluetooth.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   wifi:
     kind: VERIFIED_DEVICE
-    path: docs/WIFI.md
+    path: Porting Notes/wifi.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   memory:
     kind: VERIFIED_DEVICE
-    path: docs/MEMORY-BUS.md
+    path: Porting Notes/memory-interconnect.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   graphics:
     kind: VERIFIED_DEVICE
-    path: docs/GRAPHICS-STABILITY.md
+    path: Porting Notes/display.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   native:
     kind: VERIFIED_DEVICE
-    path: docs/NATIVE-KMS.md
+    path: Porting Notes/display.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   performance:
     kind: VERIFIED_DEVICE
-    path: docs/GRAPHICS-BOTTLENECK.md
+    path: Porting Notes/gpu-experiments.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   backlight:
     kind: VERIFIED_DEVICE
-    path: docs/BACKLIGHT.md
+    path: Porting Notes/backlight.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   touch:
     kind: VERIFIED_DEVICE
-    path: docs/TOUCH-SLEEP.md
+    path: Porting Notes/touchscreen.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   charging:
     kind: VERIFIED_DEVICE
-    path: docs/CHARGING.md
+    path: Porting Notes/battery-charging.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   chargepath:
     kind: VERIFIED_DEVICE
-    path: docs/CHARGE-PATH.md
+    path: Porting Notes/battery-charging.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   vbus:
     kind: VERIFIED_DEVICE
-    path: docs/VBUS.md
+    path: Porting Notes/battery-charging.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   battery:
     kind: VERIFIED_DEVICE
-    path: docs/BATTERY.md
+    path: Porting Notes/battery-charging.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   rtc:
     kind: VERIFIED_DEVICE
-    path: docs/RTC-WATCHDOG.md
+    path: Porting Notes/platform.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   firmware:
     kind: VERIFIED_DEVICE
-    path: docs/FIRMWARE.md
+    path: Porting Notes/firmware.md
     scope: 'Acceptance scope/build/date stated in that document; historical test is not a fresh #19 acceptance.'
   android:
     kind: VERIFIED_DEVICE
-    path: docs/ANDROID-HARDWARE-AUDIT.md
+    path: Porting Notes/device-tree.md
     scope: Temporary boot of preserved Android 6.0.1 kernel, live DT/config/driver/ID reads, then byte-exact BOOT
       restore; hardware presence only, not native Linux acceptance.
 subsystems:
@@ -2161,7 +2161,7 @@ subsystems:
   - UNKNOWN
   - VERIFIED_VENDOR_SOURCE
 android_audit:
-  report: docs/ANDROID-HARDWARE-AUDIT.md
+  report: Porting Notes/device-tree.md
   observations: docs/android-hardware-observation-20261022.json
   board_revision_reported: '0003'
   selected_dt: r02 (explicit compatible QCDT metadata; original FDT bytes unchanged)

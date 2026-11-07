@@ -26,33 +26,20 @@
 | 🟡 **Display** | Native MDP5 / DSI / TC358764 output; earlier physical image/touch acceptance | Historical black/frozen GUI reports; repeat physical and endurance acceptance of the current build |
 | 🟢 **Backlight** | Phosh absent-sensor bug fixed; actual GUI/register range reaches 255 instead of 37 | Optical brightness acceptance and full panel power sequencing |
 | 🟡 **GPU & shell** | Freedreno / Adreno acceleration; Plasma Mobile and native Phosh | Composition performance, fault recovery; [single qualified stack](docs/GRAPHICS-STACK.md) |
-| 🟡 **Suspend** | Six CPU/L2 modes plus the power-key input path passed short checks; MDP5/OCMEM restore; [qualification](docs/OCMEM-RESUME-20261103.md), [mode selection](docs/SLEEP-STACK.md) | Fully clock-gated RPM collapse, XO/VMIN and long-term reliability remain open. No autonomy tests performed |
+| 🟡 **Suspend** | Six CPU/L2 modes plus the power-key input path passed short checks; MDP5/OCMEM restore; [qualification](Porting%20Notes/memory-interconnect.md#qos-and-sleep), [mode selection](Porting%20Notes/power-management.md) | Fully clock-gated RPM collapse, XO/VMIN and long-term reliability remain open. No autonomy tests performed |
 | 🟡 **Battery** | PM8226 BMS voltage/current/temperature/coulombs and modeled SOC | Capacity / aging / full-cycle accuracy |
-| 🟡 **Wi-Fi** | Managed, WPA2 AP, raw standalone monitor + probe/data injection | [Tested scope](docs/WIFI.md); firmware restart, PMF and RF-control limitations |
+| 🟡 **Wi-Fi** | Managed, WPA2 AP, raw standalone monitor + probe/data injection | [Tested scope](Porting%20Notes/wifi.md); firmware restart, PMF and RF-control limitations |
 | 🟡 **Bluetooth** | Native WCN3660 controller, discovery/pairing and BLE mouse | Audio/data profiles, Classic and sleep acceptance pending |
 | ⚪ **Built-in audio** | WCD9306/SLIMbus confirmed under Android | Native ADSP/ALSA card not brought up |
 | ⚪ **Modem / cameras** | — | Not brought up / untested |
 
 > [!NOTE]
-> **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](docs/GRAPHICS-STABILITY.md), [battery evidence](docs/BATTERY.md), and [patch review](docs/PATCH-REVIEW.md).
+> **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](Porting%20Notes/display.md#errors-suspend-and-unsafe-probes), [battery evidence](Porting%20Notes/battery-charging.md), and [patch review](docs/PATCH-REVIEW.md).
 
-**Current graphics stack (2026-11-03):** unified Adreno 305 / MDP5 MSM
-DRM, hardware Mesa 25.0.7 and Plasma Mobile with the restored quick-settings
-cache. The single qualified stack measured **51.25 presentation events/s after
-boot and 50.73/s after sleep**. The earlier approximately 35-FPS result used
-the packaged plugin without this cache. These are DRM presentation counts,
-not optical FPS; stable 60 FPS is not established. See the
-[current stack and limitations](docs/GRAPHICS-STACK.md).
-
-The mainline SD image booted and was persistently selected; six CPU/L2 sleep
-modes and the power-key input path passed short checks, with final panels/input
-confirmed before cache consolidation. The restored cache subsequently passed
-s2idle/RPM checks. Long-term reliability, whole-SoC XO/VMIN sleep and GPU recovery
-remain open; a GPU hang occurred during repeated live session restarts.
-
-On **2026-10-22**, kernel #16 consolidates [WCN3660 support](docs/WIFI.md) into one kernel patch, selects software scanning without the known HAL208 timeout, clears stale scan state and excludes the unsupported channel 144 through standard OF limits. Managed, WPA2 AP, raw monitor, probe/data injection and hcxdumptool handshake capture passed short tests. Configuration/MSM module are unchanged; DTB adds only the frequency limit. Monitor is exclusive; firmware hot restart, PMF and advanced RF controls remain incomplete or unvalidated.
-
-The **[full hardware matrix](docs/HARDWARE.md)** tracks 108 porting/acceptance tasks, with sources, remaining tests and [machine-readable dependencies](status/hardware.yaml). The [temporary Android cross-check](docs/ANDROID-HARDWARE-AUDIT.md) confirms several component identities; original internal BOOT was restored byte-for-byte. Android observations do not establish native Linux acceptance.
+Current graphics, sleep and peripheral integration details are consolidated in
+[Porting Notes](Porting%20Notes/README.md). The
+[component list](hardware/README.md) identifies hardware; the dated
+[machine-readable task snapshot](status/hardware.yaml) records porting dependencies.
 
 ## Boot flow
 
@@ -107,29 +94,15 @@ Linux patch files live in [`patches/linux/`](patches/linux); board and build con
 
 </details>
 
-## Research map
+## Project map
 
-| Area | Start here |
+| Contents | Location |
 |---|---|
-| Hardware inventory / porting order | [Full functional matrix](docs/HARDWARE.md) · [Machine-readable tasks](status/hardware.yaml) |
-| 🖥️ **Native screen / DSI / LVDS** | [Native KMS](docs/NATIVE-KMS.md) · [Graphics stability](docs/GRAPHICS-STABILITY.md) |
-| 🎮 **Rendering performance** | [Graphics](docs/GRAPHICS.md) · [Bottlenecks](docs/GRAPHICS-BOTTLENECK.md) · [Memory bus](docs/MEMORY-BUS.md) |
-| 📱 **Mobile shell** | [Phosh](docs/PHOSH.md) · [Backlight](docs/BACKLIGHT.md) |
-| 🔋 **Battery & charging** | [Battery measurements](docs/BATTERY.md) |
-| 🧪 **Patch acceptance** | [Patch review](docs/PATCH-REVIEW.md) · [Measured JSON datasets](docs) |
-| 🛠️ **Operations** | [Build / deploy](docs/BUILD-DEPLOY.md) · [Recovery / safety](docs/RECOVERY.md) |
-
-<details>
-<summary><strong>Latest practical graphics constraints</strong></summary>
-
-- Native scanout and GPU acceleration work, but the project explicitly records **missing / frozen GUI** reports.
-- An ordinary Phosh drawer run was approximately **33 presentations/s**; a **59.993 presentations/s** fullscreen direct-scanout test does **not** mean the composited desktop runs at 60 FPS.
-- Firmware-owned bridge power, GPU runtime workarounds, and resume/recovery paths remain bring-up topics.
-- Some logs, calibration, firmware and device-identifying records are intentionally kept **outside Git**.
-
-The evidence and caveats are in [Graphics stability](docs/GRAPHICS-STABILITY.md), [Patch review](docs/PATCH-REVIEW.md), and [Native KMS](docs/NATIVE-KMS.md).
-
-</details>
+| Component specifications | [hardware/](hardware/README.md) |
+| Linux integration, measured causes and unresolved work | [Porting Notes/](Porting%20Notes/README.md) |
+| Build, installation and recovery procedures | [docs/](docs/README.md) |
+| Diagnostics and workload tools | [tools/](tools/README.md) |
+| Primary measurements and source manifests | JSON/TXT files in `docs/` |
 
 > [!CAUTION]
 > This repository contains **no universal flashable image**. Commands and partition assumptions are specific to the owner's verified SM-T531 setup. Never commit device credentials, factory calibration, raw partition backups, or unsanitized logs.

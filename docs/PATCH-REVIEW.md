@@ -1,84 +1,22 @@
-# Patch review and deployment boundary, 2026-10-17
+# Patch review and source boundaries
 
-This is a bring-up snapshot, not a completed production graphics release.
-The native Linux patch series is applied to the pinned v7.2.9 base and the
-built source matches that complete series. Number0117 is intentionally unused:
-the brightness defect is fixed in Phosh rather than by changing LED current.
+* Linux base/ordered series: `scripts/build.sh`, `patches/linux`; preserve
+  exact base commit, third-party authorship, licensing and Message-IDs.
+* Accepted graphics changes: `patches/mesa`, `patches/qt`, `patches/kwin`,
+  `patches/plasma-mobile`; the loaded identities are in
+  `config/graphics-stack.lock.json`. Phosh/PowerDevil patches are separate.
+* Rejected candidates are retained in Git history (`43648a2`), not selected by
+  production scripts. A candidate number in an old dataset is not an active
+  patch; consult the [component notes](../Porting%20Notes/README.md).
+* Apply/source consistency, checkpatch, DT schemas and builds are host evidence,
+  not physical acceptance. Use a minimal justified change, preserve the checked
+  SD baseline, then record real endpoint tests before changing feature status.
+* `make check` covers syntax, JSON, links, generated-file hygiene and unit tests.
+  Kernel/Mesa builds, schema checks and device acceptance remain distinct.
+* No zeroing/cache synchronization/fence/validation removal as a performance
+  workaround. No diagnostic register probe or temporary runtime override should
+  silently become production policy.
 
-Focused review of0112–0121 and Phosh0002 found no clear new deployment blocker.
-This is not an exhaustive upstream review of all earlier patches.0116 retains
-Dmitry Baryshkov's original authorship and v4 message metadata; it remains
-unmerged in the checked mainline/linux-next sources. BMS characterization
-retains Samsung's GPL-2.0-only license and copyright.
-
-The production commit excludes local experimental Mesa, Phoc, wlroots and
-Pixman patch sets and their optional build path. In particular rejected tiled
-uploads, cached compositor layers and their misleading presentation-only FPS
-results are not installed. Local research files may remain untracked.
-Only ordinary system Mesa/Phoc and the rebuilt Phosh are selected on-device.
-
-The kernel series still contains explicitly gated bring-up diagnostics.
-Firmware bridge power, LP11/deferred-video/PHY profile7, the Mesa inorder
-workaround and the device GPU runtime hold are not a finished native power
-implementation. Removing these requires separate source cleanup and hardware
-acceptance; this snapshot does not silently classify them as production fixes.
-The bounded NULL-domain guard does not prove all domain-lifetime races fixed.
-GPU recovery after an actual fault remains unverified.
-
-The latest ordinary Phosh drawer regression before the brightness rebuild
-is33.14 DRM presentations/s, with zero logged underruns; p95 is about50ms.
-The earlier59.993 result belongs to a simple fullscreen client using direct
-scanout, not the entire composited interface. Memory/bus rates and unresolved
-OCMEM/power-state limits are recorded in MEMORY-BUS.md. No overclock is applied.
-
-Brightness has an actual GUI/register before-and-after acceptance: maximum
-37→255 after fixing false sensor claims. Battery telemetry uses real measured
-OCV, coulombs, voltage/current and temperature through power_supply/UPower.
-Its nominal cell model,2.4% sense-resistor uncertainty, absent learned ageing
-and untested full discharge/recharge prevent a gauge-accuracy claim.
-
-See GRAPHICS-STABILITY.md, BACKLIGHT.md and BATTERY.md for exact tests,
-artifact hashes and the rollback path. Internal boot/lk2nd are unchanged.
-
-
-Wi-Fi follow-up, 2026-10-21: patches 0123–0125 validate TX context/header
-lengths and injection flags, describe the actual level-high DXE IRQs, and
-supply a valid local PHY address when DT lacks one. They were built as #10
-with unchanged configuration/MSM module, and passed managed, WPA2 AP and
-3/3 directed probe-injection acceptance. See [Wi-Fi evidence](WIFI.md) for
-the corrected DT packaging, firmware hot-rebind failure/recovery and exact
-limits. The historical legacy-scan candidate remains outside the series;
-scan-based management capture alone was not unrestricted RFMON.
-
-Final monitor follow-up, 2026-10-21: production patch0126 bounds SMD TX FIFO
-waits; patch0127 adds guarded five-register RXP/DPU routing for the exact
-stock WCN3660 firmware, saved-state restoration and monitor-only ciphertext
-handling. Built-in kernel #12 passed management/control and encrypted payload
-capture with extended IV on channels 1/6/36, actual probe/data TX responses,
-helper failure rollback, original managed reconnection and independent WPA2
-AP DHCP/ping/HTTP. All 126 production patch files match the built source;
-new patches pass checkpatch without errors/warnings/checks. Persistent #12
-boot was checked, with #10 retained for rollback. Configuration, native-ICC
-DTB and MSM module are unchanged from #10. Full monitor requires exclusive
-radio ownership; bad-FCS/FCS retention, arbitrary TX controls and reliable
-firmware hot restart remain unvalidated or unresolved. See [Wi-Fi](WIFI.md)
-and [aggregate results](wifi-results.json) for exact acceptance.
-
-
-Wi-Fi consolidation, 2026-10-22: the single production patch
-[0123-wifi-wcn3660-matisse3g-support.patch](../patches/linux/0123-wifi-wcn3660-matisse3g-support.patch)
-replaces 0013/0014, the WCNSS portion of 0015, 0031/0032 and 0123–0127.
-Charging remains separate. It adds exact-image scan-offload avoidance, scan
-state cleanup, safe monitor channel errors and standard per-radio OF frequency
-limits for the stock NV2 image's unsupported channel 144. The obsolete legacy
-scan candidate was removed; history preserves its evidence.
-
-All 118 production patches match the final built source. Checkpatch reports
-0 errors/warnings/checks. Kernel #16, native-ICC DTB and modules built; DTB
-changes only the frequency limit, and configuration/MSM module are unchanged.
-Short on-device tests passed managed DHCP/SSH, 38 supported channel tunes,
-raw encrypted RX on 1/6/36 and after hopping, independent WPA2 AP DHCP/ping/HTTP,
-and hcxdumptool M1–M4 capture. The image is installed on SD with #12 rollback.
-No endurance test was run. Firmware hot restart, PMF/WPA3, active-monitor ACK,
-arbitrary TX controls and bad-FCS remain outside the verified scope; one patch
-does not imply universal or complete hardware acceptance. See [Wi-Fi](WIFI.md).
+Machine-readable historical task states and dependencies:
+[`status/hardware.yaml`](../status/hardware.yaml). Current technical conclusions
+belong only in `Porting Notes/`; procedure changes belong in the operator guide.

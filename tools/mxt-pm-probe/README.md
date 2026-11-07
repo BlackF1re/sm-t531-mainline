@@ -13,7 +13,7 @@ make -C .work/linux O="$PWD/.work/out" ARCH=arm \
     CROSS_COMPILE=arm-linux-gnueabihf- M="$PWD/tools/mxt-pm-probe" modules
 ```
 
-The test in [TOUCH-SLEEP.md](../../docs/TOUCH-SLEEP.md) exclusively grabbed
+The test in [touchscreen sleep test](../../Porting%20Notes/touchscreen.md) exclusively grabbed
 the touch evdev node, asserted slot 15 tracking ID 30000 using evdev writes,
 cleared `BTN_TOUCH` to model input-core suspend, loaded this module, and read
 `EVIOCGMTSLOTS(ABS_MT_TRACKING_ID)` after 0.5 seconds. The tracking ID remained
