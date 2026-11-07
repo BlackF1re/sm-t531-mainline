@@ -1,6 +1,6 @@
 # Firmware, calibration and factory identity
 
-**DEVICE, 2026-10-22:** installed board WCNSS files match the tablet's Android
+**DEVICE:** installed board WCNSS files match the tablet's Android
 partition files byte-for-byte; this establishes content identity, not the
 historical order in which Linux obtained them. Android is a preserved custom
 ROM, not proven factory Samsung. Firmware presence does not prove population.
@@ -24,11 +24,11 @@ Existing private archive after cleanup:
 
 * `PARTITIONS/dumps/`: ten original BOOT/RECOVERY/EFS/MODEMST1/MODEMST2/FSG/FSC/
   PARAM/PERSIST/PERSDATA images, not a complete eMMC dump.
-* `FIRMWARE/firmware-original-2026-10-22.tar`:12original WCNSS/NV/reference files
+* `FIRMWARE/firmware-original-*.tar`:12original WCNSS/NV/reference files
   plus provenance/checksums. Old `.work` audit paths and pre-cleanup `private/device`
   paths are historical, not current prerequisites.
 * `FIRMWARE/board-data/bluetooth-address`: validated EFS identity,0600.
-* `BOOTSTRAP/immutable-20261022/`: current Linux/lk2nd physical BOOT and origin
+* `BOOTSTRAP/immutable-*/`: current Linux/lk2nd physical BOOT and origin
   metadata; distinct from the earlier Android BOOT. Do not replace one with the other.
 * The internal partition called BACKUP is only~7MiB; its name does not make it
   a full-device backup. `private.7z` was not inspected/changed during cleanup.

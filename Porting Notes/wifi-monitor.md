@@ -45,7 +45,7 @@ restored on stop; invalid-channel rollback passed. No persistent monitor service
 In-place type change with managers running was unreliable/EBUSY; don't confuse
 it with the accepted exclusive workflow.
 
-**DEVICE, 2026-10-22 #16:** channels1/6/36 captured real management/control,
+**DEVICE, kernel #16:** channels1/6/36 captured real management/control,
 Data/QoS and encrypted payload/extended IV, including non-self unicast; no
 reported kernel capture drops. Three probe/raw ToDS ARP transmissions elicited
 223/236 external responses (retries included), beyond local TX echoes. No

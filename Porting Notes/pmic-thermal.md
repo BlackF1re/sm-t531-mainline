@@ -5,7 +5,7 @@
   or overtemperature-alarm behavior is recorded. Do not treat TSENS or battery
   temperature as a replacement measurement of this die.
 
-* **DEVICE, 2026-11-07:** Android `thermal_zone6` is `pm8226_tz`, snapshot
+* **DEVICE:** Android `thermal_zone6` is `pm8226_tz`, snapshot
   44542 (millidegrees). Native support remains separate from this observation.
 
 Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

@@ -11,8 +11,8 @@
   Platform GPU drvdata is SMMU state, not DRM private data. Closing one imported
   handle must not unmap another client's live A305 global-VM object.
   Two-client reproducer: live IOVA stays `0x1009000`; filler gets `0x100a000`.
-  Upstream backports retain authorship and [series Message-IDs](https://lore.kernel.org/r/20260822-msm-fix-export-v1-1-917b3cbedd43@oss.qualcomm.com).
-* **DEVICE, 2026-10-29:** expensive split PRIME median ~6.2 ms → unified
+  Upstream backports retain authorship and series Message-IDs in patches0128/0129.
+* **DEVICE:** expensive split PRIME median ~6.2 ms → unified
   card/render 0.017/0.014 ms, maximum 0.081 ms; allocations 615,243/20 s →
   275/22 s. 2,113 successful PRIME calls remain: cheap shared-object lookup,
   not elimination of the API. Exact old allocation/import ownership was not

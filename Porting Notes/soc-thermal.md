@@ -6,7 +6,7 @@
   behavior are not fully accepted. A readable zone alone is not thermal safety
   or externally calibrated temperature evidence.
 
-* **DEVICE, 2026-11-07:** Android exports six `tsens_tz_sensor0`…`5` zones,
+* **DEVICE:** Android exports six `tsens_tz_sensor0`…`5` zones,
   snapshots45–52. Their vendor temperature units differ from the PMIC zone's
   millidegrees; convert per driver rather than applying a universal scale.
 

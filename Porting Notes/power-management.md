@@ -37,7 +37,7 @@ is still absent. Ordinary awake cpuidle remains per-core WFI/SPC.
 * Production cmdline removes `clk_ignore_unused`; CPU critical clock remains
   `CLK_IS_CRITICAL`. TC358764/LCD enables use vendor order, L5 still retained.
 
-## Preserved Android reference (2026-11-03)
+## Preserved Android reference
 
 Dirty Unicorns6.0.1 is not factory firmware. Its L2 maximum mode was4,
 CPU0 coordinated-collapse idle enabled, CPU1–3 disabled; standalone idle
@@ -78,7 +78,7 @@ sleep or measured battery life. Do not run an extra background suspend loop.
 Network standby policy enables Wi-Fi power-save/WoWLAN ANY; advertised support
 is not accepted notification wake/continuous connectivity or call/SMS wake.
 
-**DEVICE, 2026-11-03 balanced OCMEM:** accepted suspended times s2idle14.180s,
+**DEVICE, balanced OCMEM:** accepted suspended times s2idle14.180s,
 shallow13.506, standalone13.686, retention29.364, GDHS28.962, RPM14.131,
 RPM/key-path28.095. Complete pixels/scanout/resources, stable process IDs,
 journals and all phase counters passed. Owner accepted both panels afterward.

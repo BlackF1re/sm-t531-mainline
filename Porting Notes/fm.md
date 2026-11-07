@@ -29,4 +29,4 @@
 Sources: `tools/fm-diag`,
 [source manifest](../docs/hardware-source-manifest.json),
 [Samsung service manual p45](https://www.manualslib.com/manual/2076923/Samsung-Sm-T531.html?page=45)
-(text-only retrieval2026-10-22; no scans redistributed).
+(text-only inspection; no scans redistributed).

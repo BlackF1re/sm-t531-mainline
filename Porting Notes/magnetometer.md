@@ -6,7 +6,7 @@
 * Population, exact wiring and calibration are **UNKNOWN**. Do not carry an
   early-r00 node into the r02-based native board without positive evidence.
 
-* **DEVICE, 2026-11-07:** no compass among the two SensorService hardware
+* **DEVICE:** no compass among the two SensorService hardware
   sensors or identified I²C devices. Android nevertheless advertises
   `android.hardware.sensor.compass`; this generic feature is not a chip ID.
   No populated compass is established by this audit.

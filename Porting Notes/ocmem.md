@@ -3,7 +3,7 @@
 * Linux `qcom_ocmem` supplies firmware-backed graphics allocation to A305B.
   At450MHz, the source peak6.4GB/s over16bytes implies a400MHz request;
   physical OCMEM frequency remains unmeasured. Do not infer it from DDR clocks.
-* **DEVICE, 2026-11-03:** RPM resume returned CPU but GMEM readback was zero;
+* **DEVICE:** RPM resume returned CPU but GMEM readback was zero;
   sysmem passed. Re-voting ICC or restoring SCM security alone did not fix it.
   Restoring security **and the existing OCMEM graphics lock** restored all
   28 full 257×131 image checks without reboot.

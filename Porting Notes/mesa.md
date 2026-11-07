@@ -16,7 +16,7 @@
 * Device measurements:16targets1280×800 allocated85,568→69,184KiB (−19.15%);
   render~14.9ms unchanged. Actual BO buckets/cache affect allocation; do not
   derive savings from width×height alone or claim a60FPS fix.
-* **DEVICE, 2026-11-03:** retained correctness campaign checked98readback
+* **DEVICE:** retained correctness campaign checked98readback
   cases/62,655,530pixels, including full-frame comparisons. Bounded true/empty
   occlusion queries passed after0012; correctness is not60FPS acceptance.
 * Build accepted series with `scripts/build-mesa.sh`, supplying

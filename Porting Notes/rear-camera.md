@@ -9,7 +9,7 @@
 * Native complete frames, formats and controls remain unaccepted. A fitted
   flash, autofocus actuator or calibration EEPROM is not established.
 
-* **DEVICE, 2026-11-07:** camera HAL1 reports BACK/orientation0, fixed focus
+* **DEVICE:** camera HAL1 reports BACK/orientation0, fixed focus
   only, still sizes up to2048×1536, preview up to1024×768 and video up to1280×720.
   These are advertised modes, not tested frame capture. No `flash-mode` control
   was reported despite generic flash/autofocus package features and a

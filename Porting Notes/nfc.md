@@ -5,7 +5,7 @@
 * Population, antenna, wiring, firmware and a native tag transaction are all
   unestablished. Generic kernel support is not evidence for a board node.
 
-* **DEVICE, 2026-11-07:** no NFC binding or NFC package feature was observed;
+* **DEVICE:** no NFC binding or NFC package feature was observed;
   NFC/PN547/BCM2079X/SEC-NFC driver options are disabled in the custom kernel.
   Earlier candidates came from shared variants, not identified board hardware.
   These software omissions alone do not prove physical absence.

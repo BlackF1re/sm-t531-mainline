@@ -1,7 +1,7 @@
 # Porting Notes — SM-T531
 
 Each record states the component, integration, accepted observations and open
-limits locally. The 2026-11-07 Android audit adds device observations with explicit limits.
+limits locally. Android observations retain explicit validation limits.
 Evidence labels distinguish device observations, source-only configuration and
 hypotheses; a probe is not functional acceptance. Unknown population is explicit.
 
@@ -10,10 +10,10 @@ artifacts corroborate local facts; only the interconnect record
 links component records to identify the endpoints it joins. There are no
 required reading steps in other prose documents. Raw firmware/NV, identities,
 calibration and unsanitized backups remain private.
-Historical measurements were consolidated here on2026-11-07; full report
-snapshots remain in Git at`e865aba`. Dated observations retain their original
-scope and do not certify today's entire system. Source manifests, build locks
-and runnable diagnostic tools remain separate technical artifacts.
+Historical report snapshots remain in Git at`e865aba`. Observations retain
+their tested configuration and scope; they do not certify the entire system.
+Source manifests, build locks and runnable diagnostic tools remain separate
+technical artifacts.
 
 ## Platform
 
@@ -118,6 +118,6 @@ and runnable diagnostic tools remain separate technical artifacts.
 | [camera-isp](camera-isp.md) | MSM8226 camera interface and image processing |
 | [video-codec](video-codec.md) | Qualcomm Venus / VIDC |
 
-The flat directory has no per-component subdirectories. Source versions and
-experiment dates are recorded with the facts; unknown hardware is not invented
-to complete a catalog.
+The directory is flat. Facts use component names, source versions, build
+identities and test conditions rather than calendar dates. Unknown hardware
+is not invented to complete a catalog.

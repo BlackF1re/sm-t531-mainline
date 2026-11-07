@@ -9,7 +9,7 @@
   SMS/call, call/SMS wake or continuous network-standby acceptance is recorded.
 * Preserve MODEMST1/2,FSG/FSC,EFS/PERSIST calibration. No guessed RF/NV changes.
 
-* **DEVICE, 2026-11-07:** in a fully booted preserved Android, modem subsystem
+* **DEVICE:** in a fully booted preserved Android, modem subsystem
   was OFFLINE and baseband property empty, while ADSP/WCNSS were ONLINE.
   `/firmware-modem` was mounted; SMD nodes and GSM/CDMA package declarations
   do not establish modem boot, SIM service or CDMA hardware. This custom ROM

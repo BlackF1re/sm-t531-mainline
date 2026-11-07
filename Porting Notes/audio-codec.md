@@ -10,7 +10,7 @@
   are unaccepted. Use matisse conditionals in `sound/soc/msm/msm8226.c` rather
   than treating every Tapan reference-board route as fitted.
 
-* **DEVICE, 2026-11-07:** WCD9306 detection and Tapan ALSA card were repeated;
+* **DEVICE:** WCD9306 detection and Tapan ALSA card were repeated;
   ADSP is ONLINE. DT reset is GPIO72, MCLK9.6MHz, CFILT1/2/3=2800mV;
   h/px rails1.8V, cx1.2V, buck1.8–2.15V, helper1.775–2.125V (configured ranges).
   Generic PCM endpoints include FM, BT-SCO, HDMI and voice/VoLTE; registration

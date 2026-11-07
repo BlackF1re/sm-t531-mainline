@@ -6,7 +6,7 @@
   physical grip transitions, channel assignment and modem SAR policy remain
   unaccepted. An Android probe is identity/communication evidence only.
 
-* **DEVICE, 2026-11-07:** Android HAL exposes `SX9500 Grip Sensor`, private
+* **DEVICE:** Android HAL exposes `SX9500 Grip Sensor`, private
   sensor type65560, on-change/no batching; bound at I²C33:`0x28`.
   Its `nirq-gpio` is GPIO66 (not an established Linux IRQ number).
   Shared audio DT also names GPIO66 as AUXPCM DOUT: verify actual ownership

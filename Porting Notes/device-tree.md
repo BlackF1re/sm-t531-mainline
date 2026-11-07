@@ -3,14 +3,16 @@
 * **DEVICE:** `samsung,matisse3g`, SM-T531, MSM8226 SoC ID 158/revision 2.0.
   Android cpuinfo revision is `0003`; DT model `[MATISSE-3G-OPEN] Rev-02-MTP-v2`
   does not prove physical PCB revision 2. Do not substitute matissewifi wiring.
+* TrustZone secure-monitor firmware is accessed through Qualcomm SCM
+  (`qcom,scm-msm8226` in the SoC DTS).
 * Native board/SoC definitions are maintained through `patches/linux`, initially
   0001–0006; required configurations are `config/kernel.fragment`,
   `config/native-kms.fragment`, `config/native-icc.fragment`.
-* **DEVICE, 2026-10-22:** preserved Android is Dirty Unicorns 6.0.1 userdebug,
+* **DEVICE:** preserved Android is Dirty Unicorns 6.0.1 userdebug,
   kernel `3.4.0-cyanogenmod-g6be37d8-00011-gcee6fdf-dirty`, not factory Samsung.
   Android completed boot, enabling actual driver/ID checks; raw runtime tree
   has 5,468 properties and remains private.
-* **DEVICE, 2026-11-07:** the ROM's Samsung5.0.2 release fingerprint conflicts
+* **DEVICE:** the ROM's Samsung5.0.2 release fingerprint conflicts
   with SDK23/DU6.0.1 display properties. A fingerprint string alone cannot
   identify factory firmware or establish a trustworthy stock-policy baseline.
 * The RAM/maintenance Android image changed QCDT selection metadata only:
@@ -28,7 +30,7 @@
   not a bare host zImage. Preserve decompressor/DT placement below firmware
   scanout0x03200000; the internal BOOT prefix is512KiB,not part of virtual boot.
 
-* **DEVICE, 2026-11-07:** flashing the unchanged original full Android BOOT
+* **DEVICE:** flashing the unchanged original full Android BOOT
   and booting through Samsung's loader independently selected
   `[MATISSE-3G-OPEN] Rev-02-MTP-v2`. No QCDT metadata adaptation was used.
   The archived runtime tree contains 3,504 property files; this count is not

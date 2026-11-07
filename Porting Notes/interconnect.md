@@ -2,7 +2,7 @@
 
 ## Active clocks and votes
 
-**DEVICE, 2026-10-15/16, GPU workload; not just software requests:**
+**DEVICE, GPU workload; not just software requests:**
 
 | Clock | MHz |
 |---|---:|

@@ -36,9 +36,8 @@
 > [!NOTE]
 > **Observed ≠ production-ready.** The status above summarizes on-device tests, not successful compilation alone. See [graphics stability](Porting%20Notes/mdp5.md), [battery evidence](Porting%20Notes/battery.md), and [patch review](docs/PATCH-REVIEW.md).
 
-Current graphics, sleep and peripheral integration details are consolidated in
+Hardware facts, graphics, sleep and peripheral integration are consolidated in
 [Porting Notes](Porting%20Notes/README.md). The
-[component list](hardware/README.md) identifies hardware; the dated
 [machine-readable task snapshot](status/hardware.yaml) records porting dependencies.
 
 ## Boot flow
@@ -58,8 +57,9 @@ flowchart LR
 
 ## Hardware reference and private backups
 
-[`hardware/`](hardware/README.md) contains the component list and partition
-geometry. Support status and research are in [docs](docs/README.md).
+[Porting Notes](Porting%20Notes/README.md) contains component facts and Linux
+integration. [Partition geometry](hardware/partitions.json) is retained as a
+machine-readable backup/restore input; [docs](docs/README.md) contains procedures.
 Raw dumps, calibration and device identities remain local. Use `./scripts/backup-stock --help` and the
 [backup guide](docs/BACKUP-STOCK.md) for acquisition, integrity checks and
 explicit restore plans. Default captures are stored in ignored `backup_stock/`.
@@ -98,11 +98,10 @@ Linux patch files live in [`patches/linux/`](patches/linux); board and build con
 
 | Contents | Location |
 |---|---|
-| Component specifications | [hardware/](hardware/README.md) |
-| Linux integration, measured causes and unresolved work | [Porting Notes/](Porting%20Notes/README.md) |
+| Component facts, Linux integration and unresolved work | [Porting Notes/](Porting%20Notes/README.md) |
 | Build, installation and recovery procedures | [docs/](docs/README.md) |
 | Diagnostics and workload tools | [tools/](tools/README.md) |
-| Primary measurements and source manifests | JSON/TXT files in `docs/` |
+| Partition geometry and source provenance | `hardware/partitions.json`, `docs/hardware-source-manifest.json` |
 
 > [!CAUTION]
 > This repository contains **no universal flashable image**. Commands and partition assumptions are specific to the owner's verified SM-T531 setup. Never commit device credentials, factory calibration, raw partition backups, or unsanitized logs.

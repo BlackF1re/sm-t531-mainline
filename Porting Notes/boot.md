@@ -18,9 +18,9 @@
   slot`mainline-d476c3fb1032`; `/graphics-current` selects actual slot. Read-only
   debugfs `cat` does not follow ext2 fast symlinks: resolve them before hashing.
   A stale production.slot marker is not proof of selected boot content.
-* Retained working artifacts:`../artifacts/mainline-20261103` (balanced boot +
-  matching production modules; all811module hashes matched); main source
-  `../sources/linux-mainline`,139recorded patches, no extra source modifications.
+* Retained balanced-OCMEM artifacts live under `../artifacts/`; identify the
+  build by the image hash above and matching modules (all811hashes matched).
+  Main source: `../sources/linux-mainline`,139recorded patches, no extra changes.
   Generated builds now use`../build/sm-t531`, not removed`.work`.
 
 ## Preservation and recovery boundaries
@@ -31,7 +31,7 @@ Do not relabel one as the other or treat ten old critical dumps as full eMMC.
 Ramoops controlled-restart retention was observed; power-loss retention was not.
 Never infer crash absence solely from missing pstore after an early failure.
 
-* **DEVICE, 2026-11-07:** original Android full BOOT booted through Samsung's
+* **DEVICE:** original Android full BOOT booted through Samsung's
   loader; afterward the fresh pre-test Linux/lk2nd BOOT was restored to p14.
   Full partition readback matched the `f2e67d…` hash above. The SD boot selection
   and mainline image were not changed during this audit.

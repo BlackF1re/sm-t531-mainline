@@ -9,7 +9,7 @@
 * Test actual decode/encode and complete output frames independently of Adreno
   OpenGL. GPU acceleration does not establish Venus or JPEG support.
 
-* **DEVICE, 2026-11-07:** Venus subsystem was OFFLINE without an active video
+* **DEVICE:** Venus subsystem was OFFLINE without an active video
   workload; that idle snapshot is not a codec failure. Generic VIDC nodes
   alone do not validate encode/decode formats or sustained playback.
 

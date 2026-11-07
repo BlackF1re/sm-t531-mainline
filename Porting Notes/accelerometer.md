@@ -8,7 +8,7 @@
   restores QUP clocks before client interrupt handling. Preserve both orderings.
 * This is an accelerometer; rotation support does not establish a gyroscope.
 
-* **DEVICE, 2026-11-07:** Android SensorService exposes `K2HH Acceleration`,
+* **DEVICE:** Android SensorService exposes `K2HH Acceleration`,
   continuous mode up to100Hz, no batching; bound `K2HH` at I²C2:`0x1d`.
   Android uses vendor input/sysfs interfaces, not IIO.
 

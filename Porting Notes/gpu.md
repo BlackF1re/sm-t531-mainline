@@ -10,14 +10,14 @@
 * If `needs_hw_init`, synchronize software ring cur/next with validated hardware
   WPTR before suspend (0131). Otherwise second sleep can compare RPTR0 with
   stale WPTR528 and return−EBUSY. Keep ring-drain/RBBM/VBIF/fence checks enabled.
-* Device,2026-11-06: a lockup/recovery at~109s occurred despite matching loaded
+* **DEVICE:** a lockup/recovery at~109s occurred despite matching loaded
   identities. Settings/live session restarts have also hung/crashed compositors.
   Permanent runtime-PM `on` and replacing KWin's Mesa with a test shell library
   are not accepted solutions; recovery/endurance and stable60FPS remain open.
 * Counter sampling must distinguish pending GPU work from idle. HLSQ register
   probing is unsafe; overlapping pressure counters are not additive stage time.
 
-* **DEVICE, 2026-11-07:** Android KGSL uses `msm-adreno-tz`, reports450MHz
+* **DEVICE:** Android KGSL uses `msm-adreno-tz`, reports450MHz
   maximum and three power levels; snapshot frequency320MHz. Cumulative
   `reset_count=155` was observed without an attributable workload; this is not
   evidence that Android GPU operation was fault-free or a native regression.

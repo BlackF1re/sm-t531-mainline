@@ -7,7 +7,7 @@
 * Controller/motor population remains unconfirmed. Do not drive guessed pins
   or claim native vibration; require chip/motor evidence before FF integration.
 
-* **DEVICE, 2026-11-07:** repeated full Android boot creates unbound
+* **DEVICE:** repeated full Android boot creates unbound
   I²C79:`0x48` (`vibrator`); DT uses SDA12/SCL13, motor-enable32/clock34.
   The same actual-driver Kconfig mismatch persists. No vibration acceptance or
   physical no-motor conclusion follows from this custom-kernel omission.

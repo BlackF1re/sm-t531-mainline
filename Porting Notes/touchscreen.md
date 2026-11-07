@@ -11,7 +11,7 @@
   queued reports can lose a lift event. T6 reset/calibration also retained slots.
   This explains stale state; the exact lost report was not captured.
 * Patch0124 preserves Nick Dyer's authorship (historical Jiada Wang v11 12/56,
-  2020-05-08, source commit`26794433086dbc7dea18d2f6a1c8d61ab25bcfda`): quiesce
+  source commit`26794433086dbc7dea18d2f6a1c8d61ab25bcfda`): quiesce
   threaded IRQ before stopping, release MT/pointer state, suppress transition
   reports while retaining T6 completions, wake/drain/restart/synchronize before
   reporting. I²C drain failures propagate. T9 Chromebook reset path was reviewed,

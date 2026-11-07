@@ -6,7 +6,7 @@
 * `config/kernel.fragment`: BT_QCOMSMD, RFCOMM/TTY, BNEP/PAN, HIDP, UHID modules.
   BlueZ5.82/PipeWire were present in acceptance; service registration does not
   validate audio/SCO. Driver send callback supports CMD/ACL, not proven SCO.
-* **DEVICE, 2026-10-22 #19:** HCI version6, advertisements/discovery; Baseus
+* **DEVICE, kernel #19:** HCI version6, advertisements/discovery; Baseus
   F01B5.0 paired/bonded/connected, HoG resolved into UHID/evdev.20-s capture:
   982relative events,2buttons,523input frames; owner confirmed real mouse use.
 * Classic pairing, A2DP/AVRCP playback, HFP/HSP/SCO, RFCOMM/PAN traffic,

@@ -8,7 +8,7 @@
   that hardware exists. This distinction matters when enabling automatic
   brightness; an unavailable sensor must not activate zero-lux offset mode.
 
-* **DEVICE, 2026-11-07:** Android exposes no light sensor in SensorService
+* **DEVICE:** Android exposes no light sensor in SensorService
   or the identified sensor bindings, although package features advertise one.
   Earlier r00 candidates and those declarations do not prove r02 population.
 

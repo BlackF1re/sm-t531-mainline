@@ -10,7 +10,7 @@
   removes GP0 PWM. 0033 gates BL_CTL at zero/power-off; 0037 reads BRT/BL_CTL.
   A0/A1 retain ~23.0-mA sink current (`30 mA×0xc44/4095`), four output phases.
   No evidence supports increasing LED current or falsifying the kernel scale.
-* **DEVICE, 2026-10-17:** exclusive 18-step sysfs/I²C sweep2…255 matched every
+* **DEVICE:** exclusive 18-step sysfs/I²C sweep2…255 matched every
   requested/actual/BRT level; CTRL85 and ROM unchanged. Status02 read clears
   latched OVP/OCP/TSD/UVLO: initial38 contained old OVP, later30 had no fault.
   No numerical kernel clamp; optical endpoint acceptance remains separate.

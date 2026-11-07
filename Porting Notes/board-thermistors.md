@@ -6,7 +6,7 @@
 * Pinned research implementation: `arch/arm/mach-msm/sec_thermistor_8226.c`.
   That table is not proof of a measured board temperature on native Linux.
 
-* **DEVICE, 2026-11-07:** Android thermal zones `pa_therm0`/`pa_therm1`
+* **DEVICE:** Android thermal zones `pa_therm0`/`pa_therm1`
   reported22/−40 respectively. The −40 reading may be an absent/open or
   uncalibrated channel; neither value identifies an extra fitted thermistor.
 

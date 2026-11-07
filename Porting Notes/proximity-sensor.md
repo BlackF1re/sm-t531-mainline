@@ -7,7 +7,7 @@
 * Grip/SAR sensing and the Hall cover switch are different hardware functions,
   not evidence of optical proximity support.
 
-* **DEVICE, 2026-11-07:** no proximity HAL sensor/binding was identified;
+* **DEVICE:** no proximity HAL sensor/binding was identified;
   package feature declarations still advertise proximity. The audited custom
   Android does not establish a fitted proximity sensor or its physical absence.
 
