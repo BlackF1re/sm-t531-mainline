@@ -25,7 +25,7 @@ deb [check-valid-until=no] $snapshot trixie main contrib non-free non-free-firmw
 SOURCES
 sudo chroot "$root" apt-get update
 sudo chroot "$root" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    --no-install-recommends systemd-timesyncd dbus util-linux-extra wpasupplicant iw sudo
+    --no-install-recommends systemd-timesyncd dbus util-linux-extra wpasupplicant iw sudo python3
 sudo systemctl --root="$root" enable systemd-timesyncd
 case "${ROOTFS_PROFILE:-base}" in
     base) ;;
@@ -108,6 +108,14 @@ sudo systemctl --root="$root" enable systemd-networkd ssh t531-ssh-keys.service 
 if [ -d "$artifacts/modules/lib/modules" ]; then
     sudo mkdir -p "$root/lib/modules"
     sudo cp -a "$artifacts/modules/lib/modules/." "$root/lib/modules/"
+fi
+# Optional private SX9500 calibration becomes a normal udev attribute rule.
+sudo install -Dm755 scripts/configure-grip.py "$root/usr/local/sbin/t531-configure-grip"
+if [ -n "${GRIP_CALIBRATION_FILE:-}" ]; then
+    python3 scripts/configure-grip.py "$GRIP_CALIBRATION_FILE" \
+        --output "$work/grip-calibration.rules"
+    sudo install -Dm600 "$work/grip-calibration.rules" \
+        "$root/etc/udev/rules.d/70-t531-grip-calibration.rules"
 fi
 sudo install -m 755 scripts/configure-charging.sh "$root/tmp/t531-configure-charging.sh"
 sudo chroot "$root" env INSTALL_ONLY=1 /tmp/t531-configure-charging.sh

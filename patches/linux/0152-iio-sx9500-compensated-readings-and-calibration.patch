@@ -1,0 +1,545 @@
+From: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+Subject: [PATCH] iio: proximity: sx9500: expose compensated and calibrated readings
+
+Keep signed USEFUL samples and expose the hardware compensated DIFF.
+Add nominal small-range capacitance, per-electrode calibration bias
+and standard threshold/hysteresis controls. Calibration remains a
+userspace board policy; no Android filesystem or per-device values
+enter the kernel.
+
+Bound conversion waits, preserve user counts on I2C errors and
+sequence VDD before SVDD. An absent reset GPIO is normal and uses
+software reset.
+
+Signed-off-by: BlackF1re <55582873+BlackF1re@users.noreply.github.com>
+---
+diff --git a/drivers/iio/proximity/sx9500.c b/drivers/iio/proximity/sx9500.c
+--- a/drivers/iio/proximity/sx9500.c
++++ b/drivers/iio/proximity/sx9500.c
+@@ -18,6 +18,7 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/pm.h>
+ #include <linux/delay.h>
++#include <linux/math64.h>
+ 
+ #include <linux/iio/iio.h>
+ #include <linux/iio/buffer.h>
+@@ -94,6 +95,8 @@
+ 	struct completion completion;
+ 	int data_rdy_users, close_far_users;
+ 	int channel_users[SX9500_NUM_CHANNELS];
++	int cap_bias[SX9500_NUM_CHANNELS];
++	struct regulator_bulk_data supplies[2];
+ };
+ 
+ static const struct iio_event_spec sx9500_events[] = {
+@@ -101,13 +104,16 @@
+ 		.type = IIO_EV_TYPE_THRESH,
+ 		.dir = IIO_EV_DIR_EITHER,
+ 		.mask_separate = BIT(IIO_EV_INFO_ENABLE),
++		.mask_shared_by_type = BIT(IIO_EV_INFO_VALUE) |
++				      BIT(IIO_EV_INFO_HYSTERESIS),
+ 	},
+ };
+ 
+ #define SX9500_CHANNEL(idx)					\
+ 	{							\
+ 		.type = IIO_PROXIMITY,				\
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),	\
++		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |		\
++				      BIT(IIO_CHAN_INFO_PROCESSED),	\
+ 		.info_mask_shared_by_all = BIT(IIO_CHAN_INFO_SAMP_FREQ), \
+ 		.indexed = 1,					\
+ 		.channel = idx,					\
+@@ -115,12 +121,19 @@
+ 		.num_event_specs = ARRAY_SIZE(sx9500_events),	\
+ 		.scan_index = idx,				\
+ 		.scan_type = {					\
+-			.sign = 'u',				\
++			.sign = 's',				\
+ 			.realbits = 16,				\
+ 			.storagebits = 16,			\
+ 			.shift = 0,				\
+ 		},						\
+ 	}
++
++#define SX9500_CAP_CHANNEL(idx) { \
++	.type = IIO_CAPACITANCE, .indexed = 1, .channel = (idx), \
++	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) | \
++		BIT(IIO_CHAN_INFO_PROCESSED) | BIT(IIO_CHAN_INFO_CALIBBIAS), \
++	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE), .scan_index = -1, \
++}
+ 
+ static const struct iio_chan_spec sx9500_channels[] = {
+ 	SX9500_CHANNEL(0),
+@@ -128,6 +141,10 @@
+ 	SX9500_CHANNEL(2),
+ 	SX9500_CHANNEL(3),
+ 	IIO_CHAN_SOFT_TIMESTAMP(4),
++	SX9500_CAP_CHANNEL(0),
++	SX9500_CAP_CHANNEL(1),
++	SX9500_CAP_CHANNEL(2),
++	SX9500_CAP_CHANNEL(3),
+ };
+ 
+ static const struct {
+@@ -203,23 +220,27 @@
+ static int sx9500_inc_users(struct sx9500_data *data, int *counter,
+ 			    unsigned int reg, unsigned int bitmask)
+ {
+-	(*counter)++;
+-	if (*counter != 1)
+-		/* Bit is already active, nothing to do. */
++	int ret;
++
++	if ((*counter)++ != 0)
+ 		return 0;
+-
+-	return regmap_set_bits(data->regmap, reg, bitmask);
++	ret = regmap_set_bits(data->regmap, reg, bitmask);
++	if (ret)
++		(*counter)--;
++	return ret;
+ }
+ 
+ static int sx9500_dec_users(struct sx9500_data *data, int *counter,
+ 			    unsigned int reg, unsigned int bitmask)
+ {
+-	(*counter)--;
+-	if (*counter != 0)
+-		/* There are more users, do not deactivate. */
++	int ret;
++
++	if (--(*counter) != 0)
+ 		return 0;
+-
+-	return regmap_clear_bits(data->regmap, reg, bitmask);
++	ret = regmap_clear_bits(data->regmap, reg, bitmask);
++	if (ret)
++		(*counter)++;
++	return ret;
+ }
+ 
+ static int sx9500_inc_chan_users(struct sx9500_data *data, int chan)
+@@ -260,23 +281,53 @@
+ 				SX9500_CLOSE_IRQ | SX9500_FAR_IRQ);
+ }
+ 
++/* Samsung's small-range capacitance model, in 0.1 fF code units. */
++static int sx9500_capacitance_code(unsigned int offset, int useful,
++				 unsigned int gain)
++{
++	return 2 * ((int)(offset >> 6) * 3600 + (int)(offset & 63) * 225) +
++		div_s64((s64)useful * 50000, gain * 65536);
++}
++
+ static int sx9500_read_prox_data(struct sx9500_data *data,
+ 				 const struct iio_chan_spec *chan,
+-				 int *val)
+-{
+-	int ret;
+-	__be16 regval;
++				 int *val, int *val2, long mask)
++{
++	__be16 sample[4];
++	unsigned int ctrl, gain;
++	int ret, useful;
+ 
+ 	ret = regmap_write(data->regmap, SX9500_REG_SENSOR_SEL, chan->channel);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = regmap_bulk_read(data->regmap, SX9500_REG_USE_MSB, &regval, 2);
+-	if (ret < 0)
+-		return ret;
+-
+-	*val = be16_to_cpu(regval);
+-
++	if (ret)
++		return ret;
++	ret = regmap_bulk_read(data->regmap, SX9500_REG_USE_MSB, sample,
++			       sizeof(sample));
++	if (ret)
++		return ret;
++	useful = (s16)be16_to_cpu(sample[0]);
++	if (chan->type == IIO_PROXIMITY) {
++		*val = mask == IIO_CHAN_INFO_PROCESSED ?
++			(useful - (s16)be16_to_cpu(sample[1])) >> 4 : useful;
++		return IIO_VAL_INT;
++	}
++
++	/* The retained capacitance model is characterized for the small range. */
++	ret = regmap_read(data->regmap, SX9500_REG_PROX_CTRL1, &ctrl);
++	if (ret)
++		return ret;
++	if ((ctrl & 3) != 3)
++		return -EOPNOTSUPP;
++	ret = regmap_read(data->regmap, SX9500_REG_PROX_CTRL2, &ctrl);
++	if (ret)
++		return ret;
++	gain = 1U << ((ctrl >> 5) & 3);
++	*val = sx9500_capacitance_code(be16_to_cpu(sample[3]), useful, gain) +
++		data->cap_bias[chan->channel];
++	if (mask == IIO_CHAN_INFO_PROCESSED) {
++		/* Standard IIO capacitance units are nF; one code unit is 0.1 fF. */
++		*val2 = 10000000;
++		return IIO_VAL_FRACTIONAL;
++	}
+ 	return IIO_VAL_INT;
+ }
+ 
+@@ -302,11 +353,18 @@
+ 
+ static int sx9500_read_proximity(struct sx9500_data *data,
+ 				 const struct iio_chan_spec *chan,
+-				 int *val)
+-{
+-	int ret;
+-
+-	mutex_lock(&data->mutex);
++				 int *val, int *val2, long mask)
++{
++	int ret, format;
++	unsigned long timeout;
++
++	mutex_lock(&data->mutex);
++	/* A frequency change can leave the previous (up to 400 ms) scan active.
++	 * Allow the slowest scan including the default 2x doze period.
++	 */
++	timeout = msecs_to_jiffies(100 + 2 * sx9500_scan_period_table[
++		ARRAY_SIZE(sx9500_scan_period_table) - 1]);
++	reinit_completion(&data->completion);
+ 
+ 	ret = sx9500_inc_chan_users(data, chan->channel);
+ 	if (ret < 0)
+@@ -319,19 +377,27 @@
+ 	mutex_unlock(&data->mutex);
+ 
+ 	if (data->client->irq > 0)
+-		ret = wait_for_completion_interruptible(&data->completion);
+-	else
++		ret = wait_for_completion_interruptible_timeout(&data->completion,
++							     timeout);
++	else {
+ 		ret = sx9500_wait_for_sample(data);
+-
+-	mutex_lock(&data->mutex);
+-
+-	if (ret < 0)
++		if (!ret)
++			ret = 1;
++	}
++
++	mutex_lock(&data->mutex);
++
++	if (ret <= 0) {
++		if (!ret)
++			ret = -ETIMEDOUT;
+ 		goto out_dec_data_rdy;
+-
+-	ret = sx9500_read_prox_data(data, chan, val);
++	}
++
++	ret = sx9500_read_prox_data(data, chan, val, val2, mask);
+ 	if (ret < 0)
+ 		goto out_dec_data_rdy;
+ 
++	format = ret;
+ 	ret = sx9500_dec_data_rdy_users(data);
+ 	if (ret < 0)
+ 		goto out_dec_chan;
+@@ -340,7 +406,7 @@
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	ret = IIO_VAL_INT;
++	ret = format;
+ 
+ 	goto out;
+ 
+@@ -350,7 +416,6 @@
+ 	sx9500_dec_chan_users(data, chan->channel);
+ out:
+ 	mutex_unlock(&data->mutex);
+-	reinit_completion(&data->completion);
+ 
+ 	return ret;
+ }
+@@ -382,23 +447,26 @@
+ 	struct sx9500_data *data = iio_priv(indio_dev);
+ 	int ret;
+ 
+-	switch (chan->type) {
+-	case IIO_PROXIMITY:
+-		switch (mask) {
+-		case IIO_CHAN_INFO_RAW:
+-			if (!iio_device_claim_direct(indio_dev))
+-				return -EBUSY;
+-			ret = sx9500_read_proximity(data, chan, val);
+-			iio_device_release_direct(indio_dev);
+-			return ret;
+-		case IIO_CHAN_INFO_SAMP_FREQ:
+-			return sx9500_read_samp_freq(data, val, val2);
+-		default:
+-			return -EINVAL;
+-		}
+-	default:
++	if (mask == IIO_CHAN_INFO_SCALE && chan->type == IIO_CAPACITANCE) {
++		*val = 0;
++		*val2 = 100;
++		return IIO_VAL_INT_PLUS_NANO;
++	}
++	if (mask == IIO_CHAN_INFO_CALIBBIAS && chan->type == IIO_CAPACITANCE) {
++		mutex_lock(&data->mutex);
++		*val = data->cap_bias[chan->channel];
++		mutex_unlock(&data->mutex);
++		return IIO_VAL_INT;
++	}
++	if (mask == IIO_CHAN_INFO_SAMP_FREQ)
++		return sx9500_read_samp_freq(data, val, val2);
++	if (mask != IIO_CHAN_INFO_RAW && mask != IIO_CHAN_INFO_PROCESSED)
+ 		return -EINVAL;
+-	}
++	if (!iio_device_claim_direct(indio_dev))
++		return -EBUSY;
++	ret = sx9500_read_proximity(data, chan, val, val2, mask);
++	iio_device_release_direct(indio_dev);
++	return ret;
+ }
+ 
+ static int sx9500_set_samp_freq(struct sx9500_data *data,
+@@ -431,17 +499,20 @@
+ {
+ 	struct sx9500_data *data = iio_priv(indio_dev);
+ 
+-	switch (chan->type) {
+-	case IIO_PROXIMITY:
+-		switch (mask) {
+-		case IIO_CHAN_INFO_SAMP_FREQ:
+-			return sx9500_set_samp_freq(data, val, val2);
+-		default:
++	if (mask == IIO_CHAN_INFO_CALIBBIAS && chan->type == IIO_CAPACITANCE) {
++		if (val2 || val < -8388608 || val > 8388607)
+ 			return -EINVAL;
+-		}
+-	default:
+-		return -EINVAL;
+-	}
++		if (!iio_device_claim_direct(indio_dev))
++			return -EBUSY;
++		mutex_lock(&data->mutex);
++		data->cap_bias[chan->channel] = val;
++		mutex_unlock(&data->mutex);
++		iio_device_release_direct(indio_dev);
++		return 0;
++	}
++	if (mask == IIO_CHAN_INFO_SAMP_FREQ)
++		return sx9500_set_samp_freq(data, val, val2);
++	return -EINVAL;
+ }
+ 
+ static irqreturn_t sx9500_irq_handler(int irq, void *private)
+@@ -578,6 +649,93 @@
+ 	return ret;
+ }
+ 
++static const int sx9500_thresholds[] = {
++	0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260,
++	280, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1100,
++	1200, 1300, 1400, 1500, 1600, 1700,
++};
++
++static int sx9500_read_event_value(struct iio_dev *indio_dev,
++				 const struct iio_chan_spec *chan,
++				 enum iio_event_type type,
++				 enum iio_event_direction dir,
++				 enum iio_event_info info, int *val, int *val2)
++{
++	struct sx9500_data *data = iio_priv(indio_dev);
++	unsigned int reg, value;
++	int ret;
++
++	if (type != IIO_EV_TYPE_THRESH || dir != IIO_EV_DIR_EITHER)
++		return -EINVAL;
++	if (info == IIO_EV_INFO_VALUE)
++		reg = SX9500_REG_PROX_CTRL6;
++	else if (info == IIO_EV_INFO_HYSTERESIS)
++		reg = SX9500_REG_PROX_CTRL7;
++	else
++		return -EINVAL;
++	mutex_lock(&data->mutex);
++	ret = regmap_read(data->regmap, reg, &value);
++	mutex_unlock(&data->mutex);
++	if (ret)
++		return ret;
++	*val = info == IIO_EV_INFO_VALUE ? sx9500_thresholds[value & 31] :
++		32 << ((value >> 4) & 3);
++	return IIO_VAL_INT;
++}
++
++static int sx9500_write_event_value(struct iio_dev *indio_dev,
++				  const struct iio_chan_spec *chan,
++				  enum iio_event_type type,
++				  enum iio_event_direction dir,
++				  enum iio_event_info info, int val, int val2)
++{
++	struct sx9500_data *data = iio_priv(indio_dev);
++	unsigned int reg, mask, value;
++	int i, ret;
++
++	if (type != IIO_EV_TYPE_THRESH || dir != IIO_EV_DIR_EITHER || val2)
++		return -EINVAL;
++	if (info == IIO_EV_INFO_VALUE) {
++		for (i = 0; i < ARRAY_SIZE(sx9500_thresholds); i++)
++			if (val == sx9500_thresholds[i])
++				break;
++		if (i == ARRAY_SIZE(sx9500_thresholds))
++			return -EINVAL;
++		reg = SX9500_REG_PROX_CTRL6;
++		mask = GENMASK(4, 0);
++		value = i;
++	} else if (info == IIO_EV_INFO_HYSTERESIS) {
++		for (i = 0; i < 4; i++)
++			if (val == (32 << i))
++				break;
++		if (i == 4)
++			return -EINVAL;
++		reg = SX9500_REG_PROX_CTRL7;
++		mask = GENMASK(5, 4);
++		value = i << 4;
++	} else {
++		return -EINVAL;
++	}
++	mutex_lock(&data->mutex);
++	ret = regmap_update_bits(data->regmap, reg, mask, value);
++	mutex_unlock(&data->mutex);
++	return ret;
++}
++
++static IIO_CONST_ATTR(in_proximity_thresh_either_value_available,
++	"0 20 40 60 80 100 120 140 160 180 200 220 240 260 280 300 350 400 450 500 600 700 800 900 1000 1100 1200 1300 1400 1500 1600 1700");
++static IIO_CONST_ATTR(in_proximity_thresh_either_hysteresis_available, "32 64 128 256");
++
++static struct attribute *sx9500_event_attributes[] = {
++	&iio_const_attr_in_proximity_thresh_either_value_available.dev_attr.attr,
++	&iio_const_attr_in_proximity_thresh_either_hysteresis_available.dev_attr.attr,
++	NULL,
++};
++
++static const struct attribute_group sx9500_event_attribute_group = {
++	.attrs = sx9500_event_attributes,
++};
++
+ static IIO_CONST_ATTR_SAMP_FREQ_AVAIL(
+ 	"2.500000 3.333333 5 6.666666 8.333333 11.111111 16.666666 33.333333");
+ 
+@@ -592,6 +750,9 @@
+ 
+ static const struct iio_info sx9500_info = {
+ 	.attrs = &sx9500_attribute_group,
++	.event_attrs = &sx9500_event_attribute_group,
++	.read_event_value = sx9500_read_event_value,
++	.write_event_value = sx9500_write_event_value,
+ 	.read_raw = &sx9500_read_raw,
+ 	.write_raw = &sx9500_write_raw,
+ 	.read_event_config = &sx9500_read_event_config,
+@@ -641,7 +802,7 @@
+ 
+ 	iio_for_each_active_channel(indio_dev, bit) {
+ 		ret = sx9500_read_prox_data(data, &indio_dev->channels[bit],
+-					    &val);
++					    &val, NULL, IIO_CHAN_INFO_RAW);
+ 		if (ret < 0)
+ 			goto out;
+ 
+@@ -878,16 +1039,23 @@
+ 			client->irq = gpiod_to_irq(gpiod_int);
+ 	}
+ 
+-	data->gpiod_rst = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
++	data->gpiod_rst = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_HIGH);
+ 	if (IS_ERR(data->gpiod_rst)) {
+ 		dev_warn(dev, "gpio get reset pin failed\n");
+ 		data->gpiod_rst = NULL;
+ 	}
+ }
+ 
++static void sx9500_disable_supplies(void *private)
++{
++	struct sx9500_data *data = private;
++
++	regulator_disable(data->supplies[1].consumer);
++	regulator_disable(data->supplies[0].consumer);
++}
++
+ static int sx9500_probe(struct i2c_client *client)
+ {
+-	static const char * const supplies[] = { "vdd", "svdd" };
+ 	int ret;
+ 	struct iio_dev *indio_dev;
+ 	struct sx9500_data *data;
+@@ -913,10 +1081,23 @@
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+ 	i2c_set_clientdata(client, indio_dev);
+ 
+-	ret = devm_regulator_bulk_get_enable(&client->dev,
+-					     ARRAY_SIZE(supplies), supplies);
++	data->supplies[0].supply = "vdd";
++	data->supplies[1].supply = "svdd";
++	ret = devm_regulator_bulk_get(&client->dev, ARRAY_SIZE(data->supplies),
++				    data->supplies);
+ 	if (ret)
+-		return dev_err_probe(&client->dev, ret, "failed to enable supplies\n");
++		return dev_err_probe(&client->dev, ret, "failed to get supplies\n");
++	ret = regulator_enable(data->supplies[0].consumer);
++	if (ret)
++		return ret;
++	ret = regulator_enable(data->supplies[1].consumer);
++	if (ret) {
++		regulator_disable(data->supplies[0].consumer);
++		return ret;
++	}
++	ret = devm_add_action_or_reset(&client->dev, sx9500_disable_supplies, data);
++	if (ret)
++		return ret;
+ 
+ 	/* Allow power to settle before resetting and accessing the device. */
+ 	msleep(30);
+diff --git a/Documentation/ABI/testing/sysfs-bus-iio-sx9500 b/Documentation/ABI/testing/sysfs-bus-iio-sx9500
+new file mode 100644
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-iio-sx9500
+@@ -0,0 +1,33 @@
++What:           /sys/bus/iio/devices/iio:deviceX/in_proximityY_input
++Contact:        linux-iio@vger.kernel.org
++Description:
++                Signed (USEFUL - AVG) >> 4, after background filtering.
++                It is not a distance in millimeters.
++                in_proximityY_raw remains signed PROXUSEFUL ADC counts.
++
++What:           /sys/bus/iio/devices/iio:deviceX/in_capacitanceY_raw
++What:           /sys/bus/iio/devices/iio:deviceX/in_capacitanceY_scale
++What:           /sys/bus/iio/devices/iio:deviceX/in_capacitanceY_calibbias
++What:           /sys/bus/iio/devices/iio:deviceX/in_capacitanceY_input
++Contact:        linux-iio@vger.kernel.org
++Description:
++                Nominal small-range capacitance reconstructed from the offset
++                DAC and signed USEFUL reading, using the Samsung SX9500 model.
++                Each raw code is 0.1 fF; scale is 0.000000100 nF per code.
++                Calibbias is a signed additive offset in these code units,
++                applied internally to both raw and processed readings. Input
++                is in nF. Zero bias gives nominal absolute capacitance; a
++                negative board baseline gives baseline-relative capacitance.
++                Each electrode has its own bias; do not copy CS0 calibration
++                to other electrodes. Accuracy needs an external reference.
++                These derived channels cannot be placed in the raw buffer.
++                The model is supported only with the small analog range.
++
++What:           /sys/bus/iio/devices/iio:deviceX/events/in_proximity_thresh_either_value
++What:           /sys/bus/iio/devices/iio:deviceX/events/in_proximity_thresh_either_hysteresis
++Contact:        linux-iio@vger.kernel.org
++Description:
++                Global SX9500 PROXDIFF threshold and hysteresis in signed
++                difference counts, shared by all electrodes. Supported values
++                are listed in the corresponding _available attributes.
++                Per-electrode threshold event enables retain the standard ABI.

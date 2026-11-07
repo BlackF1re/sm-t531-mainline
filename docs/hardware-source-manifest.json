@@ -251,6 +251,11 @@
       "path": "sound/soc/msm/msm8226.c",
       "bytes": 85504,
       "sha256": "2aa4bf29b0da30686e90777bf59ab8a4f200a455e30d68f7ec3ad84dce8f1d7c"
+    },
+    {
+      "path": "drivers/sensors/sx9500_reg.h",
+      "bytes": 2793,
+      "sha256": "1927ae30c8dd5c75604a9717b25b847020c23b09364eded50d64d2222c7f0274"
     }
   ],
   "manual": {

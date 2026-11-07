@@ -14,6 +14,7 @@ session selection and power tests change state; do not run them as health checks
 | Graphics installation | `install-graphics-stack.sh`, `install-mesa-shell.sh` | Tablet |
 | Desktop setup and selection | `configure-plasma.sh`, `install-phosh.sh`, `select-mobile-shell.sh` | Tablet |
 | Board services | `configure-network.sh`, `configure-wifi.sh`, `configure-charging.sh`, `configure-sleep.sh` | Tablet or target rootfs |
+| SX9500 board calibration | `configure-grip.py` | Host validation/rule generation; `--install` applies on tablet |
 | Runtime service helpers | `start-native-graphics.sh`, `phosh-session.sh`, `wifi-monitor.sh`, `sleep-mode.sh` | Tablet; normally invoked by installed units/session |
 | Graphics capabilities / safe update | `graphics/build-probe.sh` (host); `graphics/snapshot.sh`, `graphics/ab.sh` (tablet) | See [A/B procedure](../docs/UNIFIED_DRM.md) |
 | Recovery and crash preservation | `restore-native-from-bootstrap.sh`, `graphics/rollback-compat.sh`, `graphics/save-gpu-coredump.sh` | Tablet; rollback compatibility entry remains installed |

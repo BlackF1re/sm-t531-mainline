@@ -100,3 +100,12 @@ research reports describe old experiments, not required current inputs.
 Frozen bootstrap source/layout constraints are recorded in
 [storage notes](../Porting%20Notes/boot.md). It is a separate build
 profile and must not be flashed as part of ordinary main-kernel updates.
+
+SX9500 calibration is optional private input: set `GRIP_CALIBRATION_FILE` to
+an extracted Android `grip_cal_data` when building the rootfs. The validated
+baseline becomes an owner-only udev rule; no Android mount or resident helper
+is required. After installing the matching IIO driver on an existing tablet:
+
+```sh
+sudo t531-configure-grip --install /path/to/grip_cal_data
+```
