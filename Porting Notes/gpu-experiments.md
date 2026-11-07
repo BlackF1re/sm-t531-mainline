@@ -35,6 +35,20 @@ on the active desktop visibly corrupted pixels and was stopped; future
 pixel-changing diagnostics must be offscreen. Scissor culling compares complete
 images/query behavior rather than assuming preserved coverage is sufficient.
 
+## Lomiri / Mir control
+
+* Separate workload: Lomiri0.6.2/Mir2.28, Qt5.15.19, unified DRM, GPU450MHz;
+  actual manual drawer gestures, first two excluded, no other GUI. Packaged /
+  accepted six-patch Mesa / packaged A/B/A:20.21/27.69/21.77 presentations/s;
+  p95:66.73/50.01/66.67ms. Different gesture durations limit exact comparisons.
+* Packaged Mesa with `QSG_RENDER_LOOP=basic`:20.41/s, p95 83.35ms; rejected.
+  No tested mode reached60. Baseline restored; no precision/depth/clock overrides.
+* Heavy two-command submissions: median submit→retire25.58ms packaged versus
+  18.46ms accepted Mesa. Includes queueing/retirement, not exclusive GPU time;
+  framebuffer ownership was not traced. A3xx trace elapsed/tick fields were zero.
+* Heap corruption occurred during shutdown with both accepted Mesa and packaged
+  Mesa/basic. Root cause is unknown; do not attribute it to Mesa solely by timing.
+
 ## Correlation and measurement traps
 
 * Nonintrusive busy counter is stationary with no pending work and follows
