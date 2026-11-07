@@ -17,9 +17,16 @@ private. Historical results are archived at Git `e865aba`, not active facts.
 | [cpu](cpu.md) | CPU, voltage and idle |
 | [memory](memory.md) | RAM and BIMC memory controller |
 | [clocks](clocks.md) | MSM8226 clock and reset controllers |
+| [blsp](blsp.md) | QUP I²C, GPIO-I²C, SPI and UART buses |
+| [dma-bam](dma-bam.md) | SPS / BAM DMA and modem BAM-DMUX |
+| [coresight](coresight.md) | ARM CoreSight and debug trace fabric |
 | [interrupts](interrupts.md) | Interrupt controller and timers |
 | [pinctrl](pinctrl.md) | TLMM and PMIC pin control |
 | [ipc](ipc.md) | Shared memory and remote-processor IPC |
+| [trustzone](trustzone.md) | TrustZone, SCM and QSEECom resources |
+| [spmi](spmi.md) | SPMI PMIC bus and interrupt arbitration |
+| [reserved-memory](reserved-memory.md) | Firmware, shared-RAM and ramoops reservations |
+| [gdsc](gdsc.md) | Multimedia GDSC power domains |
 | [efuses](efuses.md) | QFPROM / eFuses |
 | [interconnect](interconnect.md) | MSM8226 interconnect |
 | [ocmem](ocmem.md) | OCMEM SRAM and graphics allocation |
@@ -38,6 +45,7 @@ private. Historical results are archived at Git `e865aba`, not active facts.
 | [gpu](gpu.md) | Adreno 305B kernel driver |
 | [gpu-smmu](gpu-smmu.md) | GPU ARM SMMU |
 | [display-iommu](display-iommu.md) | Legacy display IOMMU / TrustZone |
+| [multimedia-iommu](multimedia-iommu.md) | Camera, JPEG, Venus and LPASS IOMMUs |
 | [mesa](mesa.md) | Mesa / Freedreno A3xx resource handling |
 | [qt](qt.md) | Qt OpenGL swapchain depth/stencil |
 | [kwin](kwin.md) | KWin Wayland and MDP5 overlays |
@@ -59,6 +67,8 @@ private. Historical results are archived at Git `e865aba`, not active facts.
 | [vadc](vadc.md) | PM8226 VADC |
 | [iadc](iadc.md) | PM8226 IADC |
 | [battery](battery.md) | PM8226 BMS1 / battery fuel gauge |
+| [bcl](bcl.md) | Qualcomm battery current limiting |
+| [pmic-peripherals](pmic-peripherals.md) | PM8226 auxiliary ADC, GPIO/MPP, PWM and LED IP |
 | [charger](charger.md) | SMB358 charging and input-current policy |
 | [soc-thermal](soc-thermal.md) | MSM8226 TSENS |
 | [battery-thermistor](battery-thermistor.md) | Battery thermistor |
@@ -110,6 +120,7 @@ private. Historical results are archived at Git `e865aba`, not active facts.
 | [rear-camera](rear-camera.md) | Rear camera — Siliconfile SR352 |
 | [front-camera](front-camera.md) | Front camera — Siliconfile SR130PC20 |
 | [camera-isp](camera-isp.md) | MSM8226 camera interface and image processing |
+| [jpeg](jpeg.md) | Standalone MSM8226 JPEG engine |
 | [video-codec](video-codec.md) | Qualcomm Venus / VIDC |
 
 The directory is flat. Facts use component names, source versions, build
