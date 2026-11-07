@@ -6,10 +6,11 @@ firmware, enter global suspend, or replace the production driver. Loading it
 briefly stops/restarts touch scanning and adds the usual out-of-tree kernel
 taint. It is diagnostic code, not a production sleep implementation.
 
-Build against the exact running kernel output:
+Run from the repository root; select the exact running kernel output:
 
 ```sh
-make -C .work/linux O="$PWD/.work/out" ARCH=arm \
+make -C "${KERNEL_SRC:-../sources/linux-mainline}" \
+    O="${KERNEL_OUT:-$PWD/../build/sm-t531/out}" ARCH=arm \
     CROSS_COMPILE=arm-linux-gnueabihf- M="$PWD/tools/mxt-pm-probe" modules
 ```
 

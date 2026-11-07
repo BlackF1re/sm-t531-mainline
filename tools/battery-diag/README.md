@@ -8,7 +8,7 @@ unlocked and can tear; compare repeated snapshots before interpreting them.
 Build against the exact running kernel's configured output and symbols:
 
 ```sh
-make -C .work/out M="$PWD/tools/battery-diag" \
+make -C "${KERNEL_OUT:-../build/sm-t531/out}" M="$PWD/tools/battery-diag" \
     ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- modules
 ```
 

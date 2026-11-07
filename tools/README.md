@@ -12,14 +12,23 @@ invocation. Read the tool's header or adjacent README before using it.
 | DRM capabilities | `drm-device/`, `check-mdp5-resources.py`, `check-crtc-progress.c` | Native KMS/format/resource diagnostics |
 | Graphics measurements | `sample-*.py`, `summarize-*.py`, `auto-drawer.py`, `drawer-load.py`, `frame-load.qml` | Sampling, report generation and explicit test workloads; presentation counts are not optical FPS |
 | GPU microbenchmarks | `fd-*.c`, `fd2d-bench.c`, `cache-latency.c` | Isolated workloads; do not infer whole-desktop FPS from them |
-| Bounded kernel diagnostics | `native-fence-owner/`, `native-gpu-counters/`, `native-memory-floor/`, `cpu-cache-state/`, `battery-diag/`, `fm-diag/`, `mxt-pm-probe/`, `wifi-irq-rearm/` | Build against the exact target kernel; several probes access hardware or change temporary state. None is autoloaded by this index |
+| Bounded kernel diagnostics | `native-fence-owner/`, `native-gpu-counters/`, `native-memory-floor/`, `cpu-cache-state/`, `battery-diag/`, `fm-diag/`, `mxt-pm-probe/` | Build against the exact target kernel; several probes access hardware or change temporary state. None is autoloaded by this index |
 | Historical Mesa instrumentation | `diagnostics/a3xx-stage/` | Intrusive stage-timing method; excluded from production patches and unsuitable as an FPS benchmark |
 | Build compatibility | `kwin-vulkan-api-probe.cpp` | Vulkan-Hpp syntax probe, not Vulkan support on Adreno 305 |
 | Battery, backlight and sleep | `check-battery-*.py`, `test-*brightness.py`, `test-backlight-range.py`, `audit-sleep-states.py`, `check-suspend-cycle.py` | Tool-specific acceptance tests; some change device state |
 | Private stock-data backups | `stock-backup/`, `scripts/backup-stock` | Read-only acquisition, integrity checks and explicitly confirmed restoration; default output is Git-ignored |
 | Identity and image preparation | `set-bluetooth-address.py`, `check-boot-layout.py` | Private per-device identity insertion and boot-container inspection |
-| Radio / Android research | `wifi/`, `android/`, `build-wifi-trial.sh`, `fetch-phosh-runtime.py` | Specialized bring-up and reproducibility helpers |
+| Radio / Android research | `wifi/`, `android/`, `fetch-phosh-runtime.py` | Specialized bring-up and reproducibility helpers |
 | Bus / display register research | `measure-msm8226-bus.c`, `read-msm8226-qos.py`, `read-dsi-controller.c` | Device-specific register access; historical diagnostics, not routine health checks |
+
+Production build, installation and recovery entry points are listed in
+[the script index](../scripts/README.md). Battery source checks use `KERNEL_SRC`,
+`SOURCES_DIR` and `WORK_DIR`, with the same defaults as host builds; the Samsung
+OCV reference must be supplied explicitly with `check-battery-model.py --vendor`.
+Diagnostic module examples require the matching configured kernel output.
+`test-rgb888-neon.c` remains a regression check for Linux patch0046, not a
+supported simpledrm desktop path. Historical trace summaries can still read
+simpledrm recordings; new recordings use native KMS by default.
 
 Generated objects and caches are ignored. Keep builds outside the source tree
 where practical; retaining a `.ko` does not establish compatibility with the

@@ -12,7 +12,7 @@ p.add_argument("--start", type=float, help="CLOCK_MONOTONIC start of workload")
 p.add_argument("--warmup", type=float, default=5)
 p.add_argument("--duration", type=float, default=25)
 p.add_argument("--presentation-path", choices=("simpledrm", "native-kms"),
-               default="simpledrm", help="KMS path used for this recording")
+               default="native-kms", help="KMS path used for this recording")
 args = p.parse_args()
 events = []
 pattern = re.compile(r"\s(\d+)\s+\[\d+\]\s+([\d.]+):\s+(\S+):\s*(.*)")

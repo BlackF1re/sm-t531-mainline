@@ -47,13 +47,8 @@ if not found:
 print(found[-1])
 ' "$marker" > "$destination/kernel-start.txt"
 cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor > "$destination/governor.txt"
-# Include pre-created t531 kprobe events only when available. No global trace changes.
+# Record native KMS completions and available GPU events.
 events=drm:drm_vblank_event_delivered
-for event in blit blit_end update update_end wait wait_end; do
-    if [[ -d /sys/kernel/tracing/events/t531/$event ]]; then
-        events+=,t531:$event
-    fi
-done
 if [[ -d /sys/kernel/tracing/events/drm_msm_gpu/msm_gpu_devfreq_status ]]; then
     events+=,drm_msm_gpu:msm_gpu_devfreq_status
 fi

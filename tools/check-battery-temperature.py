@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """Compile the real battery-info getter and check standard temperature units."""
 import argparse
+import os
 from pathlib import Path
 import re
 import subprocess
 
-p = argparse.ArgumentParser(description=__doc__)
-p.add_argument('--source', type=Path, default=Path('.work/linux/drivers/power/supply/power_supply_core.c'))
-p.add_argument('--out', type=Path, default=Path('.work/battery-temperature-validation'))
+project = Path(__file__).resolve().parents[1]
+sources = Path(os.environ.get('SOURCES_DIR', project.parent / 'sources'))
+linux = Path(os.environ.get('KERNEL_SRC', sources / 'linux-mainline'))
+work = Path(os.environ.get('WORK_DIR', project.parent / 'build/sm-t531'))
+
+p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+p.add_argument('--source', type=Path, default=linux / 'drivers/power/supply/power_supply_core.c')
+p.add_argument('--out', type=Path, default=work / 'battery-temperature-validation')
 a = p.parse_args()
 a.out.mkdir(parents=True, exist_ok=True)
 s = a.source.read_text()

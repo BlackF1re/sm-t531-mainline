@@ -60,6 +60,6 @@ every subtype, coexistence/P2P, sustained loss, restart and endurance remain
 unvalidated. Zero kernel drops is not zero over-air/firmware loss.
 
 Sources: [aggregate evidence](../docs/wifi-results.json), `tools/wifi`,
-`tools/build-wifi-trial.sh`, `scripts/wifi-monitor.sh`, production0123.
+`scripts/wifi-monitor.sh`, production0123.
 Firmware b06 SHA256 `a57d7a162f15a9d281ec66f24c0e0f7b4f37d81e891ebd64356403bdfb9fd96e`;
 MDT `aa09c377bfb663aafebf0b5d0bb43bfcb296fb15997a3725b25a756ba7352480`.

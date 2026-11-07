@@ -3,13 +3,19 @@
 from fractions import Fraction
 from pathlib import Path
 import argparse
+import os
 import re
 import subprocess
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--linux', type=Path, default=Path('.work/linux'))
-parser.add_argument('--vendor', type=Path, default=Path('.work/research/battery-arch-arm-mach-msm-bms-batterydata-samsung-6800mah.c'))
-parser.add_argument('--out', type=Path, default=Path('.work/battery-validation'))
+project = Path(__file__).resolve().parents[1]
+sources = Path(os.environ.get('SOURCES_DIR', project.parent / 'sources'))
+linux = Path(os.environ.get('KERNEL_SRC', sources / 'linux-mainline'))
+work = Path(os.environ.get('WORK_DIR', project.parent / 'build/sm-t531'))
+
+parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--linux', type=Path, default=linux)
+parser.add_argument('--vendor', type=Path, required=True, help='Samsung 6800mAh batterydata C source (not bundled)')
+parser.add_argument('--out', type=Path, default=work / 'battery-validation')
 a = parser.parse_args()
 a.out.mkdir(parents=True, exist_ok=True)
 

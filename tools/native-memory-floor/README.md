@@ -10,8 +10,9 @@ delivered by firmware.
 Build using the exact configured kernel tree, generated headers and symbols:
 
 ```sh
-make -C .work/linux O="$PWD/.work/gpu-counter-build/out" ARCH=arm \
-  CROSS_COMPILE=arm-linux-gnueabihf- LOCALVERSION=-unified2 \
+make -C "${KERNEL_SRC:-../sources/linux-mainline}" \
+  O="${KERNEL_OUT:-$PWD/../build/sm-t531/out}" ARCH=arm \
+  CROSS_COMPILE=arm-linux-gnueabihf- \
   M="$PWD/tools/native-memory-floor" modules
 ```
 
