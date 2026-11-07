@@ -25,5 +25,12 @@ Configuration: `sudo scripts/configure-charging.sh`; status/logs:
 `journalctl -u t531-charge-ramp.service`. The installation command starts
 policy unless INSTALL_ONLY=1; do not run it during an unrelated measurement.
 
+* **DEVICE, 2026-11-07:** Android USB was online while battery status said
+  Discharging; logs repeatedly failed BMS and SMB358 properties. This custom
+  ROM is not a clean charging-policy reference. Its `CURRENT_NOW=-50` is a
+  vendor value; do not assume standard microamps without checking the driver.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Evidence: `scripts/configure-charging.sh`, `patches/linux/0011*`, `0015*`,
 `0016*`, `0122*`, [battery/load observations](../docs/battery-results.json).

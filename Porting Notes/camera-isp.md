@@ -10,4 +10,11 @@
   native JPEG/mem2mem acceptance remain unresolved. Generic PM8226 flash nodes
   are not proof of a physical LED and must not be activated blindly.
 
+* **DEVICE, 2026-11-07:** Android exposes two CSIPHY, two CSID, sensor-init,
+  VFE, ISPIF, buffer-manager and CPP subdevices, plus SR352/SR130PC20.
+  HAL is `Samsung MSM8226 Camera Wrapper`, module API0x100, two devices.
+  A generic `msm_flash` node is present without a HAL flash-mode control.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).

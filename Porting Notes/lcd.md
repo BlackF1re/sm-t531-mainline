@@ -12,6 +12,14 @@
   Do not select a generic similarly sized panel or infer physical PCB revision
   from its r02 DT model string.
 
+* **DEVICE, 2026-11-07:** Android selects
+  `qcom,mdss_dsi_tc358764_wxga_video`, continuous splash enabled, partial update
+  disabled. Physical fb0 is1280×800, virtual1280×1600,32bpp/stride5120.
+  `fb0/modes` prints `p-1`: do not infer panel refresh from that vendor string.
+  fb1 is the registered writeback panel, not a second physical display.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Evidence: [native output](../docs/native-kms-results.json),
 [sleep image checks](../docs/sleep-release-validation-20261103.json),
 `patches/linux/0051*`, `0135*`, [vendor pins](../docs/hardware-source-manifest.json).

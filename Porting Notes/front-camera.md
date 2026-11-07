@@ -8,4 +8,11 @@
 * Bring-up needs powered ID, V4L2 formats/controls and complete frames through
   ISPIF/VFE. Flash/AF/EEPROM population is unestablished.
 
+* **DEVICE, 2026-11-07:** camera HAL1 reports FRONT/orientation0, fixed focus
+  only, still sizes up to1280×960; advertised preview/video include720×480.
+  `/sys/class/camera/front/front_camtype=SILICONFILE_SR130PC20`.
+  Mode enumeration is not native capture or optical/orientation acceptance.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).

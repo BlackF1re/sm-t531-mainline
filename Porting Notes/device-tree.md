@@ -25,6 +25,14 @@
   not a bare host zImage. Preserve decompressor/DT placement below firmware
   scanout0x03200000; the internal BOOT prefix is512KiB,not part of virtual boot.
 
+* **DEVICE, 2026-11-07:** flashing the unchanged original full Android BOOT
+  and booting through Samsung's loader independently selected
+  `[MATISSE-3G-OPEN] Rev-02-MTP-v2`. No QCDT metadata adaptation was used.
+  The archived runtime tree contains 3,504 property files; this count is not
+  directly comparable to earlier collector totals.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Sources: [sanitized Android tree/probes](../docs/android-hardware-observation-20261022.json),
 [Linux observation](../docs/hardware-observation-20261022.json),
 [vendor source pins/include closure](../docs/hardware-source-manifest.json).

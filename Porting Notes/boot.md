@@ -31,6 +31,13 @@ Do not relabel one as the other or treat ten old critical dumps as full eMMC.
 Ramoops controlled-restart retention was observed; power-loss retention was not.
 Never infer crash absence solely from missing pstore after an early failure.
 
+* **DEVICE, 2026-11-07:** original Android full BOOT booted through Samsung's
+  loader; afterward the fresh pre-test Linux/lk2nd BOOT was restored to p14.
+  Full partition readback matched the `f2e67d…` hash above. The SD boot selection
+  and mainline image were not changed during this audit.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Primary data: [SD checks](../docs/sd-cd-sleep-results-20261101.json),
 [package](../docs/sd-cd-fix-package-20261101.json),
 [graphics audit](../docs/graphics-stack-audit-20261103.json), private provenance.

@@ -16,6 +16,15 @@
 * Use one ACM reader at a time. Recover/probe without automatic USB disconnect
   or kernel mode switch; device enumeration/disappearance is not proof of panic.
 
+* **DEVICE, 2026-11-07:** full Android root ADB works with Samsung USB
+  `04e8:6860`, composite `mtp,acm,adb`, CONFIGURED. Under Windows USB/IP a
+  stale Linux `1d6b:0104` enumeration blocked ADB after reboot; detach/reattach
+  only the tablet's physical bus restored it. Re-identify the bus each time.
+  `sys.boot_completed=1` plus mounted `/data` distinguished full Android from
+  charger mode; a charging screen alone is not a reliable boot-state test.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Sources: `config/kernel.fragment`, `patches/linux/0141*`, board MUIC entries in
 [source manifest](../docs/hardware-source-manifest.json),
 [device snapshot](../docs/hardware-observation-20261022.json).

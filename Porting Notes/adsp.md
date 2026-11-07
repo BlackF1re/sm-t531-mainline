@@ -7,4 +7,10 @@
 * Bluetooth endpoint registration is not proof of working SCO/PCM or board
   audio. Actual playback/recording and restart/sleep behavior remain untested.
 
+* **DEVICE, 2026-11-07:** secure `pil-q6v5-lpass` loaded ADSP into
+  `0x0d900000–0x0f100000`, received power/clock-ready and reached ONLINE.
+  This validates that Android firmware boot path, not native audio routing.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).

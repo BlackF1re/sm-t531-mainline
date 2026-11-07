@@ -5,4 +5,10 @@
 * No fitted transmitter or native transmit acceptance is established. Do not
   infer SM-T531 wiring from Wi-Fi/US variants or enable those GPIOs blindly.
 
+* **DEVICE, 2026-11-07:** no IR binding was identified and the custom kernel
+  disables `CONFIG_IR_REMOCON_MC96FR116`. Early/common variant descriptions
+  remain the reason IR was considered; no populated transmitter is established.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).

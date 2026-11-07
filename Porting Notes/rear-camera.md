@@ -9,4 +9,12 @@
 * Native complete frames, formats and controls remain unaccepted. A fitted
   flash, autofocus actuator or calibration EEPROM is not established.
 
+* **DEVICE, 2026-11-07:** camera HAL1 reports BACK/orientation0, fixed focus
+  only, still sizes up to2048×1536, preview up to1024×768 and video up to1280×720.
+  These are advertised modes, not tested frame capture. No `flash-mode` control
+  was reported despite generic flash/autofocus package features and a
+  `msm_flash` subdevice; neither proves a fitted flash or AF actuator.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).

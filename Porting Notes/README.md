@@ -1,7 +1,7 @@
 # Porting Notes — SM-T531
 
 Each record states the component, integration, accepted observations and open
-limits locally. No hardware research was added during this reorganization.
+limits locally. The 2026-11-07 Android audit adds device observations with explicit limits.
 Evidence labels distinguish device observations, source-only configuration and
 hypotheses; a probe is not functional acceptance. Unknown population is explicit.
 

@@ -6,5 +6,11 @@
   behavior are not fully accepted. A readable zone alone is not thermal safety
   or externally calibrated temperature evidence.
 
+* **DEVICE, 2026-11-07:** Android exports six `tsens_tz_sensor0`…`5` zones,
+  snapshots45–52. Their vendor temperature units differ from the PMIC zone's
+  millidegrees; convert per driver rather than applying a universal scale.
+
+[Android boot audit](../docs/android-hardware-observation-20261107.json).
+
 Evidence: [native observation](../docs/hardware-observation-20261022.json),
 `config/kernel.fragment` and [board source pins](../docs/hardware-source-manifest.json).
