@@ -21,8 +21,12 @@
   CS0 baseline application/readback, threshold/hysteresis validation, signed
   triggered buffer with monotonic timestamps. Slow→fast sampling changes can
   retain the preceding scan; direct reads allow 900ms before reporting timeout.
-* Grip/release event acceptance and suspend/resume remain unverified. Modem SAR
-  control is not implemented by this IIO driver. Trial kernel boots with SX9500;
+* Manual edge-grip/release test: 95 samples without read errors; CS0 DIFF
+  −3…1947, two threshold events, return near baseline after release. CS1–3
+  vary little. CS0 USEFUL clips at32767 during strong grip with default x8 gain;
+  do not treat saturated capacitance as quantitatively accurate. Per-edge
+  sensitivity and suspend/resume remain unverified. Modem SAR control is absent.
+  Trial kernel boots with SX9500;
   K2HH startup timing is corrected separately by patch0153.
 
 Sources: vendor `drivers/sensors/sx9500{,_reg.h}`, commit
