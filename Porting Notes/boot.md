@@ -36,11 +36,7 @@ Never infer crash absence solely from missing pstore after an early failure.
   Full partition readback matched the `f2e67d…` hash above. The SD boot selection
   and mainline image were not changed during this audit.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Primary data: [SD checks](../docs/sd-cd-sleep-results-20261101.json),
-[package](../docs/sd-cd-fix-package-20261101.json),
-[graphics audit](../docs/graphics-stack-audit-20261103.json), private provenance.
+Primary data: private provenance.
 
 Startup: native graphics waits up to45s for SSH listener. Unit uses
 Wants/Before display-manager rather than nested synchronous systemctl from

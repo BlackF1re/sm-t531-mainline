@@ -8,4 +8,4 @@
 * No cold-fix, tracking, power/suspend or location-triggered wake acceptance.
   Preserve modem/WCNSS factory calibration; do not synthesize RF/NV data.
 
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

@@ -16,6 +16,4 @@
   stages immutable files/diverts the packaged plugin; it does not restart the
   session. `tools/check-graphics-stack.py` verifies actual process mappings.
 
-Evidence: `patches/plasma-mobile/0001-cache-quick-settings-during-drawer-motion.patch`,
-[release timings](../docs/graphics-release-validation-20261103.json),
-[stack audit](../docs/graphics-stack-audit-20261103.json).
+Evidence: `patches/plasma-mobile/0001-cache-quick-settings-during-drawer-motion.patch`.

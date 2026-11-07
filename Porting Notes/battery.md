@@ -27,6 +27,6 @@
 *0132 removes wake activation from periodic30sBMS polling and avoids unchanged
   notifications; charger events still notify. SOC accuracy is a separate issue.
 
-Evidence: [device results](../docs/battery-results.json), `patches/linux/0118*`–`0121*`,
+Evidence: `patches/linux/0118*`–`0121*`,
 `0132*`, `tools/check-battery-model.py`, `tools/check-battery-temperature.py`,
 [pinned Samsung profile/source paths](../docs/hardware-source-manifest.json).

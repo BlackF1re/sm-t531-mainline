@@ -12,6 +12,4 @@
   continuous mode up to100Hz, no batching; bound `K2HH` at I²C2:`0x1d`.
   Android uses vendor input/sysfs interfaces, not IIO.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json). Kernel fixes: `patches/linux/0020*`, `0022*`.
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json). Kernel fixes: `patches/linux/0020*`, `0022*`.

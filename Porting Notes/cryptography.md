@@ -5,4 +5,4 @@
   engine version have not been accepted. No crypto-vector or throughput
   acceptance is recorded. Android probe is not a usable native crypto path.
 
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

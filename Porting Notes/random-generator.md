@@ -6,5 +6,4 @@
   `hwrng_support=false`. Do not expose this as a proven physical entropy source
   or infer successful randomness delivery merely from a bound driver.
 
-Evidence: [device observation](../docs/hardware-observation-20261022.json),
-Linux v7.2.9 `drivers/crypto/qcom-rng.c` (base `5fce161649b4`).
+Evidence: Linux v7.2.9 `drivers/crypto/qcom-rng.c` (base `5fce161649b4`).

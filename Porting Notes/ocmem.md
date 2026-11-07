@@ -15,6 +15,4 @@
 * Firmware-protected OCMEM register changes are not identified; the SCM causal
   result does not prove a specific MPU bit or explain remaining FPS loss.
 
-Evidence: [resume acceptance](../docs/sleep-release-validation-20261103.json),
-[graphics checks](../docs/graphics-release-validation-20261103.json),
-`patches/linux/0148*`, `0059*`, `0060*`.
+Evidence: `patches/linux/0148*`, `0059*`, `0060*`.

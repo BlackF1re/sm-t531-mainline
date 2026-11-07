@@ -10,7 +10,4 @@
   snapshots45–52. Their vendor temperature units differ from the PMIC zone's
   millidegrees; convert per driver rather than applying a universal scale.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [native observation](../docs/hardware-observation-20261022.json),
-`config/kernel.fragment` and [board source pins](../docs/hardware-source-manifest.json).
+Evidence: `config/kernel.fragment` and [board source pins](../docs/hardware-source-manifest.json).

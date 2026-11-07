@@ -10,5 +10,4 @@
 * The bounded reader saves/restores the mux/counter; it must not program
   operating rates or probe powered-off MMSS registers.
 
-Evidence: [physical measurements](../docs/phosh-performance-results.json),
-`tools/measure-msm8226-bus.c`.
+Evidence: `tools/measure-msm8226-bus.c`.

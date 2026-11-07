@@ -15,6 +15,4 @@
   HAL is `Samsung MSM8226 Camera Wrapper`, module API0x100, two devices.
   A generic `msm_flash` node is present without a HAL flash-mode control.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

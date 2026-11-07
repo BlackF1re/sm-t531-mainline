@@ -16,6 +16,4 @@
   Generic PCM endpoints include FM, BT-SCO, HDMI and voice/VoLTE; registration
   does not establish those external connectors, radio standards or sound.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

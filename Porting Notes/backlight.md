@@ -19,6 +19,5 @@ For register control, write the standard sysfs brightness range0…255;
 read actual_brightness and BRT to distinguish a kernel clamp from UI mapping.
 The device sweep reached255 numerically; optical endpoint acceptance is pending.
 
-Evidence: [register sweep](../docs/backlight-range-results.json),
-`patches/linux/0033*`, `0036*`, `0037*`, `tools/test-backlight-range.py`.
+Evidence: `patches/linux/0033*`, `0036*`, `0037*`, `tools/test-backlight-range.py`.
 [LP8556 SNVS871M datasheet](https://www.ti.com/lit/ds/symlink/lp8556.pdf).

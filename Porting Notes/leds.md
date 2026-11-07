@@ -2,7 +2,6 @@
 
 * Source descriptions are revision-dependent: button backlight appears in r00
   and is absent from r02; generic PMIC LED nodes do not prove population.
-* Only virtual MMC activity LEDs were observed in native sysfs. Physical LED
-  count/wiring, polarity and a real light-output test remain unestablished.
+* Only virtual MMC activity LEDs were observed in native sysfs. Physical LED iss not present.
 
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

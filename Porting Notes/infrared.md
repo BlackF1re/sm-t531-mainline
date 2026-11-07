@@ -9,6 +9,4 @@
   disables `CONFIG_IR_REMOCON_MC96FR116`. Early/common variant descriptions
   remain the reason IR was considered; no populated transmitter is established.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

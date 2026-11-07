@@ -6,8 +6,8 @@ size, as resource creation does. Image slice setup sees the old layout width
 and can allocate a BO too small for per-tile query samples on A3xx.
 Observed with GL_ANY_SAMPLES_PASSED at 1280x800: OUT_RELOC offset exceeds BO.
 Separate correctness fix; not established as a cause of the GUI FPS deficit.
-Bounded true/empty occlusion query checks are recorded in
-docs/graphics-scissor-group-offscreen-20261101.json.
+Bounded true/empty occlusion query checks passed; the retained correctness
+scope and limits are documented in Porting Notes/mesa.md.
 
 --- a/src/gallium/drivers/freedreno/freedreno_resource.c
 +++ b/src/gallium/drivers/freedreno/freedreno_resource.c

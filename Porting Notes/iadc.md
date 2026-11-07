@@ -11,4 +11,4 @@
   infer polarity only from a channel label or equate USB input and cell current.
 
 Evidence: `patches/linux/0119-iio-qcom-spmi-iadc-signed-current-calibration.patch`,
-[load response](../docs/battery-results.json), `tools/check-battery-model.py`.
+`tools/check-battery-model.py`.

@@ -15,6 +15,4 @@
   do not establish modem boot, SIM service or CDMA hardware. This custom ROM
   is not a known-working telephony reference.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

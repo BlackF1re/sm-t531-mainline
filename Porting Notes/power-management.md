@@ -37,6 +37,17 @@ is still absent. Ordinary awake cpuidle remains per-core WFI/SPC.
 * Production cmdline removes `clk_ignore_unused`; CPU critical clock remains
   `CLK_IS_CRITICAL`. TC358764/LCD enables use vendor order, L5 still retained.
 
+## Preserved Android reference (2026-11-03)
+
+Dirty Unicorns6.0.1 is not factory firmware. Its L2 maximum mode was4,
+CPU0 coordinated-collapse idle enabled, CPU1–3 disabled; standalone idle
+was enabled and retention idle disabled. Direct unplugged screen-off suspend
+returned after~8.137s using MPM timer8s with RTC backup45s; XO/VMIN counters
+still0. Connected suspend returned−EBUSY from USB. This does not establish
+normal framework autosuspend or low power. The41 GPIO↔MPM pairs matched the
+runtime Android DT; GIC SPI mappings subtract32, and vendor255 bypass entries
+are not physical MPM pins.
+
 ## Reproduced independent aborts
 
 * GPIO38 SD CD IRQ78 exceeded3million interrupts, mmc1 generated hundreds of
@@ -77,7 +88,4 @@ XO/VMIN counters remained0; DDR self-refresh, low sleep current and long-term
 reliability are unverified. USB connection previously impeded sleep; don't
 conflate local clock-gating success with low whole-board power.
 
-Data: `docs/{sleep-stack,sleep-modes,sleep-capabilities}-*.json`,
-[sleep release](../docs/sleep-release-validation-20261103.json),
-[SD CD](../docs/sd-cd-sleep-results-20261101.json),
-`tools/audit-sleep-states.py`, `tools/check-suspend-cycle.py`.
+Tools: `tools/audit-sleep-states.py`, `tools/check-suspend-cycle.py`.

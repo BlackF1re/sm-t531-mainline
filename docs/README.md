@@ -1,7 +1,7 @@
 # Operator and developer guides
 
 Technical component knowledge lives only in [Porting Notes](../Porting%20Notes/README.md).
-This directory retains operator procedures and primary measurement artifacts.
+This directory retains operator procedures and the pinned hardware-source manifest.
 
 | Task | Guide |
 |---|---|
@@ -13,7 +13,7 @@ This directory retains operator procedures and primary measurement artifacts.
 | Optional Phosh packages and session selection | [Phosh](PHOSH.md) |
 | Patch ownership and validation boundaries | [Patch review](PATCH-REVIEW.md) |
 
-JSON/TXT results and source manifests remain unchanged beside these guides.
-Their dates/build identities delimit evidence; a historical successful probe,
-synthetic speedup or frame count is not acceptance of the current whole stack.
-Per-device dumps, firmware/NV, calibration and raw logs stay private.
+Test reports and probe snapshots were consolidated into the component notes.
+`hardware-source-manifest.json` retains source commits, include closure,
+licensing and provenance; it is not a test report. Runtime version/hash locks
+remain in `config/`. Raw dumps, firmware/NV and calibration stay private.

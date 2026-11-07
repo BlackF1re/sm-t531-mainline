@@ -10,5 +10,4 @@
 * Earlier volume/PIN interference followed stale touchscreen slots, while the
   physical key bits were released. Do not diagnose stuck keys from the overlay.
 
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json). [Touch regression](../docs/touch-sleep-results.json),
-[sleep validation](../docs/sleep-release-validation-20261103.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

@@ -23,8 +23,7 @@
   First touch added ~1002 minor faults; warm iterations added none. This does
   not prove a cache-enable bug or justify CPU tile packing as a GPU fix.
 
-Sources: [physical-rate/cache measurements](../docs/phosh-performance-results.json),
-`tools/cache-latency.c`, `tools/cpu-cache-state`,
+Sources: `tools/cache-latency.c`, `tools/cpu-cache-state`,
 `tools/measure-msm8226-bus.c`, corresponding Linux patches above.
 Low-load DVFS, thermal/voltage transitions and long hotplug/suspend acceptance
 remain incomplete; no overclock is selected.

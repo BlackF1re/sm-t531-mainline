@@ -9,5 +9,4 @@
   0.492s after slow preparation and was rejected. Check actual suspended time,
   not only a successful `rtcwake`/kernel return.
 
-Evidence: [device observation](../docs/hardware-observation-20261022.json),
-[sleep results](../docs/sleep-release-validation-20261103.json), `config/kernel.fragment`.
+Evidence: `config/kernel.fragment`.

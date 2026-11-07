@@ -22,5 +22,4 @@
   image/mouse. That incident does not establish a Bluetooth transport failure.
 
 Sources: [0125](../patches/linux/0125-arm-dts-qcom-matisse3g-enable-bluetooth.patch),
-[sanitized device observations](../docs/hardware-observation-20261022.json),
 [board source pins](../docs/hardware-source-manifest.json). No per-device address is public.

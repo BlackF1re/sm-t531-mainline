@@ -16,6 +16,5 @@
   desktop uses native KMS; simpledrm CPU RGB888 conversion is obsolete for it.
   Early console/recovery framebuffer remains deliberate.
 
-Evidence: [native KMS](../docs/native-kms-results.json),
-[stability](../docs/graphics-stability-results.json), `patches/linux/0104*`,
+Evidence: `patches/linux/0104*`,
 `0110*`, `0111*`, `0116*`, `0136*`, `0140*`.

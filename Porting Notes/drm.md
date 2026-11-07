@@ -22,5 +22,4 @@ Configuration: `config/msm.conf`; activation: `scripts/start-native-graphics.sh`
 Run `tools/drm-device` probes to validate the actual common device. Hardware
 OpenGL, valid planes and short trace success are not endurance acceptance.
 
-Evidence: [stack audit](../docs/graphics-stack-audit-20261103.json),
-`patches/linux/0126*`–`0129*`, `tools/drm-device/shared-iova.c`.
+Evidence: `patches/linux/0126*`–`0129*`, `tools/drm-device/shared-iova.c`.

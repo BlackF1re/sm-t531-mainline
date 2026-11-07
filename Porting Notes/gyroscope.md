@@ -14,6 +14,4 @@
   `pm list features` advertises a gyro despite this; that declaration is not
   hardware evidence. Physical absence is still unproven.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

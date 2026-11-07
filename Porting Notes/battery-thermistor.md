@@ -9,5 +9,4 @@
   sliders/input-current requests. Sensor precision and full thermal charge
   protection still need external/load acceptance.
 
-Evidence: [battery data](../docs/battery-results.json),
-`patches/linux/0121*`, `tools/check-battery-temperature.py`.
+Evidence: `patches/linux/0121*`, `tools/check-battery-temperature.py`.

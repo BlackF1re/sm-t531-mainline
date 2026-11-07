@@ -10,6 +10,4 @@
   Earlier candidates came from shared variants, not identified board hardware.
   These software omissions alone do not prove physical absence.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

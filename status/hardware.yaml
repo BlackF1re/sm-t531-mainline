@@ -31,11 +31,11 @@ priorities:
 sources:
   live:
     kind: VERIFIED_DEVICE
-    path: docs/hardware-observation-20261022.json
+    path: Porting Notes/README.md
     scope: 'Read-only #19 probe/interface snapshot; earlier physical tests are separately dated.'
   dt:
     kind: VERIFIED_DEVICE
-    path: docs/hardware-observation-20261022.json
+    path: Porting Notes/README.md
     scope: Read-only deployed DT compatible/status list, cross-checked with local board/SoC source; no claim local
       patches are merged upstream.
   config:
@@ -68,7 +68,7 @@ sources:
       Unwired FM pins are a hypothesis pending graphical schematic inspection; no physical continuity test.
   fm-trial:
     kind: VERIFIED_DEVICE
-    path: docs/fm-results.json
+    path: Porting Notes/fm.md
     scope: Temporary native V4L2 candidate/API and failed RF trials; not production FM acceptance.
   vendor-board:
     kind: VERIFIED_VENDOR_SOURCE
@@ -2162,7 +2162,7 @@ subsystems:
   - VERIFIED_VENDOR_SOURCE
 android_audit:
   report: Porting Notes/device-tree.md
-  observations: docs/android-hardware-observation-20261022.json
+  observations: Porting Notes/device-tree.md
   board_revision_reported: '0003'
   selected_dt: r02 (explicit compatible QCDT metadata; original FDT bytes unchanged)
   native_acceptance_unchanged: true

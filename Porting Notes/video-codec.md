@@ -13,6 +13,4 @@
   workload; that idle snapshot is not a codec failure. Generic VIDC nodes
   alone do not validate encode/decode formats or sustained playback.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

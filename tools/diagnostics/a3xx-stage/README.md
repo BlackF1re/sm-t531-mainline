@@ -11,7 +11,6 @@ uninstrumented latency**. Do not use at another GPU frequency unchanged.
 
 `python3 analyze.py TRACE.json RESULT.json` recovers only complete render passes
 from a potentially unclosed trace. No missing records are reconstructed.
-Accepted aggregates and limitations already live in
-`docs/graphics-gpu-stages-20261101.json` and
-`Porting Notes/gpu-experiments.md`; raw traces are not duplicated here.
+Accepted aggregates and limitations live in
+[GPU experiments](../../../Porting%20Notes/gpu-experiments.md); raw traces are not duplicated here.
 Old hardcoded build/deploy scripts and full Mesa source snapshots are omitted.

@@ -10,4 +10,4 @@
   independent voltage/power measurement. Keep active and sleep resource votes
   distinct; do not manipulate genpd reference counts to simulate sleep.
 
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json). `config/kernel.fragment`, `patches/linux/0134*`, `0135*`, `0138*`.
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json). `config/kernel.fragment`, `patches/linux/0134*`, `0135*`, `0138*`.

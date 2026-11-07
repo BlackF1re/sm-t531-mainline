@@ -47,7 +47,6 @@ Topology: APSS/CPU and [Adreno](gpu.md) request DDR through BIMC/SNOC/MMSS;
 [OCMEM](ocmem.md); its virtual master vote is not a physical DDR port.
 The links identify endpoints, not missing setup instructions.
 
-Evidence: [measured buses/QoS](../docs/phosh-performance-results.json),
-`patches/linux/0055*`–`0061*`, `0107*`, `0138*`, `0139*`, `0142*`,
+Evidence: `patches/linux/0055*`–`0061*`, `0107*`, `0138*`, `0139*`, `0142*`,
 `tools/read-msm8226-qos.py`, `tools/measure-msm8226-bus.c`.
 Low-load policy, contention and whole-board power remain unverified.

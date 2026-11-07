@@ -28,9 +28,11 @@ correct active clocks do not prove optimal contention or sleep policy.
 
 Earlier split-stack tiled-vs-linear four-layer AB-A: 25.55→15.91→25.41 ms;
 texture path is expensive, but that stack differs from current unified/cache.
-Command/state constant-update, clear census, tile choice, shader pow/thread-size,
-precision and memory-floor controls are retained in the datasets below. Their
-small/synthetic gains did not establish a stable GUI speedup. Coverage-reduction
+Clear folding executed40times but GUI ABA50.877/50.619/50.554/s and submit/
+retire timing did not improve; it remained disabled. TWO_QUADS vs FOUR_QUADS
+fragment thread size and exponent-one shader controls gave no reliable GUI
+solution. Per-draw full-state IB and KWin tiling candidates were rejected.
+Coverage-reduction
 on the active desktop visibly corrupted pixels and was stopped; future
 pixel-changing diagnostics must be offscreen. Scissor culling compares complete
 images/query behavior rather than assuming preserved coverage is sufficient.
@@ -70,18 +72,9 @@ controls do not prove Android minimum rates were pinned. Android DSI pixel/byte
 76.333/57.250 MHz vs historical Linux74.240/55.680 is a separate timing issue,
 not an explanation of offscreen cost. No Android internal layout/stream capture.
 
-## Primary data (retained, not duplicated)
+## Reproduction boundary
 
-All paths below are under `docs/`:
-
-* `graphics-android-{dt,linux-comparison,offscreen,presentation}-20261103.json`.
-* `graphics-{atomic,batch-links,busy-deadlines,critical,fence-owners,gpu-stages}-20261101.json`.
-* `graphics-{counters,deadline-counters,color-controls,startup-fps,thread-size}-20261101.json`.
-* `graphics-half-export-{offscreen,shell,stack}-20261101.json`.
-* `graphics-pow-one-{gui,offscreen}-20261101.json`.
-* `graphics-scissor-{group-gui,group-offscreen,ib-gui,ib-offscreen,ib-v4-offscreen,textures}-20261101.json`.
-* `graphics-compact-layout-results.json`, `graphics-kwin-tiling-20261101.json`,
-  `graphics-results.json`, `phosh-{performance,drawer}-results.json`.
-
-Historical candidate source: Git `43648a2`; only accepted fixes are in current
-`patches/mesa`. Missing .work build directories are not required evidence.
+Only accepted fixes are selected in `patches/mesa`; rejected candidate source
+is available in Git`43648a2`. Historical report snapshots remain retrievable
+from Git`e865aba`, not as active test results. Preserve the workload, image
+checks and attribution limits above when designing a new comparison.

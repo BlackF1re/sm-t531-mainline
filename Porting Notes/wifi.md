@@ -33,6 +33,5 @@ Monitor uses exclusive ownership and disconnects Wi-Fi SSH; it is not a normal
 mixed managed/AP workflow. Regulatory rights and exact-image guards remain in
 force regardless of test software.
 
-Evidence: [radio acceptance](../docs/wifi-results.json),
-`patches/linux/0123-wifi-wcn3660-matisse3g-support.patch`,
+Evidence: `patches/linux/0123-wifi-wcn3660-matisse3g-support.patch`,
 `config/wcn36xx-networkmanager.conf`, `scripts/configure-wifi.sh`.

@@ -17,6 +17,5 @@
   context diagnostics only; a translation query completing is not proof its
   returned physical address is correct.
 
-Evidence: [translation experiments](../docs/native-kms-results.json),
-[crash controls](../docs/graphics-stability-results.json), `patches/linux/0062*`–`0067*`,
+Evidence: `patches/linux/0062*`–`0067*`,
 `0079*`–`0098*`, `0101*`, `0112*`–`0114*`.

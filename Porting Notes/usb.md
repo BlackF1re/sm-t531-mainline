@@ -23,8 +23,5 @@
   `sys.boot_completed=1` plus mounted `/data` distinguished full Android from
   charger mode; a charging screen alone is not a reliable boot-state test.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
 Sources: `config/kernel.fragment`, `patches/linux/0141*`, board MUIC entries in
-[source manifest](../docs/hardware-source-manifest.json),
-[device snapshot](../docs/hardware-observation-20261022.json).
+[source manifest](../docs/hardware-source-manifest.json).

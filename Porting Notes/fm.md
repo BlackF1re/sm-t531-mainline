@@ -26,8 +26,7 @@
   connection during these trials was once ordinary sleep, not a proven crash.
   No guessed GPIO/RF voltage/calibration values should enter production.
 
-Sources: [FM results](../docs/fm-results.json),
-[API compliance](../docs/fm-v4l2-compliance.txt), `tools/fm-diag`,
+Sources: `tools/fm-diag`,
 [source manifest](../docs/hardware-source-manifest.json),
 [Samsung service manual p45](https://www.manualslib.com/manual/2076923/Samsung-Sm-T531.html?page=45)
 (text-only retrieval2026-10-22; no scans redistributed).

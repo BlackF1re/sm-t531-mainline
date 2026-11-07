@@ -8,4 +8,4 @@
   responsibilities. Exact VBUS ownership/current capability is unresolved;
   do not invent a regulator/GPIO or derive connector voltage from extcon state.
 
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json). `config/kernel.fragment`.
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json). `config/kernel.fragment`.

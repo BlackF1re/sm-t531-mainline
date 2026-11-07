@@ -12,5 +12,4 @@
   remain the qualified ones when comparing this intervention.
 
 Evidence: `patches/qt/0001-discard-swapchain-depth.patch`,
-[loaded stack identity](../config/graphics-stack.lock.json),
-[release validation](../docs/graphics-release-validation-20261103.json).
+[loaded stack identity](../config/graphics-stack.lock.json).

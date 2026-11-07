@@ -8,5 +8,4 @@
   physical recovery; do not rely on a userspace rollback timer after a kernel
   wedge or repeat reset tests without an approved recovery plan.
 
-Evidence: [device observation](../docs/hardware-observation-20261022.json),
-[historical test-state artifact](../status/hardware.yaml).
+Evidence: [historical test-state artifact](../status/hardware.yaml).

@@ -10,5 +10,4 @@
   write/fsync/full hash readback passed (~2.608s). Root-device hot removal and
   general hotplug/card/signal-mode/endurance acceptance remain incomplete.
 
-Evidence: [CD sleep tests](../docs/sd-cd-sleep-results-20261101.json),
-[package](../docs/sd-cd-fix-package-20261101.json), `patches/linux/0130*`.
+Evidence: `patches/linux/0130*`.

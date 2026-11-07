@@ -9,5 +9,5 @@
   A4.8V connector floor cannot be implemented from these values by guessing
   a scaling factor. Extcon cable state is not a voltage measurement.
 
-Evidence: [ADC observations](../docs/battery-results.json), `patches/linux/0118*`,
+Evidence: `patches/linux/0118*`,
 `tools/battery-diag`, [vendor ADC/BMS pins](../docs/hardware-source-manifest.json).

@@ -15,6 +15,4 @@
   was reported despite generic flash/autofocus package features and a
   `msm_flash` subdevice; neither proves a fitted flash or AF actuator.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

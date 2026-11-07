@@ -5,4 +5,4 @@
   wake flag does not establish correct polarity, open/closed screen policy or
   wake behavior. Use a real magnet/cover before changing porting status.
 
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

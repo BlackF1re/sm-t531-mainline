@@ -10,10 +10,13 @@
   kernel `3.4.0-cyanogenmod-g6be37d8-00011-gcee6fdf-dirty`, not factory Samsung.
   Android completed boot, enabling actual driver/ID checks; raw runtime tree
   has 5,468 properties and remains private.
+* **DEVICE, 2026-11-07:** the ROM's Samsung5.0.2 release fingerprint conflicts
+  with SDK23/DU6.0.1 display properties. A fingerprint string alone cannot
+  identify factory firmware or establish a trustworthy stock-policy baseline.
 * The RAM/maintenance Android image changed QCDT selection metadata only:
   platform `0x9e`, variant `0x8`, revision `0x20000`. Selected r02 FDT bytes stayed
   unchanged, SHA256 `834eb73ec12f46211acd6e2f301f51c75dad429b5bd5cca0ab9114bcb6a62bc9`.
-  This does not independently validate Samsung's original DT-selection logic.
+  The later unchanged full-BOOT test below independently checked selection.
 * `/proc/device-tree` was archived and reconstructed using `dtc -I fs` because
   Android lacked `/sys/firmware/fdt`. Sanitize bootargs/identities before export.
 * r02 positively identifies the touch/accelerometer/charger/MUIC/backlight
@@ -31,9 +34,5 @@
   The archived runtime tree contains 3,504 property files; this count is not
   directly comparable to earlier collector totals.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Sources: [sanitized Android tree/probes](../docs/android-hardware-observation-20261022.json),
-[Linux observation](../docs/hardware-observation-20261022.json),
-[vendor source pins/include closure](../docs/hardware-source-manifest.json).
+Sources: [vendor source pins/include closure](../docs/hardware-source-manifest.json).
 A bound driver establishes communication/probe, not full peripheral acceptance.

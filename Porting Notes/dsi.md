@@ -22,6 +22,5 @@
   can leave CCF locked and stall storage. Use only bounded active-host register
   allowlists. Keep modetest active during image checks; TPG alone bypasses MDP.
 
-Evidence: [first-frame](../docs/native-first-frame-results.json),
-[native KMS](../docs/native-kms-results.json), `tools/read-dsi-controller.c`,
+Evidence: `tools/read-dsi-controller.c`,
 `patches/linux/0065*`, `0068*`–`0078*`, `0086*`, `0099*`, `0100*`, `0108*`, `0109*`, `0115*`.

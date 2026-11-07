@@ -10,6 +10,4 @@
   reported22/−40 respectively. The −40 reading may be an absent/open or
   uncalibrated channel; neither value identifies an extra fitted thermistor.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

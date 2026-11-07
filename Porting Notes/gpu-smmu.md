@@ -11,5 +11,4 @@
   recovery, sleep isolation and unused camera/video contexts are not accepted
   merely because this GPU path works.
 
-Evidence: `patches/linux/0007*`–`0010*`, `0017*`, `0126*`–`0129*`,
-[stack validation](../docs/graphics-stack-audit-20261103.json).
+Evidence: `patches/linux/0007*`–`0010*`, `0017*`, `0126*`–`0129*`.

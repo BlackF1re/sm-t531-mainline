@@ -8,4 +8,4 @@
 * The native audio card is not brought up; jack detection and audible output
   need separate acceptance rather than an Android audio-HAL dependency.
 
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

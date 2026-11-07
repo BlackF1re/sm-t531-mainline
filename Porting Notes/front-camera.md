@@ -13,6 +13,4 @@
   `/sys/class/camera/front/front_camtype=SILICONFILE_SR130PC20`.
   Mode enumeration is not native capture or optical/orientation acceptance.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

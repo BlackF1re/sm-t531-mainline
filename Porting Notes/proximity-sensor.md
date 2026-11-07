@@ -11,6 +11,4 @@
   package feature declarations still advertise proximity. The audited custom
   Android does not establish a fitted proximity sensor or its physical absence.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [Android probe data](../docs/android-hardware-observation-20261022.json), [pinned board sources](../docs/hardware-source-manifest.json).
+Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

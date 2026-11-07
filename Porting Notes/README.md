@@ -6,10 +6,14 @@ Evidence labels distinguish device observations, source-only configuration and
 hypotheses; a probe is not functional acceptance. Unknown population is explicit.
 
 Links in the index are navigation. In component records, source/configuration/
-measurement artifacts corroborate local facts; only the interconnect record
+artifacts corroborate local facts; only the interconnect record
 links component records to identify the endpoints it joins. There are no
 required reading steps in other prose documents. Raw firmware/NV, identities,
 calibration and unsanitized backups remain private.
+Historical measurements were consolidated here on2026-11-07; full report
+snapshots remain in Git at`e865aba`. Dated observations retain their original
+scope and do not certify today's entire system. Source manifests, build locks
+and runnable diagnostic tools remain separate technical artifacts.
 
 ## Platform
 

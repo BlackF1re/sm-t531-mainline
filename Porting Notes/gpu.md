@@ -22,8 +22,5 @@
   `reset_count=155` was observed without an attributable workload; this is not
   evidence that Android GPU operation was fault-free or a native regression.
 
-[Android boot audit](../docs/android-hardware-observation-20261107.json).
-
-Evidence: [physical clocks](../docs/phosh-performance-results.json),
-[stack lock](../config/graphics-stack.lock.json), `patches/linux/0024*`, `0027*`,
+Evidence: [stack lock](../config/graphics-stack.lock.json), `patches/linux/0024*`, `0027*`,
 `0105*`, `0106*`, `0131*`, `tools/sample-gpu-busy.py`.

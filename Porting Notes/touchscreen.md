@@ -27,6 +27,6 @@
   confuse shell DPMS reactivation with an accepted kernel wake source.
 
 Sources: [0124 patch](../patches/linux/0124-input-atmel-mxt-release-contacts-across-sleep.patch),
-[device results](../docs/touch-sleep-results.json), `tools/mxt-pm-probe`.
+`tools/mxt-pm-probe`.
 Direct `rtcwake -m mem` once selected deep instead of configured s2idle and
 failed DRM preparation: that is not touchscreen or deep-sleep acceptance.

@@ -18,5 +18,4 @@
   no-display startup failure is not evidence of a GPU rendering fallback.
 
 Evidence: `patches/kwin`, [stack identity](../config/graphics-stack.lock.json),
-[stack audit](../docs/graphics-stack-audit-20261103.json),
 `tools/check-graphics-stack.py`, `config/t531-kwin-graphics.conf`.

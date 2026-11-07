@@ -16,5 +16,4 @@
   --expect-manual` needs the desktop session bus and exclusive display ownership;
   it briefly changes real brightness and restores the original GUI/raw value.
 
-Evidence: [GUI/register observations](../docs/backlight-range-results.json),
-`patches/phosh/0002*`, `tools/test-phosh-brightness.py`.
+Evidence: `patches/phosh/0002*`, `tools/test-phosh-brightness.py`.
