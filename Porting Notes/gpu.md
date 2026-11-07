@@ -21,3 +21,5 @@
   maximum and three power levels; snapshot frequency320 MHz. Cumulative
   `reset_count=155` was observed without an attributable workload; this is not
   evidence that Android GPU operation was fault-free or a native regression.
+
+Hardware block inventory: [Adreno 305B IP](gpu-hardware.md).
