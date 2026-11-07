@@ -7,9 +7,9 @@ ROM, not proven factory Samsung. Firmware presence does not prove population.
 
 | Internal partition | Contents / native use |
 |---|---|
-| APNHLOS, p1,FAT | `image/wcnss.mdt` +b00/b01/b02/b04/b06/b07/b08/b09; also TZ-related images |
-| MODEM, p2,FAT | `image/modem.*`, `mba.*`, `adsp.*`; native services not accepted |
-| SYSTEM, p23 | `etc/firmware/wlan/prima/WCNSS_qcom_wlan_nv.bin` (29816bytes), cfg.dat,qcom_cfg.ini |
+| APNHLOS, p1, FAT | `image/wcnss.mdt` +b00/b01/b02/b04/b06/b07/b08/b09; also TZ-related images |
+| MODEM, p2, FAT | `image/modem.*`, `mba.*`, `adsp.*`; native services not accepted |
+| SYSTEM, p23 | `etc/firmware/wlan/prima/WCNSS_qcom_wlan_nv.bin` (29816 bytes), cfg.dat, qcom_cfg.ini |
 | EFS, p11 | Factory Wi-Fi `wifi/.mac.info`, `.mac.cob`; BT `/bluetooth/bt_addr` |
 | PERSIST, p21 | Sensor/private data, `.bt_nv.bin`, secure-data directories |
 
@@ -20,32 +20,10 @@ DT requests nine WCNSS executable files and board NV under
 native executable blobs/NV separate from prima Android config reference files;
 copying cfg.dat/qcom_cfg.ini is not Linux driver configuration.
 
-Existing private archive after cleanup:
-
-* `PARTITIONS/dumps/`: ten original BOOT/RECOVERY/EFS/MODEMST1/MODEMST2/FSG/FSC/
-  PARAM/PERSIST/PERSDATA images, not a complete eMMC dump.
-* `FIRMWARE/firmware-original-*.tar`:12original WCNSS/NV/reference files
-  plus provenance/checksums. Old `.work` audit paths and pre-cleanup `private/device`
-  paths are historical, not current prerequisites.
-* `FIRMWARE/board-data/bluetooth-address`: validated EFS identity,0600.
-* `BOOTSTRAP/immutable-*/`: current Linux/lk2nd physical BOOT and origin
-  metadata; distinct from the earlier Android BOOT. Do not replace one with the other.
-* The internal partition called BACKUP is only~7MiB; its name does not make it
-  a full-device backup. `private.7z` was not inspected/changed during cleanup.
-
-New captures use ignored `backup_stock/` with owner-only permissions:
-`./scripts/backup-stock backup --host root@ADDRESS` and
-`./scripts/backup-stock verify backup_stock/SESSION`. SSH requires verified host
-keys,rootPython and offline internal storage. It captures the full user area plus
-boot0/boot1; lk2nd captures exposed partitions, not raw gaps/GPT/boot areas.
-RPMB keys/contents,OTP/eFuses/secure secrets and eMMC hardware config are not
-ordinary raw backup data. A current capture is not automatically factory stock.
-Restore defaults to a plan; writing needs --execute,same-device identity,
-explicit target selection,critical gating where applicable and confirmation.
-Do not clone calibration or assume transport loss during writing is atomic.
-No calibration/NV, raw dumps, addresses, unsanitized DT or credentials belong
-in Git. Do not fabricate calibration or clone identities to another tablet.
-Read-only extraction used `mtools` for FAT firmware partitions and `debugfs`
-for ext images; no internal filesystem mount or firmware rewrite was needed.
-Sources: [storage geometry](../hardware/partitions.json),
-[source manifest](../docs/hardware-source-manifest.json), private SHA/provenance.
+Private archives retain ten selected critical-partition images,
+WCNSS/NV provenance and separate current/Android BOOT images; none is a
+complete eMMC dump. Full backups must include eMMC user area and boot0/boot1;
+lk2nd partition reads exclude raw gaps/GPT/boot areas. RPMB/OTP/eFuses,
+secure secrets and eMMC hardware configuration are not ordinary raw backups.
+Restore only after same-device identity verification and explicit consent.
+Never clone calibration/identities; keep raw dumps/NV outside Git.

@@ -7,7 +7,5 @@
   That table is not proof of a measured board temperature on native Linux.
 
 * **DEVICE:** Android thermal zones `pa_therm0`/`pa_therm1`
-  reported22/−40 respectively. The −40 reading may be an absent/open or
+  reported 22/−40 respectively. The −40 reading may be an absent/open or
   uncalibrated channel; neither value identifies an extra fitted thermistor.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

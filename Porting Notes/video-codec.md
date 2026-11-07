@@ -12,5 +12,3 @@
 * **DEVICE:** Venus subsystem was OFFLINE without an active video
   workload; that idle snapshot is not a codec failure. Generic VIDC nodes
   alone do not validate encode/decode formats or sustained playback.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

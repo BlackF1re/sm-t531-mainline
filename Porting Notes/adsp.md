@@ -10,5 +10,3 @@
 * **DEVICE:** secure `pil-q6v5-lpass` loaded ADSP into
   `0x0d900000–0x0f100000`, received power/clock-ready and reached ONLINE.
   This validates that Android firmware boot path, not native audio routing.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

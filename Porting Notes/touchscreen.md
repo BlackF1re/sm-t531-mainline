@@ -1,6 +1,6 @@
 # maXTouch touchscreen and sleep
 
-* **DEVICE:** Atmel mXT1188S, I²C`0x4a`, 16 MT slots, coordinate range0…4095.
+* **DEVICE:** Atmel mXT1188S, I²C`0x4a`, 16 MT slots, coordinate range 0…4095.
   Android adapter5; an observed Linux adapter4. Discover by device/driver,
   not fixed event or I²C bus numbers. Driver `atmel_mxt_ts`, standard evdev.
 * After sleep on #16: `BTN_TOUCH=1`, slot0 tracking9 at(35,1820), unchanged
@@ -10,8 +10,7 @@
   input suspend clears BTN_TOUCH but retains tracking IDs. Stop/start and
   queued reports can lose a lift event. T6 reset/calibration also retained slots.
   This explains stale state; the exact lost report was not captured.
-* Patch0124 preserves Nick Dyer's authorship (historical Jiada Wang v11 12/56,
-  source commit`26794433086dbc7dea18d2f6a1c8d61ab25bcfda`): quiesce
+* Patch 0124 (upstream-derived, authorship retained): quiesce
   threaded IRQ before stopping, release MT/pointer state, suppress transition
   reports while retaining T6 completions, wake/drain/restart/synchronize before
   reporting. I²C drain failures propagate. T9 Chromebook reset path was reviewed,
@@ -25,8 +24,3 @@
   but separate GUI event chains were not traced. This touch driver disables
   its IRQ in suspend and does not enable it as a system wake source. Do not
   confuse shell DPMS reactivation with an accepted kernel wake source.
-
-Sources: [0124 patch](../patches/linux/0124-input-atmel-mxt-release-contacts-across-sleep.patch),
-`tools/mxt-pm-probe`.
-Direct `rtcwake -m mem` once selected deep instead of configured s2idle and
-failed DRM preparation: that is not touchscreen or deep-sleep acceptance.

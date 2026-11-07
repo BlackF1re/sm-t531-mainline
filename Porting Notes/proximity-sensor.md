@@ -10,5 +10,3 @@
 * **DEVICE:** no proximity HAL sensor/binding was identified;
   package feature declarations still advertise proximity. The audited custom
   Android does not establish a fitted proximity sensor or its physical absence.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

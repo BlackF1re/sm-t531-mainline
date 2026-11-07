@@ -1,6 +1,6 @@
 # LVDS LCD panel
 
-* Physical10.1-inch1280×800,nominal60Hz; exact panel supplier is unconfirmed.
+* Physical 10.1-inch1280×800, nominal60 Hz; exact panel supplier is unconfirmed.
   Transport: MDP5→four-lane DSI/28-nm PHY→TC358764→LVDS; LP8556 drives backlight.
 * Native DRM connector LVDS-1 and full test pattern/desktop were device-accepted.
   Short modeset success does not establish cold initialization, full supply
@@ -13,9 +13,7 @@
   from its r02 DT model string.
 
 * **DEVICE:** Android selects
-  `qcom,mdss_dsi_tc358764_wxga_video`, continuous splash enabled, partial update
-  disabled. Physical fb0 is1280×800, virtual1280×1600,32bpp/stride5120.
+  `qcom, mdss_dsi_tc358764_wxga_video`, continuous splash enabled, partial update
+  disabled. Physical fb0 is 1280×800, virtual1280×1600, 32bpp/stride5120.
   `fb0/modes` prints `p-1`: do not infer panel refresh from that vendor string.
   fb1 is the registered writeback panel, not a second physical display.
-
-Evidence: `patches/linux/0051*`, `0135*`, [vendor pins](../docs/hardware-source-manifest.json).

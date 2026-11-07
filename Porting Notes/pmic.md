@@ -9,5 +9,3 @@
 * An enabled rail, a requested voltage or a successful SCM call is not an
   independent voltage/power measurement. Keep active and sleep resource votes
   distinct; do not manipulate genpd reference counts to simulate sleep.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json). `config/kernel.fragment`, `patches/linux/0134*`, `0135*`, `0138*`.

@@ -1,7 +1,7 @@
 # OCMEM SRAM and graphics allocation
 
 * Linux `qcom_ocmem` supplies firmware-backed graphics allocation to A305B.
-  At450MHz, the source peak6.4GB/s over16bytes implies a400MHz request;
+  At 450 MHz, the source peak6.4 GB/s over 16 bytes implies a400 MHz request;
   physical OCMEM frequency remains unmeasured. Do not infer it from DDR clocks.
 * **DEVICE:** RPM resume returned CPU but GMEM readback was zero;
   sysmem passed. Re-voting ICC or restoring SCM security alone did not fix it.
@@ -14,5 +14,3 @@
   The balanced unlock/lock revision passed the six sleep modes plus key path.
 * Firmware-protected OCMEM register changes are not identified; the SCM causal
   result does not prove a specific MPU bit or explain remaining FPS loss.
-
-Evidence: `patches/linux/0148*`, `0059*`, `0060*`.

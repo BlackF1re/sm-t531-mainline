@@ -6,6 +6,3 @@
   production policy and must not be counted as accepted hard-hang recovery.
 * Real expiry, reset reason and a recoverable boot are required acceptance;
   register access alone does not meet it. Preserve physical recovery access.
-
-Evidence: [historical test-state artifact](../status/hardware.yaml),
-[board source pins](../docs/hardware-source-manifest.json).

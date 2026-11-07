@@ -1,6 +1,6 @@
 # Front camera — Siliconfile SR130PC20
 
-* Android device ID `0xc1`, approximately1.3MP YUV sensor. Native capture is
+* Android device ID `0xc1`, approximately 1.3MP YUV sensor. Native capture is
   not accepted; successful probe is identity evidence only.
 * Reference program: `drivers/media/platform/msm/camera_v2/sensor/sr130pc20_yuv.c`.
   Use the matisse r02 camera DTS for supplies/reset/MCLK and the actual CCI/
@@ -9,8 +9,6 @@
   ISPIF/VFE. Flash/AF/EEPROM population is unestablished.
 
 * **DEVICE:** camera HAL1 reports FRONT/orientation0, fixed focus
-  only, still sizes up to1280×960; advertised preview/video include720×480.
+  only, still sizes up to 1280×960; advertised preview/video include720×480.
   `/sys/class/camera/front/front_camtype=SILICONFILE_SR130PC20`.
   Mode enumeration is not native capture or optical/orientation acceptance.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

@@ -14,5 +14,3 @@
   VFE, ISPIF, buffer-manager and CPP subdevices, plus SR352/SR130PC20.
   HAL is `Samsung MSM8226 Camera Wrapper`, module API0x100, two devices.
   A generic `msm_flash` node is present without a HAL flash-mode control.
-
-Evidence: [pinned board sources](../docs/hardware-source-manifest.json).

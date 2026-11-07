@@ -14,17 +14,12 @@
   explicit phosh|plasma and terminates local graphical sessions, not SSH.
 
 * **DEVICE, historical Phosh/Phoc trial:** GTK before/after-paint timing found
-  50/191 CPU frames above16.7ms, CPU p95~32.3–32.5ms, while DRM presented~50.96/s.
+  50/191 CPU frames above 16.7 ms, CPU p95~32.3–32.5 ms, while DRM presented~50.96/s.
   Presentation counts therefore overstate distinct GTK content updates; that
   CPU preparation cannot be fixed solely by adding GPU planes.
-* A private NEON Pixman IN_REVERSE comparison reduced GTK CPU p95 from30.657
-  to28.662ms, DRM48.721→50.285/s (separate sessions, not same-process ABA).
-  Solid fast paths passed16,697,344 exact pixels on host/device but gave
-  49.634 vs49.667/s; no aggregate FPS gain. Neither is a general60FPS fix.
+* Private NEON Pixman candidates improved isolated CPU timings but not stable
+  GUI 60 FPS; exact-pixel checks passed, while before/after FPS was nearly unchanged.
 * Private output-layer/primary-reuse prototypes reached~50.065/s, not60.
   Grouped DSI signatures matched texture composition, but direct single-plane
   fractional alpha differed. Those prototypes lack physical panel acceptance
   and are not the production compositor.
-
-Evidence: `patches/phosh`, [runtime package lock](../config/phosh-runtime.lock.json),
-`scripts/build-phosh.sh`, `scripts/install-phosh.sh`, `scripts/select-mobile-shell.sh`.
